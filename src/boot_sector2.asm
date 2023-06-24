@@ -8,20 +8,33 @@ xor ax, ax		; set DS to 0 (data segment)
 mov ds, ax
 cld
 
-mov ah, 2h		; int 13h function 2
-mov al, 1		; we want to read 1 sector
-mov ch, 0		; cylinder 0
-mov cl, 2		; start with the second sector
-mov dh, 0		; head number 0
+;; READ FILE TABLE INTO MEMORY
+mov ah, 0x02	; int 13h function 2
+mov al, 0x01	; read 1 sector
+mov ch, 0x0		; cylinder 0
+mov cl, 0x02	; start with the second sector
+mov dh, 0x0		; head 0
 
-xor bx, bx
+xor bx, bx		; set BX to 0
 mov es, bx		; set ES to 0
-mov bx, 7e00h	; and BX to 0x7e00 (EX:BX = 0x7e00)
-int 13h			; BIOS interrupt for disk functions
+mov bx, 0x7e00	; set BX to 0x7e00 (ES:BX = 0x7e00)
+int 0x13		; BIOS interrupt for disk functions
+
+;; READ KERNEL INTO MEMORY
+mov ah, 0x02		; int 13h function 2
+mov al, 0x01		; we want to read 1 sector
+mov ch, 0x0			; cylinder 0
+mov cl, 0x03		; start with the second sector
+mov dh, 0x0			; head number 0
+
+xor bx, bx		; set BX to 0
+mov es, bx		; set ES to 0
+mov bx, 0x7f00	; and BX to 0x7f00 (EX:BX = 0x7f00)
+int 0x13		; BIOS interrupt for disk functions
 
 jc disk_error	; if carry flag is set, there was an error
 
-jmp 0x7e00		; jump to second sector
+jmp 0x7f00		; jump to second sector
 
 disk_error:
 	mov bx, disk_error_message	; load error message into BX
@@ -31,7 +44,7 @@ disk_error:
 disk_error_message:
 	db "Disk read error!",0
 
-;%include "./print/print_string.asm"
+%include "./print/print_string.asm"
 
 times 510-($-$$) db 0
 dw 0xaa55
@@ -41,13 +54,13 @@ dw 0xaa55
 
 
 ; SECOND SECTOR - kernel
-mov bx, message		; load message into BX
-call print_string	; call print_string function
+;mov bx, message		; load message into BX
+;call print_string	; call print_string function
 
-jmp $		; loop indefinitely
+;jmp $		; loop indefinitely
 
 
-%include "./print/print_hex.asm"
-%include "./print/print_string.asm"
+;%include "./print/print_hex.asm"
+;%include "./print/print_string.asm"
 
-message db "Booting MyOS...",0
+;message db "Booting MyOS...",0
