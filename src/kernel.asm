@@ -1,6 +1,9 @@
 org 0x7f00
 
 main_menu:
+	;; reset screen state
+	call reset_screen
+
 	;; print menu message to screen
 	mov bx, message
 	call print_string
@@ -55,6 +58,9 @@ run_command:
 	cmp al, 'R'				; warm reboot
 	je reboot
 
+	cmp al, 'P'				; print register values
+	je register_print
+
 	mov bx, failure			; print failure message
 	call print_string
 	jmp get_input			; wait for other input
@@ -76,15 +82,12 @@ end_program:
 reboot:
 	jmp 0xFFFF:0x0000
 
-
 ;; ===============================================================
 ;; File browser and loader
 ;; ===============================================================
 filebrowser:
 	;; reset screen state
-	mov ah, 0x00	; int 0x10 set video mode
-	mov al, 0x03	; 80x25 text mode
-	int 0x10
+	call reset_screen
 
 	;; print header
 	mov bx, header
@@ -100,9 +103,27 @@ filebrowser:
 	mov ah, 0x00	; get user keystroke
 	int 0x16
 
-	mov ah, 0x00
-	mov al, 0x03
-	int 0x10
+	jmp main_menu
+
+;; ===============================================================
+;; Print register values
+;; ===============================================================
+register_print:
+	;; reset screen state
+	call reset_screen
+
+	;; print header
+	mov bx, pr_reg_header
+	call print_string
+
+	;; print register values
+	call print_registers
+
+	mov bx, go_back
+	call print_string
+
+	mov ah, 0x00	; get user keystroke
+	int 0x16
 
 	jmp main_menu
 
@@ -111,6 +132,7 @@ filebrowser:
 %include "./print/print_hex.asm"
 %include "./print/print_filetable.asm"
 %include "./print/print_registers.asm"
+%include "./screen/reset_screen.asm"
 
 message:
 	db "Booting MyOS...", 0xA, 0xD, 0xA, 0xD, \
@@ -135,6 +157,10 @@ go_back:
 
 newline:
 	db 0xA, 0xD, 0
+
+pr_reg_header:
+	db "Register       Value", 0xA, 0xD, \
+	"--------       -----", 0xA, 0xD, 0
 
 cmd_string:
 	db ''
