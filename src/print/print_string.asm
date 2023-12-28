@@ -1,6 +1,7 @@
 
 ; function that prints the string in BX
 print_string:
+	pusha					; save registers to stack
 	mov ah, 0x0e			; teletype output
 	mov si, 0				; index used to go thorough the message in BX
 
@@ -13,4 +14,5 @@ loop:
 	jmp loop
 
 end:
+	popa					; restore registers from stack
 	ret

@@ -29,7 +29,7 @@ int 0x13		; BIOS interrupt for disk functions
 ;; READ KERNEL INTO MEMORY (0x7f00)
 ;; ===============================================================
 mov ah, 0x02	; int 13h function 2
-mov al, 0x01	; we want to read 1 sector
+mov al, 0x02	; we want to read 2 sectors
 mov ch, 0x0		; cylinder 0
 mov cl, 0x03	; start with the second sector
 mov dh, 0x0		; head number 0

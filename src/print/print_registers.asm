@@ -1,0 +1,2 @@
+print_registers:
+	ret

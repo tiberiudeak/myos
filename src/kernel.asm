@@ -1,22 +1,26 @@
 org 0x7f00
 
-;; print menu message to screen
-mov bx, message
-call print_string
+main_menu:
+	;; print menu message to screen
+	mov bx, message
+	call print_string
 
-;; ===============================================================
-;; Detecting Low Memory
-;; ===============================================================
-mov bx, low_mem				; print message
-call print_string
+	;; ===============================================================
+	;; Detecting Low Memory
+	;; ===============================================================
+	mov bx, low_mem			; print message
+	call print_string
 
-clc							; clear carry flag
-int 0x12					; switch to the bios
-jc end_program				; end execution if error occured
+	clc						; clear carry flag
+	int 0x12				; switch to the bios
+	jc end_program			; end execution if error occured
 
-mov dx, ax					; save number of KiB in DX
-inc dx						; increment size of low momery as it begins from 0
-call print_hex				; print size as hex number
+	mov dx, ax				; save number of KiB in DX
+	inc dx					; increment size of low momery as it begins from 0
+	call print_hex			; print size as hex number
+
+	mov bx, newline
+	call print_string
 
 ;; ===============================================================
 ;; Get user input and execute command
@@ -90,15 +94,29 @@ filebrowser:
 	mov bx, 0x7e00
 	call print_filetable
 
-	jmp end_program
+	mov bx, go_back
+	call print_string
+
+	mov ah, 0x00	; get user keystroke
+	int 0x16
+
+	mov ah, 0x00
+	mov al, 0x03
+	int 0x10
+
+	jmp main_menu
 
 
 %include "./print/print_string.asm"
 %include "./print/print_hex.asm"
 %include "./print/print_filetable.asm"
+%include "./print/print_registers.asm"
 
 message:
-	db "Booting MyOS...", 0xA, 0xD, 0xA, 0xD, "F) File & Program Browser/Loader", 0xA, 0xD, "R) Reboot", 0xA, 0xD, 0
+	db "Booting MyOS...", 0xA, 0xD, 0xA, 0xD, \
+	"F) File & Program Browser/Loader", 0xA, 0xD, \
+	"R) Reboot", 0xA, 0xD, \
+	"P) Print Register Values", 0xA, 0xD, 0
 
 success:
 	db " Command successfully executed", 0xA, 0xD, 0
@@ -112,7 +130,13 @@ header:
 low_mem:
 	db 0xA, "Low Memory Size: ", 0
 
+go_back:
+	db 0xA, 0xA, 0xD, "Print any key to go back...", 0
+
+newline:
+	db 0xA, 0xD, 0
+
 cmd_string:
 	db ''
 
-times 512-($-$$) db 0
+times 1024-($-$$) db 0

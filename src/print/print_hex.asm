@@ -28,7 +28,14 @@ letter:
 hex_done:
 	mov bx, hex_out
 	call print_string
-	popa
+
+	; restore template to 0x0000
+	mov byte [hex_out+2], '0'
+	mov byte [hex_out+3], '0'
+	mov byte [hex_out+4], '0'
+	mov byte [hex_out+5], '0'
+
+	popa			; restore registers from stack
 	ret
 
 hex_out:
