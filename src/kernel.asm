@@ -5,23 +5,37 @@ mov bx, message
 call print_string
 
 ;; ===============================================================
+;; Detecting Low Memory
+;; ===============================================================
+mov bx, low_mem				; print message
+call print_string
+
+clc							; clear carry flag
+int 0x12					; switch to the bios
+jc end_program				; end execution if error occured
+
+mov dx, ax					; save number of KiB in DX
+inc dx						; increment size of low momery as it begins from 0
+call print_hex				; print size as hex number
+
+;; ===============================================================
 ;; Get user input and execute command
 ;; ===============================================================
 get_input:
 	mov di, cmd_string		; cmd_string will store the command
 
 keyloop:
-	xor ah, ah		; set AX to 0
-	int 0x16		; BIOS int get keystroke, character goes into al
+	xor ah, ah				; set AX to 0
+	int 0x16				; BIOS int get keystroke, character goes into al
 
-	mov ah, 0x0e	; BIOS int 1-h teletype output
+	mov ah, 0x0e			; BIOS int 1-h teletype output
 	mov bh, 0x00
 
-	cmp al, 0xD		; did user press 'enter'
+	cmp al, 0xD				; did user press 'enter'
 	je run_command
-	int 0x10		; BIOS int to print character in AL
-	mov [di], al	; store value from DI in AL
-	add di, 1		; increment DI
+	int 0x10				; BIOS int to print character in AL
+	mov [di], al			; store value from DI in AL
+	add di, 1				; increment DI
 	jmp keyloop
 
 run_command:
@@ -31,26 +45,26 @@ run_command:
 
 	je filebrowser
 
-	cmp al, 'N'			; check if the command is 'N'
-	je end_program		; if so, end the program (halt)
+	cmp al, 'N'				; check if the command is 'N'
+	je end_program			; if so, end the program (halt)
 
-	cmp al, 'R'			; warm reboot
+	cmp al, 'R'				; warm reboot
 	je reboot
 
-	mov bx, failure		; print failure message
+	mov bx, failure			; print failure message
 	call print_string
-	jmp get_input		; wait for other input
+	jmp get_input			; wait for other input
 
 cmd_success:
-	mov bx, success		; print success message
+	mov bx, success			; print success message
 	call print_string
-	jmp get_input		; wait for other input
+	jmp get_input			; wait for other input
 
 ;; ===============================================================
 ;; End program - jump indefinitely
 ;; ===============================================================
 end_program:
-	jmp $				; loop indefinitely
+	jmp $					; loop indefinitely
 
 ;; ===============================================================
 ;; Reboot - far jump to reset vector
@@ -94,6 +108,9 @@ failure:
 
 header:
 	db "File name            Sector", 0xA, 0xD, "---------            ------", 0xA, 0xD, 0
+
+low_mem:
+	db 0xA, "Low Memory Size: ", 0
 
 cmd_string:
 	db ''
