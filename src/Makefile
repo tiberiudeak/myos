@@ -1,5 +1,5 @@
 
-BINARY=boot_sector.bin kernel.bin file_table.bin os.bin
+BINARY=boot_sector.bin kernel.bin file_table.bin os.bin calculator.bin
 NASM=nasm
 
 REM=$(foreach b,$(BINARY),../bin/$(b))
@@ -15,7 +15,10 @@ kernel.bin: kernel.asm
 file_table.bin: file_table.asm
 	$(NASM) $< -f bin -o file_table.bin
 
-os.bin: boot_sector.bin file_table.bin kernel.bin
+calculator.bin: calculator.asm
+	$(NASM) $< -f bin -o calculator.bin
+
+os.bin: boot_sector.bin file_table.bin kernel.bin calculator.bin
 	cat $^ > os.bin
 	mv *.bin ../bin
 
