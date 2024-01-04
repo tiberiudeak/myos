@@ -1,29 +1,19 @@
 
-BINARY=boot_sector.bin kernel.bin file_table.bin os.bin calculator.bin
+BINARY=boot_sector.bin os.bin
 NASM=nasm
 
-REM=$(foreach b,$(BINARY),../bin/$(b))
+REM=$(foreach b,$(BINARY),$(b))
 
 all: $(BINARY)
 
-boot_sector.bin: boot_sector2.asm
+boot_sector.bin: myboot.asm
 	$(NASM) $< -f bin -o boot_sector.bin
 
-kernel.bin: kernel.asm
-	$(NASM) $< -f bin -o kernel.bin
-
-file_table.bin: file_table.asm
-	$(NASM) $< -f bin -o file_table.bin
-
-calculator.bin: calculator.asm
-	$(NASM) $< -f bin -o calculator.bin
-
-os.bin: boot_sector.bin file_table.bin kernel.bin calculator.bin
+os.bin: boot_sector.bin
 	cat $^ > os.bin
-	mv *.bin ../bin
 
-run: ../bin/os.bin
-	qemu-system-x86_64 -nographic $<
+run: os.bin
+	qemu-system-x86_64 $<
 
 .PHONY: clean
 
