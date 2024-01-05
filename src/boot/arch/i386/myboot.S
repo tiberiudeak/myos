@@ -35,9 +35,9 @@ _start:
 
 	hlt							# halt the CPU
 
-.include "print_string.S"
-.include "reset_screen.S"
-.include "gdt.S"
+.include "./include/print_string.S"
+.include "./include/reset_screen.S"
+.include "./include/gdt.S"
 
 msg:
 	.asciz "Booting MyOS..."	# the message
@@ -62,7 +62,7 @@ protected_mode_init:
 msg2:
 	.asciz "Entered protected mode!"		# the message
 
-.include "print_string_pm.S"
+.include "./include/print_string_pm.S"
 
 .space 510 - (. - _start)		# fill the rest of the bytes with 0
 .word 0xaa55					# boot signature
