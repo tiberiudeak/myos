@@ -23,6 +23,16 @@ _start:
 	mov $msg, %si				# load message address into SI
 	call print_string			# call print_string
 
+	# move cursor to next line
+	mov $0x02, %ah				# set function to 2 (set cursor position)
+	mov $0x00, %bh				# set page to 0
+	mov $0x01, %dh				# set row to 1
+	mov $0x00, %dl				# set column to 0
+	int $0x10					# call BIOS interrupt
+
+	# enable A20
+	call enable_a20				# call enable_a20
+
 	# make the switch to protected mode
 	cli							# clear interrupts
 	lgdt gdt_descriptor			# load GDT descriptor
@@ -38,9 +48,10 @@ _start:
 .include "./include/print_string.S"
 .include "./include/reset_screen.S"
 .include "./include/gdt.S"
+.include "./include/a20.S"
 
 msg:
-	.asciz "Booting MyOS..."	# the message
+	.asciz "Booting MyOS...\n"	# the message
 
 .code32
 protected_mode_init:

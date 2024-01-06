@@ -4,6 +4,6 @@ set -e
 
 . ./headers.sh
 
-for PROJECT in boot; do
+for PROJECT in $PROJECTS; do
 	(cd $PROJECT && DESTDIR="$SYSROOT" $MAKE install)
 done
