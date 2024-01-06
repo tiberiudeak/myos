@@ -7,6 +7,7 @@ export HOST=${HOST:-$(./default-host.sh)}
 export AR=${HOST}-ar
 export AS=${HOST}-as
 export CC=${HOST}-gcc
+export LD=${HOST}-ld
 
 export PREFIX=/usr
 export EXEC_PREFIX=$PREFIX
