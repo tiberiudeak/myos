@@ -33,6 +33,18 @@ _start:
 	# enable A20
 	call enable_a20				# call enable_a20
 
+	# move cursor to next line
+	call move_cursor_nl			# call cursor_next_line
+
+	# load 2nd stage boot sector
+	push $0x7e00				# push 0x7e00 to stack (load address)
+	push $0x1 					# push 1 to stack (# sectors)
+	push $0x80					# push 0x80 to stack (drive number)
+	call disk_load				# call disk_load
+	add $0x06, %sp				# add 6 to stack pointer
+
+	jmp 0x7e00					# jump to 2nd stage boot sector
+
 	# make the switch to protected mode
 	cli							# clear interrupts
 	lgdt gdt_descriptor			# load GDT descriptor
