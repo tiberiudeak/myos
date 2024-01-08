@@ -1,5 +1,5 @@
 
-# function that prints the value in DX as hex
+# function that prints the value taken from the stack as a hex number
 print_hex:
 	push %bp				# save base pointer on stack
 	mov %sp, %bp			# set base pointer to stack pointer

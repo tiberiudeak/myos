@@ -1,5 +1,5 @@
 
-# function that prints the string in the SI register
+# function that prints the string taken from the stack
 print_string:
 
 	push %bp				# save base pointer

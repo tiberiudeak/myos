@@ -18,7 +18,7 @@ _start:
 	mov %ax, %ss				# set stack segment to 0
 
 	# save drive number determined by BIOS to stack
-	push %dx                    # push dx to stack
+	push %dx					# push dx to stack
 
 	call reset_screen			# call reset_screen
 
@@ -28,11 +28,7 @@ _start:
 	add $0x02, %sp				# add 2 to stack pointer
 
 	# move cursor to next line
-	mov $0x02, %ah				# set function to 2 (set cursor position)
-	mov $0x00, %bh				# set page to 0
-	mov $0x01, %dh				# set row to 1
-	mov $0x00, %dl				# set column to 0
-	int $0x10					# call BIOS interrupt
+	call move_cursor_nl			# call cursor_next_line
 
 	# enable A20
 	call enable_a20				# call enable_a20
@@ -51,12 +47,14 @@ _start:
 
 .include "./include/print_string.S"
 .include "./include/reset_screen.S"
-.include "./include/print_hex.S"
+# .include "./include/print_hex.S"
 .include "./include/gdt.S"
 .include "./include/a20.S"
+.include "./include/disk_load.S"
+.include "./include/cursor_next_line.S"
 
 msg:
-	.asciz "Booting MyOS...\n"	# the message
+	.asciz "Booting MyOS..."	# the message
 
 .code32
 protected_mode_init:
