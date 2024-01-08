@@ -1,9 +1,9 @@
 
 .section .text
-.global _start
+.global _start2
 .code16
 
-_start:
+_start2:
 
 	push $msg2
 	call print_string
@@ -20,4 +20,4 @@ msg2:
 	.asciz "Entered 2nd stage boot"
 
 
-.space 512 - (. - _start)		# fill the rest of the bytes with 0
+.space 512 - (. - _start2)		# fill the rest of the bytes with 0
