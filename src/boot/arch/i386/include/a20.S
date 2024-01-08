@@ -1,7 +1,8 @@
 
 # function that activates the A20 line using BIOS interrupt 0x15
 enable_a20:
-	pusha					# save registers
+	push %ax				# save ax register
+	push %si				# save si register
 
 	mov $0x2403, %ax		# function 0x2403
 	int $0x15				# call BIOS
@@ -25,21 +26,27 @@ enable_a20:
 	jnz a20_failed			# jump if failed
 
 a20_ns:
-	mov $a20_ns_msg, %si	# load message
+	push $a20_ns_msg		# push message
 	call print_string		# print message
-	popa					# restore registers
-	ret						# return
+	add $2, %sp				# remove message from stack
+	jmp a20_end				# jump to end
 
 a20_failed:
-	mov $a20_failed_msg, %si	# load message
+	push $a20_failed_msg		# push message
 	call print_string			# print message
-	popa						# restore registers
-	ret							# return
+	add $2, %sp					# remove message from stack
+	jmp a20_end					# jump to end
 
 a20_ok:
-	mov $a20_ok_msg, %si	# load message
+	push $a20_ok_msg		# push message
 	call print_string		# print message
-	popa					# restore registers
+	add $2, %sp				# remove message from stack
+
+a20_end:
+
+	pop %si					# restore si register
+	pop %ax					# restore ax register
+
 	ret						# return
 
 a20_ns_msg:

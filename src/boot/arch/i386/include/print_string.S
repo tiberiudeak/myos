@@ -1,8 +1,15 @@
 
 # function that prints the string in the SI register
 print_string:
-    pusha					# save registers to stack
+
+	push %bp				# save base pointer
+	mov %sp, %bp			# set base pointer to stack pointer
+
+	push %si				# save SI register
+	push %ax				# save AX register
+
 	mov $0x0e, %ah			# teletype output
+	mov 4(%bp), %si			# set SI to the first argument
 
 print_string_loop:
 	lodsb					# load the byte in SI into AL and increment SI
@@ -13,5 +20,11 @@ print_string_loop:
 	jmp print_string_loop	# loop back to the start
 
 print_string_end:
-	popa					# restore registers from stack
+
+	pop %ax					# restore AX register
+	pop %si					# restore SI register
+
+	mov %bp, %sp			# restore stack pointer
+	pop %bp					# restore base pointer
+
 	ret						# return from function

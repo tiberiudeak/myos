@@ -17,11 +17,15 @@ _start:
 	mov %ax, %gs				# set general segment to 0
 	mov %ax, %ss				# set stack segment to 0
 
+	# save drive number determined by BIOS to stack
+	push %dx                    # push dx to stack
+
 	call reset_screen			# call reset_screen
 
 	# print message
-	mov $msg, %si				# load message address into SI
+	push $msg					# push message address to stack
 	call print_string			# call print_string
+	add $0x02, %sp				# add 2 to stack pointer
 
 	# move cursor to next line
 	mov $0x02, %ah				# set function to 2 (set cursor position)
@@ -47,6 +51,7 @@ _start:
 
 .include "./include/print_string.S"
 .include "./include/reset_screen.S"
+.include "./include/print_hex.S"
 .include "./include/gdt.S"
 .include "./include/a20.S"
 
