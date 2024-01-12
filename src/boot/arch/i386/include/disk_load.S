@@ -1,8 +1,8 @@
 
 # function that will load sectors from drive to location in memory
-# the number of sectors, the drive number and the location
-# are passed as parameters
-# disk_load(drive, sectors, location)
+# the number of sectors, the drive number, the location and the
+# sector number to start reading from are passed as parameters
+# disk_load(drive, sectors, location, sector_number)
 disk_load:
 	push %bp				# save base pointer on stack
 	mov %sp, %bp			# set base pointer to stack pointer
@@ -14,7 +14,7 @@ disk_load:
 	movb $0x02, %ah			# BIOS read sectors from drive function
 	movb 6(%bp), %al		# number of sectors to read
 	movb $0x00, %ch			# cylinder number 0
-	movb $0x02, %cl			# sector number 2 (after the boot sector)
+	movb 10(%bp), %cl		# sector number
 	movb $0x00, %dh			# head number 0
 	movb 4(%bp), %dl		# drive number
 
@@ -25,22 +25,21 @@ disk_load:
 	int $0x13				# call BIOS interrupt 0x13
 
 	jc disk_load_error		# if carry flag is set, error occurred
-	jmp disk_load_end		# jump to end of function
 
-disk_load_error:
-	push disk_error_message		# push error message on stack
-	call print_string			# call print_string function
-	add $2, %sp					# remove error message from stack
-
-disk_load_end:
 	pop %dx						# restore dx register
 	pop %cx						# restore cx register
 	pop %ax						# restore ax register
 
 	mov %bp, %sp				# restore stack pointer
 	pop %bp						# restore base pointer
-	ret							# return from function
+	ret
 
+disk_load_error:
+	push disk_error_message		# push error message on stack
+	call print_string			# call print_string function
+	add $2, %sp					# remove error message from stack
+
+	hlt
 
 disk_error_message:
 	.asciz "Disk read error occured!\n"

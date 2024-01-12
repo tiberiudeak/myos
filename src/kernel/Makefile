@@ -7,7 +7,7 @@ ARCHDIR:=arch/$(HOSTARCH)
 
 CFLAGS?=-O2 -g
 CPPFLAGS?=
-LDFLAGS?=-Ttext=0x0000 --oformat=binary
+LDFLAGS?=-Ttext=0x8000 --oformat=binary
 ASFLAGS?=
 LIBS?=
 
@@ -34,6 +34,7 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 KERNEL_OBJS:=\
 $(KERNEL_ARCH_OBJS) \
 kernel.o
+# arch/i386/kernel_entry.o
 
 OBJS=\
 $(KERNEL_OBJS)
@@ -57,7 +58,7 @@ kernel.bin: $(OBJS)
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
 .S.o:
-	$(CC) -MD -c $< -o $@ $(CFLAGS) $(CPPFLAGS)
+	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
 	rm -f $(BINARIES) $(OBJS) *.d

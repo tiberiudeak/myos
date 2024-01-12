@@ -37,58 +37,27 @@ _start:
 	call move_cursor_nl			# call cursor_next_line
 
 	# load 2nd stage boot sector
+	pop %dx						# pop drive number from stack to dx
+	push $0x2					# push 2 to stack (sector number)
 	push $0x7e00				# push 0x7e00 to stack (load address)
 	push $0x1 					# push 1 to stack (# sectors)
-	push $0x80					# push 0x80 to stack (drive number)
+	push %dx					# push dl to stack (drive number)
 	call disk_load				# call disk_load
-	add $0x06, %sp				# add 6 to stack pointer
+	add $0x08, %sp				# add 8 to stack pointer
+	push %dx					# push drive number back to stack
 
 	jmp 0x7e00					# jump to 2nd stage boot sector
 
-	# make the switch to protected mode
-	cli							# clear interrupts
-	lgdt gdt_descriptor			# load GDT descriptor
-
-	mov %cr0, %eax				# load cr0 into eax
-	or $0x1, %eax				# set bit 0 to 1
-	mov %eax, %cr0				# load eax into cr0
-
-	ljmp $CODE_SEG, $protected_mode_init		# far jump to protected mode
-
-	hlt							# halt the CPU
 
 .include "./include/print_string.S"
 .include "./include/reset_screen.S"
-# .include "./include/print_hex.S"
-.include "./include/gdt.S"
+.include "./include/print_hex.S"
 .include "./include/a20.S"
 .include "./include/disk_load.S"
 .include "./include/cursor_next_line.S"
 
 msg:
 	.asciz "Booting MyOS..."	# the message
-
-.code32
-protected_mode_init:
-	mov $DATA_SEG, %ax			# load data segment into ax
-	mov %ax, %ds				# load ax into data segment
-	mov %ax, %es				# load ax into extra segment
-	mov %ax, %fs				# load ax into file segment
-	mov %ax, %gs				# load ax into general segment
-	mov %ax, %ss				# load ax into stack segment
-
-	mov $0x90000, %ebp			# set base pointer to 0x90000 (free memory)
-	mov %ebp, %esp				# set stack pointer to base pointer
-
-	mov $msg2, %si				# load message address into SI
-	call print_string_pm		# call print_string_pm
-
-	hlt							# halt the CPU
-
-msg2:
-	.asciz "Entered protected mode!"		# the message
-
-.include "./include/print_string_pm.S"
 
 .space 510 - (. - _start)		# fill the rest of the bytes with 0
 .word 0xaa55					# boot signature
