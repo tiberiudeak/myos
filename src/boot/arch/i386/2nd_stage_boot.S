@@ -26,6 +26,9 @@ _start2:
 	xor %eax, %eax			# set eax to 0
 	mov %eax, %esp			# set the stack pointer to 0
 
+	# detect memory
+	call detect_memory		# call the detect_memory function
+
 	# make switch to protected mode
 	cli						# disable interrupts
 	lgdt gdt_descriptor		# load the gdt descriptor
@@ -36,26 +39,15 @@ _start2:
 
 	ljmp $CODE_SEG, $protected_mode_init	# jump to protected mode
 
-
-load_error:
-	push $load_error_msg	# push the error message to the stack
-	call print_string		# call the print_string function
-	add $0x2, %sp			# remove the pushed value from the stack
-
-	hlt
-
-
 .include "./include/print_string.S"
-.include "./include/print_hex.S"
+# .include "./include/print_hex.S"
 .include "./include/cursor_next_line.S"
 .include "./include/disk_load.S"
 .include "./include/gdt.S"
+.include "./include/detect_memory.S"
 
 msg2:
 	.asciz "Entered 2nd stage boot"
-
-load_error_msg:
-	.asciz "Error loading kernel"
 
 
 .code32
