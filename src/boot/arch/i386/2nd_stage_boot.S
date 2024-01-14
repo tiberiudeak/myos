@@ -22,12 +22,15 @@ _start2:
 	push %dx				# push the drive number back to the stack
 
 
-	# empty stack
-	xor %eax, %eax			# set eax to 0
-	mov %eax, %esp			# set the stack pointer to 0
-
 	# detect memory
+	push $0x1000			# push 0x1000 to the stack (memory loc.)
 	call detect_memory		# call the detect_memory function
+	add $0x2, %sp			# remove the pushed value from the stack
+
+
+	# empty stack
+	pop %dx
+
 
 	# make switch to protected mode
 	cli						# disable interrupts
