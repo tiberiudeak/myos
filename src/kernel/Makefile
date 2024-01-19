@@ -33,8 +33,8 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS:=\
 $(KERNEL_ARCH_OBJS) \
+arch/i386/kernel_entry.o \
 kernel.o
-# arch/i386/kernel_entry.o
 
 OBJS=\
 $(KERNEL_OBJS)
