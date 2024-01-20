@@ -20,8 +20,8 @@ INCLUDEDIR?=$(PREFIX)/include
 
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
 CPPFLAGS:=$(CPPFLAGS)
-LDFLAGS:=$(LDFLAGS)
-LIBS:=$(LIBS) -nostdlib
+LDFLAGS:=$(LDFLAGS) -L../libc
+LIBS:=$(LIBS) -nostdlib -lk
 
 # include arch-specific flags if any
 include $(ARCHDIR)/make.config
