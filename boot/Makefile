@@ -1,23 +1,20 @@
-
-DEFAULT_HOST!=../default-host.sh
 HOST?=$(DEFAULT_HOST)
-HOSTARCH!=../target-triplet-to-arch.sh $(HOST)
-
 ARCHDIR:=arch/$(HOSTARCH)
 
+# define flags if not already defined
 CFLAGS?=-O2 -g
 CPPFLAGS?=
 LDFLAGS?=-Ttext=0x7c00 --oformat=binary
 ASFLAGS?=-I$(ARCHDIR)
 LIBS?=
 
-# DESTDIT set when running make install (it will be the sysroot)
 DESTDIR?=
 PREFIX?=/usr/local
 EXEC_PREFIX?=$(PREFIX)
 BOOTDIR?=$(EXEC_PREFIX)/boot
 INCLUDEDIR?=$(PREFIX)/include
 
+# add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
 CPPFLAGS:=
 LDFLAGS:=$(LDFLAGS)
@@ -26,6 +23,8 @@ LIBS:=$(LIBS)
 # include arch-specific flags if any
 include $(ARCHDIR)/make.config
 
+# final flags containing the default, the extra and
+# the arch-specific ones
 CFLAGS:=$(CFLAGS) $(BOOT_ARCH_CFLAGS)
 CPPFLAGS:=$(CPPFLAGS) $(BOOT_ARCH_CPPFLAGS)
 LDFLAGS:=$(LDFLAGS) $(BOOT_ARCH_LDFLAGS)
