@@ -32,6 +32,7 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS:=\
 $(KERNEL_ARCH_OBJS) \
+arch/i386/tty.o \
 arch/i386/kernel_entry.o \
 kernel.o
 

@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "include/kernel/tty.h"
+
 void test() {
 	char* video_memory = (char*) 0xb8000;
 	*video_memory = 'A';
@@ -14,4 +16,5 @@ void kmain() {
 	*video_memory = 'A';
 	//test();
 	int a = strlen("Hello, world!");
+	terminal_initialize();
 }
