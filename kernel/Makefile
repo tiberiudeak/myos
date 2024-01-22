@@ -32,9 +32,9 @@ LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
 KERNEL_OBJS:=\
 $(KERNEL_ARCH_OBJS) \
-arch/i386/tty.o \
 arch/i386/kernel_entry.o \
-kernel.o
+kernel.o \
+arch/i386/tty.o \
 
 OBJS=\
 $(KERNEL_OBJS)
@@ -61,7 +61,7 @@ kernel.bin: $(OBJS)
 	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
-	rm -f $(BINARIES) $(OBJS) *.d
+	rm -f $(BINARIES) $(OBJS) *.d */*.d */*/*.d
 
 install: install-headers install-kernel
 

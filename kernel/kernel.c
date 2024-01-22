@@ -1,7 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
 
 #include "include/kernel/tty.h"
 
@@ -12,9 +11,6 @@ void test() {
 }
 
 void kmain() {
-	char* video_memory = (char*) 0xb8000;
-	*video_memory = 'A';
-	//test();
-	int a = strlen("Hello, world!");
 	terminal_initialize();
+	terminal_writestring("Hello, kernel World!");
 }
