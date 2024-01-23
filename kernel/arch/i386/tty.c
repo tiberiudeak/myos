@@ -2,8 +2,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
-#include "../../include/kernel/tty.h"
+#include <kernel/tty.h>
+#include <kernel/io_port.h>
 #include "vga.h"
+
+#define REG_SCREEN_CTRL 0x3D4
+#define REG_SCREEN_DATA 0x3D5
 
 static const size_t VGA_WIDTH = 80;
 static const size_t VGA_HEIGHT = 25;
@@ -13,6 +17,23 @@ static size_t terminal_row;
 static size_t terminal_column;
 static uint8_t terminal_color;
 static uint16_t* terminal_buffer;
+
+/**
+ * @brief Set the cursor to the specified position.
+ *
+ * This function sets the cursor to the specified position.
+ *
+ * @param x  The x position of the cursor.
+ * @param y  The y position of the cursor.
+ */
+void set_cursor(size_t x, size_t y) {
+	uint16_t pos = y * VGA_WIDTH + x;
+
+	port_byte_out(REG_SCREEN_CTRL, 14);
+	port_byte_out(REG_SCREEN_DATA, pos >> 8);
+	port_byte_out(REG_SCREEN_CTRL, 15);
+	port_byte_out(REG_SCREEN_DATA, pos);
+}
 
 /**
  * @brief Initialize the terminal.
@@ -25,6 +46,8 @@ void terminal_initialize(void) {
 	terminal_column = 0;
 	terminal_color = vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK); // 0x0F
 	terminal_buffer = VGA_MEMORY;
+
+	set_cursor(terminal_column, terminal_row);
 
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
 		for (size_t x = 0; x < VGA_WIDTH; x++) {
@@ -106,6 +129,8 @@ void terminal_putchar(char c) {
 			// terminal_row = VGA_HEIGHT - 1;
 		}
 	}
+
+	set_cursor(terminal_column, terminal_row);
 }
 
 /**

@@ -16,7 +16,7 @@ INCLUDEDIR?=$(PREFIX)/include
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS)
+CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -Iinclude
 LDFLAGS:=$(LDFLAGS) -L../libc
 LIBS:=$(LIBS) -nostdlib -lk
 
@@ -66,7 +66,9 @@ clean:
 
 install: install-headers install-kernel
 
-install-headers: ;
+install-headers:
+	mkdir -p $(DESTDIR)$(INCLUDEDIR)
+	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-kernel: $(BINARIES)
 	mkdir -p $(DESTDIR)$(KERNELDIR)

@@ -16,7 +16,7 @@ LIBDIR?=$(EXEC_PREFIX)/lib
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS)
+CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude
 LDFLAGS:=$(LDFLAGS)
 LIBK_CFLAGS:=$(CFLAGS)
 LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk
@@ -55,7 +55,7 @@ libk.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
 
 .c.o:
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
 clean:
 	rm -f $(BINARIES) $(OBJS) *.d *.a */*.o */*.d */*.a

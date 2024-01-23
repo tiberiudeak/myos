@@ -1,4 +1,4 @@
-# Project that hopefully will turn in a very basic OS :)
+# Project that hopefully will turn into a very basic OS :)
 
 ## Build
 In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. Without using one, there is a chance that a lot of unexpected things will happen because the compiler assumes that the code is running on the host operating system, which will not be the case. To set up one, follow the following steps (for Linux):

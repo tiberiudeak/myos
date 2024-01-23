@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <kernel/io_port.h>
 
 /**
  * @brief Read a byte from a specified I/O port.
