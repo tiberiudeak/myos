@@ -12,5 +12,9 @@ void test() {
 
 void kmain() {
 	terminal_initialize();
-	terminal_writestring("Hello, kernel World!");
+	terminal_writestring("Hello, kernel World!\n");
+
+	// for (size_t i = 0; i < 23; i++) {
+		// terminal_writestring("Hello, kernel World!\n");
+	// }
 }

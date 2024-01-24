@@ -15,7 +15,7 @@ _start2:
 	pop %dx					# pop drive number from stack to dx
 	push $0x3				# push 3 to the stack (sector number)
 	push $0x8000			# push 0x8000 to the stack (load address)
-	push $0x2				# push 2 to the stack (sector count)
+	push $0x3				# push 3 to the stack (sector count)
 	push $0x80				# push 0 to the stack (drive number)
 	call disk_load			# call the disk_load function
 	add $0x8, %sp			# remove the 3 pushed values from the stack
