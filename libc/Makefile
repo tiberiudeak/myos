@@ -16,7 +16,7 @@ LIBDIR?=$(EXEC_PREFIX)/lib
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude
+CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/include
 LDFLAGS:=$(LDFLAGS)
 LIBK_CFLAGS:=$(CFLAGS)
 LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk
@@ -38,7 +38,10 @@ string/memcmp.o \
 string/memcpy.o \
 string/memmove.o \
 string/memset.o \
-string/strlen.o
+string/strlen.o \
+stdio/puts.o \
+stdio/putchar.o \
+stdio/printf.o
 
 OBJS=\
 $(FREEOBJS)
