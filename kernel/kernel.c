@@ -10,5 +10,7 @@ void test() {
 void kmain() {
 	terminal_initialize();
 	char *a = "kernel";
-	printf("Hello, %s World!\n", a);
+	printf("Hello, ");
+	printfc(3, "%s", a);
+	printf(" World!\n");
 }

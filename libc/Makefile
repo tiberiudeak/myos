@@ -41,7 +41,9 @@ string/memset.o \
 string/strlen.o \
 stdio/puts.o \
 stdio/putchar.o \
-stdio/printf.o
+stdio/printf.o \
+stdio/putcharc.o \
+stdio/printfc.o
 
 OBJS=\
 $(FREEOBJS)
