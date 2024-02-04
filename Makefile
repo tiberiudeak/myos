@@ -18,7 +18,7 @@ export AS:=$(HOST)-as
 export CC:=$(HOST)-gcc
 export LD:=$(HOST)-ld
 
-export CFLAGS:=-O2 -g
+export CFLAGS:=-O0 -g
 export CPPFLAGS:=
 
 export SYSROOT:=$(shell pwd)/sysroot

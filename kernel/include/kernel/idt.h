@@ -1,5 +1,5 @@
-#ifndef ARCH_I386_IDT_H
-#define ARCH_I386_IDT_H 1
+#ifndef KERNEL_IDT_H
+#define KERNEL_IDT_H 1
 
 #include <stdint.h>
 
@@ -121,4 +121,4 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-#endif // ARCH_I386_IDT_H
+#endif // KERNEL_IDT_H

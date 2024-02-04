@@ -92,235 +92,167 @@ irq_common_stub:
 .globl isr177
 
 isr0:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $0, 1(%esp)
+	push $0
+	push $0
 	jmp isr_common_stub
 
 isr1:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $1, 1(%esp)
+	push $0
+	push $1
 	jmp isr_common_stub
 
 isr2:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $2, 1(%esp)
+	push $0
+	push $2
 	jmp isr_common_stub
 
 isr3:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $3, 1(%esp)
+	push $0
+	push $3
 	jmp isr_common_stub
 
 isr4:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $4, 1(%esp)
+	push $0
+	push $4
 	jmp isr_common_stub
 
 isr5:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $5, 1(%esp)
+	push $0
+	push $5
 	jmp isr_common_stub
 
 isr6:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $6, 1(%esp)
+	push $0
+	push $6
 	jmp isr_common_stub
 
 isr7:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $7, 1(%esp)
+	push $0
+	push $7
 	jmp isr_common_stub
 
 isr8:
-	cli
-	add $-1, %esp
-	movb $8, 0(%esp)
+	push $8
 	jmp isr_common_stub
 
 isr9:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $9, 1(%esp)
+	push $0
+	push $9
 	jmp isr_common_stub
 
 isr10:
-	cli
-	add $-1, %esp
-	movb $10, 0(%esp)
+	push $10
 	jmp isr_common_stub
 
 isr11:
-	cli
-	add $-1, %esp
-	movb $11, 0(%esp)
+	push $11
 	jmp isr_common_stub
 
 isr12:
-	cli
-	add $-1, %esp
-	movb $12, 0(%esp)
+	push $12
 	jmp isr_common_stub
 
 isr13:
-	cli
-	add $-1, %esp
-	movb $13, 0(%esp)
+	push $13
 	jmp isr_common_stub
 
 isr14:
-	cli
-	add $-1, %esp
-	movb $14, 0(%esp)
+	push $14
 	jmp isr_common_stub
 
 isr15:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $15, 1(%esp)
+	push $0
+	push $15
 	jmp isr_common_stub
 
 isr16:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $16, 1(%esp)
+	push $0
+	push $16
 	jmp isr_common_stub
 
 isr17:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $17, 1(%esp)
+	push $0
+	push $17
 	jmp isr_common_stub
 
 isr18:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $18, 1(%esp)
+	push $0
+	push $18
 	jmp isr_common_stub
 
 isr19:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $19, 1(%esp)
+	push $0
+	push $19
 	jmp isr_common_stub
 
 isr20:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $20, 1(%esp)
+	push $0
+	push $20
 	jmp isr_common_stub
 
 isr21:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $21, 1(%esp)
+	push $0
+	push $21
 	jmp isr_common_stub
 
 isr22:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $22, 1(%esp)
+	push $0
+	push $22
 	jmp isr_common_stub
 
 isr23:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $23, 1(%esp)
+	push $0
+	push $23
 	jmp isr_common_stub
 
 isr24:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $24, 1(%esp)
+	push $0
+	push $24
 	jmp isr_common_stub
 
 isr25:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $25, 1(%esp)
+	push $0
+	push $25
 	jmp isr_common_stub
 
 isr26:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $26, 1(%esp)
+	push $0
+	push $26
 	jmp isr_common_stub
 
 isr27:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $27, 1(%esp)
+	push $0
+	push $27
 	jmp isr_common_stub
 
 isr28:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $28, 1(%esp)
+	push $0
+	push $28
 	jmp isr_common_stub
 
 isr29:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $29, 1(%esp)
+	push $0
+	push $29
 	jmp isr_common_stub
 
 isr30:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $30, 1(%esp)
+	push $0
+	push $30
 	jmp isr_common_stub
 
 isr31:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $31, 1(%esp)
+	push $0
+	push $31
 	jmp isr_common_stub
 
 isr128:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $128, 1(%esp)
+	push $0
+	push $128
 	jmp isr_common_stub
 
 isr177:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $177, 1(%esp)
+	push $0
+	push $177
 	jmp isr_common_stub
 
 .globl irq0
@@ -341,113 +273,81 @@ isr177:
 .globl irq15
 
 irq0:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $0, 32(%esp)
+	push $0
+	push $32
 	jmp irq_common_stub
 
 irq1:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $1, 33(%esp)
+	push $1
+	push $33
 	jmp irq_common_stub
 
 irq2:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $2, 34(%esp)
+	push $2
+	push $34
 	jmp irq_common_stub
 
 irq3:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $3, 35(%esp)
+	push $3
+	push $35
 	jmp irq_common_stub
 
 irq4:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $4, 36(%esp)
+	push $4
+	push $36
 	jmp irq_common_stub
 
 irq5:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $5, 37(%esp)
+	push $5
+	push $37
 	jmp irq_common_stub
 
 irq6:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $6, 38(%esp)
+	push $6
+	push $38
 	jmp irq_common_stub
 
 irq7:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $7, 39(%esp)
+	push $7
+	push $39
 	jmp irq_common_stub
 
 irq8:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $8, 40(%esp)
+	push $8
+	push $40
 	jmp irq_common_stub
 
 irq9:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $9, 41(%esp)
+	push $9
+	push $41
 	jmp irq_common_stub
 
 irq10:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $10, 42(%esp)
+	push $10
+	push $42
 	jmp irq_common_stub
 
 irq11:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $11, 43(%esp)
+	push $11
+	push $43
 	jmp irq_common_stub
 
 irq12:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $12, 44(%esp)
+	push $12
+	push $44
 	jmp irq_common_stub
 
 irq13:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $13, 45(%esp)
+	push $13
+	push $45
 	jmp irq_common_stub
 
 irq14:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $14, 46(%esp)
+	push $14
+	push $46
 	jmp irq_common_stub
 
 irq15:
-	cli
-	add $-2, %esp
-	movb $0, (%esp)
-	movb $15, 47(%esp)
+	push $15
+	push $47
 	jmp irq_common_stub

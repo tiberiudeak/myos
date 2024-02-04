@@ -22,9 +22,21 @@ void set_idt_gate(int n, uint32_t handler) {
 	idt_entries[n].high_offset = high_16(handler);
 }
 
+/**
+ * @brief Initialize the Interrupt Descriptor Table (IDT).
+ *
+ * This function first initializes the IDT Descriptor with the
+ * address of the IDT Entries and the size of the IDT. Then, it
+ * initializes the two Programmable Interrupt Controllers (PICs)
+ * and sets the IDT gates for the first 32 interrupts and the
+ * first 16 IRQs. Finally, it loads the IDT using the lidt
+ * instruction and enables interrupts using the sti instruction.
+ *
+ * The first 32 interrupts are reserved by the CPU and are
+ * called exceptions. The first 16 IRQs are reserved by the
+ * PICs and are used to handle hardware interrupts.
+ */
 void init_idt() {
-	printf("Initializing IDT...\n");
-
 	idt_ptr_reg.limit = (sizeof(idt_gate_t) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t)&idt_entries;
 
@@ -138,6 +150,14 @@ char *exception_messages[] = {
 	"Reserved"
 };
 
+/**
+ * @brief Interrupt Service Routine (ISR) handler.
+ *
+ * This function is called when an interrupt is received. It
+ * prints the name of the interrupt and halts the system.
+ *
+ * @param r  The interrupt registers.
+ */
 void isr_handler(interrupt_regs *r) {
 	if (r->int_no < 32) {
 		printf("Received interrupt: ");
@@ -146,6 +166,8 @@ void isr_handler(interrupt_regs *r) {
 		printf("System Halted!\n");
 		for (;;);
 	}
+
+	// TODO: print the interrupt registers
 }
 
 void *irq_routines[16] = {
@@ -153,14 +175,37 @@ void *irq_routines[16] = {
 	0,0,0,0,0,0,0,0
 };
 
+/**
+ * @brief Install a new handler for the given IRQ.
+ *
+ * This function installs a new handler for the given IRQ.
+ *
+ * @param irq      The IRQ number.
+ * @param handler  The handler function.
+ */
 void irq_install_handler(int irq, void (*handler)(interrupt_regs *r)) {
 	irq_routines[irq] = handler;
 }
 
+/**
+ * @brief Uninstall the handler for the given IRQ.
+ *
+ * This function uninstalls the handler for the given IRQ.
+ *
+ * @param irq  The IRQ number.
+ */
 void irq_uninstall_handler(int irq) {
 	irq_routines[irq] = 0;
 }
 
+/**
+ * @brief Interrupt Request (IRQ) handler.
+ *
+ * This function is called when an interrupt request is received.
+ * It calls the handler for the given IRQ.
+ *
+ * @param r  The interrupt registers.
+ */
 void irq_handler(interrupt_regs *r) {
 	void (*handler)(interrupt_regs *r);
 	handler = irq_routines[r->int_no - 32];

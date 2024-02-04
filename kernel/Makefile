@@ -34,10 +34,12 @@ KERNEL_OBJS:=\
 $(KERNEL_ARCH_OBJS) \
 arch/i386/kernel_entry.o \
 kernel.o \
+arch/i386/gdt.o \
+arch/i386/gdt_flush.o \
 arch/i386/tty.o \
-arch/i386/io_port.o
-# arch/i386/idt.o
-# arch/i386/idt_as.o
+arch/i386/io_port.o \
+arch/i386/idt.o \
+arch/i386/idt_as.o
 
 OBJS=\
 $(KERNEL_OBJS)
