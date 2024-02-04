@@ -6,7 +6,9 @@
 _start:
 
 	# set up stack
-	mov $0x9000, %bp			# set base pointer to 0x9000 (free memory)
+	mov $0x7c00, %bp			# set base pointer to 0x7c00; the stack
+                                # grows downwards from here, so it will
+								# not overwrite the bootloader
 	mov %bp, %sp				# set stack pointer to base pointer
 
 	# set up segments

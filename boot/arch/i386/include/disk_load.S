@@ -24,7 +24,15 @@ disk_load:
 
 	int $0x13				# call BIOS interrupt 0x13
 
+	push $timer
+	call print_string
+	add $0x2, %sp
+
 	jc disk_load_error		# if carry flag is set, error occurred
+
+	push $done
+	call print_string
+	add $0x2, %sp
 
 	pop %dx						# restore dx register
 	pop %cx						# restore cx register
@@ -35,11 +43,17 @@ disk_load:
 	ret
 
 disk_load_error:
-	push disk_error_message		# push error message on stack
+	push $disk_error_message		# push error message on stack
 	call print_string			# call print_string function
-	add $2, %sp					# remove error message from stack
+	add $0x2, %sp					# remove error message from stack
 
 	hlt
 
 disk_error_message:
 	.asciz "Disk read error occured!\n"
+
+timer:
+	.asciz "Loading..."
+
+done:
+	.asciz "done!"
