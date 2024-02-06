@@ -63,6 +63,20 @@ typedef struct {
 	uint32_t eip, cs, eflags, useresp, ss;
 } interrupt_regs;
 
+/**
+ * IDT Entry flags. Layout:
+ *
+ *   7   6 5   4   3       0
+ * |-------------------------|
+ * | P | DPL | 0 | Gate Type |
+ * |-------------------------|
+ *
+ * P: Present bit, must be 1 for all valid selectors
+ * DPL: Descriptor Privilege Level
+ * Gate Type: 4-bit value representing the type of the gate; there
+ * 		  are 5 types of gates: task, 16-bit interrupt, 16-bit
+ * 		  trap, 32-bit interrupt, 32-bit trap
+*/
 typedef enum {
 	IDT_FLAGS_TASK_GATE 		= 0x05,
 	IDT_FLAGS_16BIT_INT 		= 0x06,
