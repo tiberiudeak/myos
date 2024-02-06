@@ -16,7 +16,7 @@ INCLUDEDIR?=$(PREFIX)/include
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -Iinclude
+CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I.
 LDFLAGS:=$(LDFLAGS) -L../libc
 LIBS:=$(LIBS) -nostdlib -lk
 
@@ -30,16 +30,25 @@ CPPFLAGS:=$(CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
 LDFLAGS:=$(LDFLAGS) $(KERNEL_ARCH_LDFLAGS)
 LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
 
-KERNEL_OBJS:=\
-$(KERNEL_ARCH_OBJS) \
-arch/i386/kernel_entry.o \
-kernel.o \
-arch/i386/gdt.o \
-arch/i386/gdt_flush.o \
-arch/i386/tty.o \
-arch/i386/io_port.o \
-arch/i386/idt.o \
-arch/i386/idt_as.o
+KERNEL_SOURCES_C:=$(shell find . -type f -name '*.c')
+KERNEL_SOURCES_S:=$(shell find . -type f -name '*.S')
+
+KERNEL_OBJS:=$(KERNEL_SOURCES_C:.c=.o)
+KERNEL_OBJS:=$(KERNEL_OBJS) $(KERNEL_SOURCES_S:.S=.o)
+
+KERNEL_OBJS:=$(filter-out ./arch/i386/kernel_entry.o, $(KERNEL_OBJS))
+KERNEL_OBJS:=./arch/i386/kernel_entry.o $(KERNEL_OBJS)
+
+# KERNEL_OBJS:=\
+# $(KERNEL_ARCH_OBJS) \
+# arch/i386/kernel_entry.o \
+# kernel.o \
+# arch/i386/gdt.o \
+# arch/i386/gdt_flush.o \
+# arch/i386/tty.o \
+# arch/i386/io_port.o \
+# arch/i386/idt.o \
+# arch/i386/idt_as.o
 
 OBJS=\
 $(KERNEL_OBJS)

@@ -32,18 +32,21 @@ LDFLAGS:=$(LDFLAGS) $(ARCH_LDFLAGS)
 LIBK_CFLAGS:=$(LIBK_CFLAGS) $(ARCH_CFLAGS)
 LIBK_CPPFLAGS:=$(LIBK_CPPFLAGS) $(ARCH_CPPFLAGS)
 
-FREEOBJS=\
-$(ARCH_FREEOBJS) \
-string/memcmp.o \
-string/memcpy.o \
-string/memmove.o \
-string/memset.o \
-string/strlen.o \
-stdio/puts.o \
-stdio/putchar.o \
-stdio/printf.o \
-stdio/putcharc.o \
-stdio/printfc.o
+FREEOBJS=$(shell find . -type f -name '*.c')
+FREEOBJS:=$(FREEOBJS:.c=.o)
+
+# FREEOBJS=\
+# $(ARCH_FREEOBJS) \
+# string/memcmp.o \
+# string/memcpy.o \
+# string/memmove.o \
+# string/memset.o \
+# string/strlen.o \
+# stdio/puts.o \
+# stdio/putchar.o \
+# stdio/printf.o \
+# stdio/putcharc.o \
+# stdio/printfc.o
 
 OBJS=\
 $(FREEOBJS)

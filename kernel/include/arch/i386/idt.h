@@ -1,5 +1,5 @@
-#ifndef KERNEL_IDT_H
-#define KERNEL_IDT_H 1
+#ifndef ARCH_I386_IDT_H
+#define ARCH_I386_IDT_H 1
 
 #include <stdint.h>
 
@@ -45,7 +45,7 @@
 typedef struct {
 	uint16_t low_offset;
 	uint16_t selector;
-	uint8_t always0;
+	uint8_t reserved;
 	uint8_t flags;
 	uint16_t high_offset;
 } __attribute__((packed)) idt_gate_t;
@@ -63,7 +63,22 @@ typedef struct {
 	uint32_t eip, cs, eflags, useresp, ss;
 } interrupt_regs;
 
-void set_idt_gate(int n, uint32_t handler);
+typedef enum {
+	IDT_FLAGS_TASK_GATE 		= 0x05,
+	IDT_FLAGS_16BIT_INT 		= 0x06,
+	IDT_FLAGS_16BIT_TRAP 		= 0x07,
+	IDT_FLAGS_32BIT_INT 		= 0x0E,
+	IDT_FLAGS_32BIT_TRAP 		= 0x0F,
+
+	IDT_FLAGS_RING0 			= 0x00,
+	IDT_FLAGS_RING1 			= 0x20,
+	IDT_FLAGS_RING2 			= 0x40,
+	IDT_FLAGS_RING3 			= 0x60,
+
+	IDT_FLAGS_PRESENT 			= 0x80
+} IDT_FLAGS;
+
+void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags);
 void init_idt();
 void isr_handler(interrupt_regs *r);
 void irq_handler();
@@ -121,4 +136,4 @@ extern void irq13();
 extern void irq14();
 extern void irq15();
 
-#endif // KERNEL_IDT_H
+#endif // ARCH_I386_IDT_H

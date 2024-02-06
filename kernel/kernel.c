@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <kernel/tty.h>
-#include <kernel/gdt.h>
-#include <kernel/idt.h>
+#include <arch/i386/gdt.h>
+#include <arch/i386/idt.h>
 
 void test() {
 	char* video_memory = (char*) 0xb8000;
@@ -25,4 +25,5 @@ void kmain() {
 	printf("done\n");
 
 	// int aa = 1/0; // get division by zero exception
+	// __asm__("int $0xA");
 }
