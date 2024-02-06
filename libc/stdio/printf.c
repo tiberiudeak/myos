@@ -86,6 +86,36 @@ int printf(const char* restrict format, ...) {
 
 			written++;
 		}
+		else if (*format == 'd') {
+			format++;
+			int i = va_arg(parameters, int);
+			char str[12];
+			itoa(i, str);
+
+			size_t len = strlen(str);
+			if (!print(str, len)) {
+				return -1;
+			}
+
+			written += len;
+		}
+		else if (*format == 'x') {
+			format++;
+			unsigned int i = va_arg(parameters, unsigned int);
+			char str[14];
+			hextoa(i, str);
+
+			size_t len = strlen(str);
+			if (!print(str, len)) {
+				return -1;
+			}
+
+			written += len;
+		}
+		else {
+			// unsupported format
+			return -1;
+		}
 	}
 
 	va_end(parameters);

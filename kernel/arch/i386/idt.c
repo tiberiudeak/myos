@@ -161,13 +161,14 @@ char *exception_messages[] = {
 void isr_handler(interrupt_regs *r) {
 	if (r->int_no < 32) {
 		printf("Received interrupt: ");
-		printfc(4, "%s", exception_messages[r->int_no]);
-		printf("\n");
-		printf("System Halted!\n");
+		printfc(4, "%s\n", exception_messages[r->int_no]);
+		printf("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi, r->esi);
+		printf("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx, r->edx);
+		printf("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax, r->int_no, r->err_code);
+		printf("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip, r->cs, r->eflags, r->useresp, r->ss);
+		printf("Kernel Panic - System Halted!\n");
 		for (;;);
 	}
-
-	// TODO: print the interrupt registers
 }
 
 void *irq_routines[16] = {

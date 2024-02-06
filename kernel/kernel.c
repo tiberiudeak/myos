@@ -1,7 +1,8 @@
-#include <stdio.h>
 #include <kernel/tty.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/idt.h>
+#include <string.h>
+#include <stdio.h>
 
 void test() {
 	char* video_memory = (char*) 0xb8000;
@@ -23,6 +24,17 @@ void kmain() {
 	printf("Initializing IDT...");
 	init_idt();
 	printf("done\n");
+
+	printf("\n");
+	printf("test: %d\n", 156);
+	printf("test: %x\n", 156);
+	// printf("%d", 1/0);
+
+	int *ptr = 0x1000;
+
+	printf("ptr: %d\n", *ptr);
+
+
 
 	// int aa = 1/0; // get division by zero exception
 	// __asm__("int $0xA");
