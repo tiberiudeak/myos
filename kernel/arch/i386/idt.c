@@ -1,5 +1,5 @@
 #include <arch/i386/idt.h>
-#include <kernel/io_port.h>
+#include <kernel/io.h>
 #include <string.h>
 #include <stdio.h>
 

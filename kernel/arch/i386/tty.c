@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <kernel/tty.h>
-#include <kernel/io_port.h>
+#include <kernel/io.h>
 #include "vga.h"
 
 #define REG_SCREEN_CTRL 0x3D4

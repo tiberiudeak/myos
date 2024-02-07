@@ -8,26 +8,26 @@ isr_common_stub:
 	mov %cr2, %eax
 	push %eax
 
-	mov $0x10, %ax
+	mov $0x10, %ax			# use kernel data segment
 	mov %ax, %ds
 	mov %ax, %es
 	mov %ax, %fs
 	mov %ax, %gs
 
-	push %esp
+	push %esp				# give pointer to stack as parameter to the C function
+							# to access the pushed information
 	call isr_handler
 	add $8, %esp
 	pop %ebx
 
-	mov %bx, %ds
+	mov %bx, %ds			# restore old segment
 	mov %bx, %es
 	mov %bx, %fs
 	mov %bx, %gs
 
-	popa
-	add $8, %esp
-	sti
-	iret
+	popa					# restore registers
+	add $8, %esp			# remove the error code and interrupt number
+	iret					# return from interrupt
 
 irq_common_stub:
 	pusha
@@ -53,7 +53,6 @@ irq_common_stub:
 	mov %ax, %gs
 	popa
 	add $8, %esp
-	sti
 	iret
 
 .globl isr0

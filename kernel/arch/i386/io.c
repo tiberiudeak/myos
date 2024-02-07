@@ -1,5 +1,7 @@
 #include <stdint.h>
-#include <kernel/io_port.h>
+#include <kernel/io.h>
+
+#define UNUSED_PORT 0x80
 
 /**
  * @brief Read a byte from a specified I/O port.
@@ -57,4 +59,14 @@ uint16_t port_word_in(uint16_t port) {
  */
 void port_word_out(uint16_t port, uint16_t data) {
 	__asm__("out %%ax, %%dx" : : "a" (data), "d" (port));
+}
+
+/**
+ * @brief Wait a very short period of time.
+ *
+ * This function waits for a very short period of time by writing to an unused
+ * port. This is useful for waiting for I/O operations to complete.
+ */
+void io_wait(void) {
+	port_byte_out(UNUSED_PORT, 0);
 }
