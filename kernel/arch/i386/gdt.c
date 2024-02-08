@@ -109,9 +109,10 @@ void write_tss(int num, uint16_t ss0, uint32_t esp0) {
 
 	memset(&tss_entry, 0, sizeof(tss_entry));
 
-	tss_entry.ss0 = ss0;
-	tss_entry.esp0 = esp0;
+	tss_entry.ss0 = ss0;	// set the kernel stack segment
+	tss_entry.esp0 = esp0;	// set the kernel stack pointer
 
-	tss_entry.cs = 0x08 | 0x03;
+	tss_entry.cs = 0x08 | 0x03;	// set the code segment ored with 3 (for ring 3)
+	// set other segments to the data segment ored with 3
 	tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs = 0x10 | 0x03;
 }

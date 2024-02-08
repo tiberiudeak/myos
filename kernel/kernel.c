@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <kernel/io.h>
+#include <arch/i386/irq.h>
 
 void test() {
 	char* video_memory = (char*) 0xb8000;

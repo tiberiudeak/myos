@@ -1,12 +1,11 @@
 .extern isr_handler
-.extern irq_handler
 
 isr_common_stub:
-	pusha
+	pusha					# push current state of registers to stack
 	mov %ds, %eax
-	push %eax
+	push %eax				# push DS to stack
 	mov %cr2, %eax
-	push %eax
+	push %eax				# push CR2 to stack
 
 	mov $0x10, %ax			# use kernel data segment
 	mov %ax, %ds
@@ -28,32 +27,6 @@ isr_common_stub:
 	popa					# restore registers
 	add $8, %esp			# remove the error code and interrupt number
 	iret					# return from interrupt
-
-irq_common_stub:
-	pusha
-	mov %ds, %eax
-	push %eax
-	mov %cr2, %eax
-	push %eax
-
-	mov $0x10, %ax
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-
-	push %esp
-	call irq_handler
-	add $8, %esp
-	pop %ebx
-
-	mov %ax, %ds
-	mov %ax, %es
-	mov %ax, %fs
-	mov %ax, %gs
-	popa
-	add $8, %esp
-	iret
 
 .globl isr0
 .globl isr1
@@ -91,9 +64,9 @@ irq_common_stub:
 .globl isr177
 
 isr0:
-	push $0
-	push $0
-	jmp isr_common_stub
+	push $0					# push error code
+	push $0					# push interrupt number
+	jmp isr_common_stub		# call the isr common stub function
 
 isr1:
 	push $0
@@ -131,7 +104,9 @@ isr7:
 	jmp isr_common_stub
 
 isr8:
-	push $8
+	push $8					# for the isrs 8, 10, 11, 12, 13 and 14
+							# the cpu already pushes the error code
+							# so there is no need to push a dummy error code
 	jmp isr_common_stub
 
 isr9:
@@ -253,100 +228,3 @@ isr177:
 	push $0
 	push $177
 	jmp isr_common_stub
-
-.globl irq0
-.globl irq1
-.globl irq2
-.globl irq3
-.globl irq4
-.globl irq5
-.globl irq6
-.globl irq7
-.globl irq8
-.globl irq9
-.globl irq10
-.globl irq11
-.globl irq12
-.globl irq13
-.globl irq14
-.globl irq15
-
-irq0:
-	push $0
-	push $32
-	jmp irq_common_stub
-
-irq1:
-	push $1
-	push $33
-	jmp irq_common_stub
-
-irq2:
-	push $2
-	push $34
-	jmp irq_common_stub
-
-irq3:
-	push $3
-	push $35
-	jmp irq_common_stub
-
-irq4:
-	push $4
-	push $36
-	jmp irq_common_stub
-
-irq5:
-	push $5
-	push $37
-	jmp irq_common_stub
-
-irq6:
-	push $6
-	push $38
-	jmp irq_common_stub
-
-irq7:
-	push $7
-	push $39
-	jmp irq_common_stub
-
-irq8:
-	push $8
-	push $40
-	jmp irq_common_stub
-
-irq9:
-	push $9
-	push $41
-	jmp irq_common_stub
-
-irq10:
-	push $10
-	push $42
-	jmp irq_common_stub
-
-irq11:
-	push $11
-	push $43
-	jmp irq_common_stub
-
-irq12:
-	push $12
-	push $44
-	jmp irq_common_stub
-
-irq13:
-	push $13
-	push $45
-	jmp irq_common_stub
-
-irq14:
-	push $14
-	push $46
-	jmp irq_common_stub
-
-irq15:
-	push $15
-	push $47
-	jmp irq_common_stub
