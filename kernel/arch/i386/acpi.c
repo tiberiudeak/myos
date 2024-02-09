@@ -9,15 +9,15 @@
  * This function searches for the RSDP signature in the memory
  * range 0x00080000 to 0x00081024 and 0x000E0000 to 0x000FFFFF.
  *
- * @return The address of the RSDP if found, 0 otherwise.
+ * @return The address of the RSDP if found, NULL otherwise.
  */
-uint32_t RSDP_detect() {
+void *RSDP_detect() {
 	char *start = (char *)0x00080000;
 	char *end = (char *)0x00081024;
 
 	while (start < end) {
 		if (memcmp(start, "RSD PTR ", 8) == 0) {
-			return (uint32_t)start;
+			return start;
 		}
 		start += 16;
 	}
@@ -27,12 +27,12 @@ uint32_t RSDP_detect() {
 
 	while (start < end) {
 		if (memcmp(start, "RSD PTR ", 8) == 0) {
-			return (uint32_t)start;
+			return start;
 		}
 		start += 16;
 	}
 
-	return 0;
+	return NULL;
 }
 
 /**
@@ -45,13 +45,11 @@ uint32_t RSDP_detect() {
  *
  * @return 1 if the RSDP is valid, 0 otherwise.
  */
-int RSDP_validate(uint32_t rsdp) {
-	RSDP_descriptor_t *rsdp_desc = (RSDP_descriptor_t *)rsdp;
-
+int RSDP_validate(RSDP_descriptor_t *rsdp) {
 	uint8_t checksum = 0;
 
 	for (size_t i = 0; i < sizeof(RSDP_descriptor_t); i++) {
-		checksum += ((char *)rsdp_desc)[i];
+		checksum += ((char *)rsdp)[i];
 	}
 
 	if (checksum != 0) {
@@ -63,9 +61,9 @@ int RSDP_validate(uint32_t rsdp) {
 }
 
 void ACPI_init() {
-	uint32_t rsdp = RSDP_detect();
+	RSDP_descriptor_t *rsdp = RSDP_detect();
 
-	if (rsdp == 0) {
+	if (rsdp == NULL) {
 		printf("RSDP not found\n");
 		return;
 	}
@@ -74,4 +72,51 @@ void ACPI_init() {
 		printf("RSDP is invalid\n");
 		return;
 	}
+
+	FADT *fadt = (FADT*) find_FACP((void *)rsdp->RsdtAddress);
+
+	if (fadt == NULL) {
+		printf("FADT not found!\n");
+		return;
+	}
+
+	printf("done\n");
+}
+
+int ACPI_do_checksum(ACPISDT_header *table_header) {
+	unsigned char sum = 0;
+
+	for (size_t i = 0; i < table_header->Length; i++) {
+		sum += ((char *) table_header)[i];
+	}
+
+	return sum;
+}
+
+/**
+ * @brief Searches for the Fixed ACPI Description Table
+ *
+ * This function searches for the FADT signature in the System Descriptor
+ * Tables present in the Root System Descriptor Table.
+ *
+ * @param RSDT_pointer address of the RSDT
+ */
+void *find_FACP(void *RSDT_pointer) {
+	RSDT *rsdt = (RSDT*) RSDT_pointer;
+	int entries = (rsdt->header.Length - sizeof(rsdt->header)) / 4;
+
+	for (int i = 0; i < entries; i++) {
+		ACPISDT_header *h = (ACPISDT_header*) rsdt->pointer_to_other_SDT[i];
+
+		if (memcmp(h->Signature, "FACP", 4) == 0) {
+			if (ACPI_do_checksum(h) == 0) {
+				return (void*) h;
+			}
+			else {
+				return NULL;
+			}
+		}
+	}
+
+	return NULL;
 }
