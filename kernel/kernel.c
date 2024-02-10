@@ -6,6 +6,7 @@
 #include <kernel/io.h>
 #include <arch/i386/irq.h>
 #include <kernel/acpi.h>
+#include <arch/i386/ps2.h>
 
 void test() {
 	char* video_memory = (char*) 0xb8000;
@@ -37,6 +38,8 @@ void kmain() {
 	printf("Detecting ACPI...");
 	ACPI_init();
 
+	PS2_init();
+
 	printf("\n");
 	printf("test: %d\n", 156);
 	printf("test: %x\n", 156);
@@ -47,6 +50,7 @@ void kmain() {
 	printf("ptr: %d\n", *ptr);
 
 	irq_install_handler(1, bla);
+
 
 
 	// int aa = 1/0; // get division by zero exception

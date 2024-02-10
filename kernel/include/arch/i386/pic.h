@@ -1,6 +1,8 @@
 #ifndef ARCH_I386_PIC_H
 #define ARCH_I386_PIC_H 1
 
+/* PIC Driver */
+
 #include <stdint.h>
 
 #define PIC1 				0x20		// master PIC

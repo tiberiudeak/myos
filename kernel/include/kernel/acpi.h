@@ -107,4 +107,4 @@ void *RSDP_detect(void);
 int RSDP_validate(RSDP_descriptor_t *rsdp);
 void *find_FACP(void *);
 
-#endif
+#endif /* KERNEL_ACPI_H */

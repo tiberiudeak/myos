@@ -43,7 +43,7 @@ void *RSDP_detect() {
  *
  * @param rsdp The address of the RSDP.
  *
- * @return 1 if the RSDP is valid, 0 otherwise.
+ * @return 0 if the RSDP is valid, 1 otherwise.
  */
 int RSDP_validate(RSDP_descriptor_t *rsdp) {
 	uint8_t checksum = 0;
@@ -60,6 +60,15 @@ int RSDP_validate(RSDP_descriptor_t *rsdp) {
 	return 0;
 }
 
+/**
+ * @brief Discovers location of ACPI Tables
+ *
+ * This function discovers the location of the present ACPI tables
+ * and initializes the global variables with their addresses.
+ *
+ * TODO: create and populate global addresses
+ * TODO: create a function  that displays the hardware information
+ */
 void ACPI_init() {
 	RSDP_descriptor_t *rsdp = RSDP_detect();
 
@@ -83,6 +92,16 @@ void ACPI_init() {
 	printf("done\n");
 }
 
+/**
+ * @brief Compute and return checksum of the given SDT Header
+ *
+ * This function receives a System Descriptor Table Header and
+ * returns its checksum.
+ *
+ * @param table_header ACPI SDT Header
+ *
+ * @return the checksum
+ */
 int ACPI_do_checksum(ACPISDT_header *table_header) {
 	unsigned char sum = 0;
 
