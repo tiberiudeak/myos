@@ -7,17 +7,12 @@
 #include <arch/i386/irq.h>
 #include <kernel/acpi.h>
 #include <arch/i386/ps2.h>
+#include <kernel/keyboard.h>
 
 void test() {
 	char* video_memory = (char*) 0xb8000;
 	*video_memory = 'A';
 	*(video_memory + 2) = 'Y';
-}
-
-void bla() {
-	printf("bla\n");
-	uint8_t scancode = port_byte_in(0x60);
-	printf("scancode: %d\n", scancode);
 }
 
 void kmain() {
@@ -49,9 +44,7 @@ void kmain() {
 
 	printf("ptr: %d\n", *ptr);
 
-	irq_install_handler(1, bla);
-
-
+	keyboard_init();
 
 	// int aa = 1/0; // get division by zero exception
 	// __asm__("int $0xA");
