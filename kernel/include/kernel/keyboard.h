@@ -1,7 +1,7 @@
 #ifndef KERNEL_KEY_H
 #define KERNEL_KEY_H 1
 
-#include <arch/i386/irq.h>
+#include <stdint.h>
 
 #define INV					0x00
 #define ESC					0x1B
@@ -16,6 +16,9 @@
 #define LSH_RELEASE			0xAA
 #define RSH_RELEASE			0xB6
 
+#define BACKSPACE			0x0E
+#define ENTER				0x1C
+
 /* there is no memory allocator yet, so the
 key information will be stored at the fixed address 0x500
 */
@@ -24,8 +27,8 @@ key information will be stored at the fixed address 0x500
 /* scancode 1 */
 static uint8_t scancode_map[] =
 {
-	INV, ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', '\b',
-	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\n', LCTRL,
+	INV, ESC, '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=', BACKSPACE,
+	'\t', 'q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', ENTER, LCTRL,
 	'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'', '`', LSH, '\\',
 	'z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', RSH, '*', LALT, ' ', CAPS,
 	INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, '7', '8', '9',
@@ -40,8 +43,8 @@ static uint8_t scancode_map[] =
 
 static uint8_t scancode_map_shifted[] =
 {
-	INV, ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', '\b',
-	'\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\n', LCTRL,
+	INV, ESC, '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+', BACKSPACE,
+	'\t', 'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', ENTER, LCTRL,
 	'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~', LSH, '|',
 	'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', RSH, '*', LALT, ' ', CAPS,
 	INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, INV, '7', '8', '9',

@@ -1,7 +1,8 @@
 #include <kernel/keyboard.h>
-#include <arch/i386/ps2.h>
 #include <kernel/io.h>
-#include <stdio.h>
+#include <kernel/shell.h>
+#include <arch/i386/ps2.h>
+#include <arch/i386/irq.h>
 
 void keyboard_handler() {
 
@@ -29,14 +30,19 @@ void keyboard_handler() {
 			}
 
 			// send key info to shell
-			char c[2];
-			c[0] = scancode;
-			c[1] = '\0';
-			printf("%s", c);
+			if (scancode != INV) {
+				shell_scancode(scancode);
+			}
 		}
 	}
 }
 
+/**
+ * @brief Initialize keyboard
+ *
+ * This function sets the handler of IRQ1 to the keyboard handler
+ * function.
+ */
 void keyboard_init() {
 	irq_install_handler(1, keyboard_handler);
 }

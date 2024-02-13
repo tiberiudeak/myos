@@ -171,3 +171,12 @@ void terminal_write(const char* data, size_t size) {
 void terminal_writestring(const char* data) {
 	terminal_write(data, strlen(data));
 }
+
+/**
+ * @brief Move the cursor back one space
+ *
+ * This function moves the cursor back one space.
+ */
+void terminal_backspace_cursor() {
+	set_cursor(--terminal_column, terminal_row);
+}
