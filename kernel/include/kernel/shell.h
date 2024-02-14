@@ -6,5 +6,6 @@
 #define MAX_COMMAND_LENGTH		256
 
 void shell_scancode(uint8_t);
+void shell_init(void);
 
 #endif /* !KERNEL_SHELL_H */

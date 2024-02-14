@@ -1,6 +1,7 @@
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
+#include <mm/pmm.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -8,10 +9,18 @@ static char key_buffer[MAX_COMMAND_LENGTH];
 static int index;
 
 void shell_exec_command(char *command) {
-	printf("%s\n", key_buffer);
+
+	if (strcmp(command, "memmap") == 0) {
+		print_mem_map();
+	}
+	else {
+		printf("%s: unknown command\n", command);
+	}
 
 	index = 0;
 	memset(key_buffer, 0, MAX_COMMAND_LENGTH);
+
+	shell_init();
 }
 
 void shell_scancode(uint8_t scancode) {
@@ -42,4 +51,9 @@ void shell_scancode(uint8_t scancode) {
 	key_buffer[index++] = scancode;
 
 	putchar(scancode);
+}
+
+/* for now, the initialization only prints the prompt */
+void shell_init() {
+	printf("> ");
 }

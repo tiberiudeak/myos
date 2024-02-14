@@ -1,19 +1,11 @@
 #include <kernel/tty.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/idt.h>
-#include <string.h>
 #include <stdio.h>
-#include <kernel/io.h>
-#include <arch/i386/irq.h>
 #include <kernel/acpi.h>
 #include <arch/i386/ps2.h>
 #include <kernel/keyboard.h>
-
-void test() {
-	char* video_memory = (char*) 0xb8000;
-	*video_memory = 'A';
-	*(video_memory + 2) = 'Y';
-}
+#include <kernel/shell.h>
 
 void kmain() {
 	terminal_initialize();
@@ -36,16 +28,9 @@ void kmain() {
 	PS2_init();
 
 	printf("\n");
-	printf("test: %d\n", 156);
-	printf("test: %x\n", 156);
-	// printf("%d", 1/0);
-
-	int *ptr = (int*)0x1000;
-
-	printf("ptr: %d\n", *ptr);
 
 	keyboard_init();
 
-	// int aa = 1/0; // get division by zero exception
-	// __asm__("int $0xA");
+	printf("Welcome to MyOS!\n");
+	shell_init();
 }
