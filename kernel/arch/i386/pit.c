@@ -4,15 +4,17 @@
 #include <stdio.h>
 
 uint64_t ticks;
+uint64_t uptime;
 
 /**
  * @brief Increment ticks
  *
  * This is the IRQ0 handler that increments the ticks every
- * one millisecond.
+ * one millisecond and the uptime.
  */
 void PIT_IRQ0_handler() {
 	ticks++;
+	uptime++;
 }
 
 /**
@@ -33,6 +35,7 @@ void PIT_init() {
 
 
 	ticks = 0;
+	uptime = 0;
 	irq_install_handler(0, PIT_IRQ0_handler);
 }
 
@@ -48,4 +51,14 @@ void wait_millis(uint16_t millis) {
 	ticks = 0;
 
 	while (ticks != millis) {}
+}
+
+/**
+ * @brief Get uptime since boot in milliseconds
+ *
+ * This function returns roughly the number of milliseconds tat passed
+ * since boot
+ */
+uint64_t get_uptime() {
+	return uptime;
 }

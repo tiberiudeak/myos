@@ -40,8 +40,9 @@ typedef enum {
 	PIT_CW_BCD					= 0x01
 } PIT_CW;
 
-void PIT_init();
+void PIT_init(void);
 void PIT_IRQ0_handler();
 void wait_millis(uint16_t);
+uint64_t get_uptime(void);
 
 #endif

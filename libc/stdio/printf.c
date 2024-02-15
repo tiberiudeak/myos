@@ -90,7 +90,7 @@ int printf(const char* restrict format, ...) {
 			format++;
 			int i = va_arg(parameters, int);
 			char str[12];
-			itoa(i, str);
+			itoa(i, str, 10);
 
 			size_t len = strlen(str);
 			if (!print(str, len)) {
@@ -102,8 +102,8 @@ int printf(const char* restrict format, ...) {
 		else if (*format == 'x') {
 			format++;
 			unsigned int i = va_arg(parameters, unsigned int);
-			char str[14];
-			hextoa(i, str);
+			char str[20] = {0};
+			itoa(i, str, 16);
 
 			size_t len = strlen(str);
 			if (!print(str, len)) {
@@ -111,6 +111,66 @@ int printf(const char* restrict format, ...) {
 			}
 
 			written += len;
+		}
+		else if (*format == 'l') {
+			format++;
+
+			if (*format == 'd') {
+				format++;
+				long int i = va_arg(parameters, long int);
+				char str[20];
+				itoa(i, str, 10);
+
+				size_t len = strlen(str);
+				if (!print(str, len)) {
+					return -1;
+				}
+
+				written += len;
+			}
+			else if (*format == 'x') {
+				format++;
+				long unsigned int i = va_arg(parameters, long unsigned int);
+				char str[20] = {0};
+				itoa(i, str, 16);
+
+				size_t len = strlen(str);
+				if (!print(str, len)) {
+					return -1;
+				}
+
+				written += len;
+			}
+			else if (*format == 'l') {
+				format++;
+
+				if (*format == 'd') {
+					format++;
+					long long int i = va_arg(parameters, long long int);
+					char str[20];
+					itoa(i, str, 10);
+
+					size_t len = strlen(str);
+					if (!print(str, len)) {
+						return -1;
+					}
+
+					written += len;
+				}
+				else if (*format == 'x') {
+					format++;
+					long long unsigned int i = va_arg(parameters, long long unsigned int);
+					char str[20] = {0};
+					itoa(i, str, 16);
+
+					size_t len = strlen(str);
+					if (!print(str, len)) {
+						return -1;
+					}
+
+					written += len;
+				}
+			}
 		}
 		else {
 			// unsupported format

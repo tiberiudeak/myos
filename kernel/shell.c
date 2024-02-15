@@ -1,6 +1,7 @@
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
+#include <arch/i386/pit.h>
 #include <mm/pmm.h>
 #include <string.h>
 #include <stdio.h>
@@ -12,6 +13,9 @@ void shell_exec_command(char *command) {
 
 	if (strcmp(command, "memmap") == 0) {
 		print_mem_map();
+	}
+	else if (strcmp(command, "uptime") == 0) {
+		printf("%d\n", get_uptime());
 	}
 	else {
 		printf("%s: unknown command\n", command);

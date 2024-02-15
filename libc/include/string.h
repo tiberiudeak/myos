@@ -22,8 +22,7 @@ char* strchr(const char*, int);
 char* strrchr(const char*, int);
 char* strstr(const char*, const char*);
 char* strrstr(const char*, const char*);
-char* itoa(int, char*);
-char* hextoa(int, char*);
+char* itoa(int, char*, int);
 void reverse(char*);
 
 #ifdef __cplusplus

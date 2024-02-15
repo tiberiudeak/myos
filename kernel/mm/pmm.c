@@ -16,9 +16,9 @@ void print_mem_map() {
 	for (size_t i = 0; i < *nr_entries; i++) {
 		mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + offset;
 
-		printf("base: %x ", mem_map_entry->base_addr);
-		printf("length: %x ", mem_map_entry->region_length);
-		printf("type: %x\n", mem_map_entry->region_type);
+		printf("E820: mem [%llx-%llx] %s\n", mem_map_entry->base_addr,
+			mem_map_entry->base_addr + mem_map_entry->region_length - 1,
+			mem_map_entry->region_type == 1 ? "usable" : "reserved");
 
 		offset += 1;
 	}
