@@ -6,6 +6,7 @@
 #include <arch/i386/ps2.h>
 #include <kernel/keyboard.h>
 #include <kernel/shell.h>
+#include <arch/i386/pit.h>
 
 void kmain() {
 	terminal_initialize();
@@ -30,6 +31,8 @@ void kmain() {
 	printf("\n");
 
 	keyboard_init();
+
+	PIT_init();
 
 	printf("Welcome to MyOS!\n");
 	shell_init();
