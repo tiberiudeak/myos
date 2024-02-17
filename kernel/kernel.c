@@ -7,6 +7,7 @@
 #include <kernel/keyboard.h>
 #include <kernel/shell.h>
 #include <arch/i386/pit.h>
+#include <mm/pmm.h>
 
 void kmain() {
 	terminal_initialize();
@@ -33,6 +34,10 @@ void kmain() {
 	keyboard_init();
 
 	PIT_init();
+
+	initialize_memory();
+	printf("\n");
+
 
 	printf("Welcome to MyOS!\n");
 	shell_init();

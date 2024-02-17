@@ -17,6 +17,9 @@ void shell_exec_command(char *command) {
 	else if (strcmp(command, "uptime") == 0) {
 		printf("%d\n", get_uptime());
 	}
+	else if (strcmp(command, "pmeminfo") == 0) {
+		print_phymem_info();
+	}
 	else {
 		printf("%s: unknown command\n", command);
 	}
