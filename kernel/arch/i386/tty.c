@@ -118,6 +118,26 @@ void terminal_scroll(void) {
 void terminal_putchar(char c) {
 	unsigned char uc = c;
 
+	if (c == '\t') {
+		terminal_column += 1;
+
+		if (terminal_column % 4 != 0) {
+			terminal_column += (4 - terminal_column % 4);
+		}
+
+		if (terminal_column >= VGA_WIDTH) {
+			terminal_column = terminal_column - VGA_WIDTH;
+
+			if (++terminal_row == VGA_HEIGHT) {
+				terminal_scroll();
+				terminal_row = VGA_HEIGHT - 1;
+			}
+		}
+
+		set_cursor(terminal_column, terminal_row);
+		return;
+	}
+
 	if (c == '\n') {
 		terminal_column = 0;
 

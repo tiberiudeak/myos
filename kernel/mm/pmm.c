@@ -167,10 +167,135 @@ void mark_e820_regions() {
 }
 
 /**
+ * @brief Perform some tests for the memmory manager
  *
-*/
+ * This function performs some test to see if the physical memory manager
+ * works as expected.
+ */
 void pmm_self_test() {
+	printf("Performing tests for the physical memory manager...\n");
 
+	uint32_t initial_free_blocks = max_blocks - used_blocks;
+	uint32_t initial_used_blocks = used_blocks;
+
+	uint32_t test_used_blocks = used_blocks;
+	uint32_t test_free_blocks = max_blocks - used_blocks;
+
+	printf("Allocating one block (4K)");
+	// request one block (4K)
+	uint32_t *a = (uint32_t*) kalloc(1);
+
+	if (test_free_blocks == 0 && a != NULL) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (test_free_blocks > 0 && a == NULL) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (a != NULL && used_blocks - test_used_blocks != 1) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\t\tOK\n");
+		test_free_blocks--;
+		test_used_blocks++;
+	}
+
+	printf("Allocating two more blocks (8K)");
+	uint32_t *b = (uint32_t*) kalloc(2);
+
+	if (test_free_blocks < 2 && b != NULL) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (test_free_blocks > 2 && b == NULL) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (b != NULL && used_blocks - test_used_blocks != 2) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\tOK\n");
+		test_free_blocks -= 2;
+		test_used_blocks += 2;
+	}
+
+	printf("Freeing first block");
+	kfree(a, 1);
+
+	if ((max_blocks - used_blocks) - test_free_blocks != 1) {
+		printfc(4, "\t\t\t\tFAILED\n");
+	}
+	else if (test_used_blocks - used_blocks != 1) {
+		printfc(4, "\t\t\t\tFAILED\n");
+	}
+	else if (*a != 0x01010101) {
+		printfc(4, "\t\t\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\t\t\t\tOK\n");
+		test_free_blocks += 1;
+		test_used_blocks -= 1;
+	}
+
+	printf("Freeing the two allocated blocks");
+	kfree(b, 2);
+
+	if ((max_blocks - used_blocks) - test_free_blocks != 2) {
+		printfc(4, "\tFAILED\n");
+	}
+	else if (test_used_blocks - used_blocks != 2) {
+		printfc(4, "\tFAILED\n");
+	}
+	else if (*b != 0x01010101) {
+		printfc(4, "\tFAILED\n");
+	}
+	else {
+		printfc(2, "\tOK\n");
+		test_free_blocks += 2;
+		test_used_blocks -= 2;
+	}
+
+	printf("Allocating max number of blocks");
+	uint32_t size = max_blocks - used_blocks;
+	a = (uint32_t*) kalloc(size);
+
+	if (a == NULL) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else if (max_blocks - used_blocks != 0) {
+		printfc(4, "\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\tOK\n");
+	}
+
+	printf("Allocating one block");
+	b = (uint32_t*)kalloc(1);
+
+	if (b != NULL) {
+		printfc(4, "\t\t\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\t\t\tOK\n");
+	}
+
+	printf("Freeing all memory");
+	kfree(a, size);
+
+	if (initial_free_blocks != max_blocks - used_blocks) {
+		printfc(4, "\t\t\t\t\tFAILED\n");
+	}
+	else if (initial_used_blocks != used_blocks) {
+		printfc(4, "\t\t\t\t\tFAILED\n");
+	}
+	else {
+		printfc(2, "\t\t\t\t\tOK\n");
+	}
 }
 
 /**
@@ -183,6 +308,7 @@ void pmm_self_test() {
  * as reserved, then marked as free and then reserved.
  */
 void initialize_memory() {
+	printf("Initializing physical memory manager\n");
 	// get base address and end address and calculate total size of RAM
 	uint64_t base_address;
 	uint64_t end_address;
@@ -219,7 +345,7 @@ void initialize_memory() {
 
 	printf("total number of blocks: %d\n", max_blocks);
 	printf("used blocks: %d\n", used_blocks);
-	printf("free blocks: %d\n", max_blocks - used_blocks);
+	printf("free blocks: %d\n\n", max_blocks - used_blocks);
 
 	// perform some tests to see that everything works as expected
 	pmm_self_test();
@@ -313,6 +439,9 @@ void kfree(void *address, uint32_t num_blocks) {
 		block_index++;
 		used_blocks--;
 	}
+
+	// override entire block with 1
+	memset(address, 1, BLOCK_SIZE);
 }
 
 /**
