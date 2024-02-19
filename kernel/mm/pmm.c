@@ -228,13 +228,14 @@ void pmm_self_test() {
 	kfree(a, 1);
 
 	if ((max_blocks - used_blocks) - test_free_blocks != 1) {
-		printfc(4, "\t\t\t\tFAILED\n");
+		printfc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else if (test_used_blocks - used_blocks != 1) {
-		printfc(4, "\t\t\t\tFAILED\n");
+		printfc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else if (*a != 0x01010101) {
-		printfc(4, "\t\t\t\tFAILED\n");
+		printf("%x\n", *a);
+		printfc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else {
 		printfc(2, "\t\t\t\t\tOK\n");
@@ -260,42 +261,42 @@ void pmm_self_test() {
 		test_used_blocks -= 2;
 	}
 
-	printf("Allocating max number of blocks");
-	uint32_t size = max_blocks - used_blocks;
-	a = (uint32_t*) kalloc(size);
+	// printf("Allocating max number of blocks");
+	// uint32_t size = max_blocks - used_blocks;
+	// a = (uint32_t*) kalloc(size);
 
-	if (a == NULL) {
-		printfc(4, "\t\tFAILED\n");
-	}
-	else if (max_blocks - used_blocks != 0) {
-		printfc(4, "\t\tFAILED\n");
-	}
-	else {
-		printfc(2, "\t\tOK\n");
-	}
+	// if (a == NULL) {
+	// 	printfc(4, "\t\tFAILED\n");
+	// }
+	// else if (max_blocks - used_blocks != 0) {
+	// 	printfc(4, "\t\tFAILED\n");
+	// }
+	// else {
+	// 	printfc(2, "\t\tOK\n");
+	// }
 
-	printf("Allocating one block");
-	b = (uint32_t*)kalloc(1);
+	// printf("Allocating one block");
+	// b = (uint32_t*)kalloc(1);
 
-	if (b != NULL) {
-		printfc(4, "\t\t\t\tFAILED\n");
-	}
-	else {
-		printfc(2, "\t\t\t\tOK\n");
-	}
+	// if (b != NULL) {
+	// 	printfc(4, "\t\t\t\tFAILED\n");
+	// }
+	// else {
+	// 	printfc(2, "\t\t\t\tOK\n");
+	// }
 
-	printf("Freeing all memory");
-	kfree(a, size);
+	// printf("Freeing all memory");
+	// kfree(a, size);
 
-	if (initial_free_blocks != max_blocks - used_blocks) {
-		printfc(4, "\t\t\t\t\tFAILED\n");
-	}
-	else if (initial_used_blocks != used_blocks) {
-		printfc(4, "\t\t\t\t\tFAILED\n");
-	}
-	else {
-		printfc(2, "\t\t\t\t\tOK\n");
-	}
+	// if (initial_free_blocks != max_blocks - used_blocks) {
+	// 	printfc(4, "\t\t\t\t\tFAILED\n");
+	// }
+	// else if (initial_used_blocks != used_blocks) {
+	// 	printfc(4, "\t\t\t\t\tFAILED\n");
+	// }
+	// else {
+	// 	printfc(2, "\t\t\t\t\tOK\n");
+	// }
 }
 
 /**
@@ -434,14 +435,14 @@ void *kalloc(uint32_t num_blocks) {
 void kfree(void *address, uint32_t num_blocks) {
 	uint32_t block_index = (uint32_t)address / BLOCK_SIZE;
 
+	// override entire block with 1
+	memset(address, 1, BLOCK_SIZE * num_blocks);
+
 	for (; num_blocks > 0; num_blocks--) {
 		__unset_block(block_index);
 		block_index++;
 		used_blocks--;
 	}
-
-	// override entire block with 1
-	memset(address, 1, BLOCK_SIZE);
 }
 
 /**

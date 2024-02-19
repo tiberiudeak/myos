@@ -1,3 +1,6 @@
+// #pragma GCC push_options
+// #pragma GCC optimize ("01")
+
 #include <string.h>
 
 void *memset(void *dest, int cons, size_t n) {
@@ -9,3 +12,5 @@ void *memset(void *dest, int cons, size_t n) {
 
 	return dest;
 }
+
+// #pragma GCC pop_options
