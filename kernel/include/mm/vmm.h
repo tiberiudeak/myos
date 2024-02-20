@@ -1,14 +1,21 @@
 #ifndef MM_VMM_H
 #define MM_VMM_H 1
 
+#include <stdint.h>
+
 #define PAGES_PER_TABLE		1024
-#define PAGES_PER_DIR		1024
+#define TABLES_PER_DIR		1024
 
 #define PAGE_SIZE			4096
 
-#define PAGE_DIRECTORY_INDEX(x)		(((x) >> 22) & 0x3FF)
-#define PAGE_TABLE_INDEX(x)			(((x) >> 12) & 0x3FF)
-#define PAGE_GET_PHY_ADDRESS(x)		(x & 0xFFF)
+#define PAGE_DIRECTORY_INDEX(x)             (((x) >> 22) & 0x3FF)
+#define PAGE_TABLE_INDEX(x)                 (((x) >> 12) & 0x3FF)
+#define PAGE_GET_PHY_ADDRESS(dir_entry)     ((*dir_entry) & ~0xFFF)
+
+#define SET_ATTRIBUTE(entry, attr)          (*entry |= attr)
+#define CLEAR_ATTRIBUTE(entry, attr)        (*entry &= ~attr)
+#define TEST_ATTRIBUTE(entry, attr)         (*entry & attr)
+#define SET_FRAME(entry, address)           (*entry = (*entry & ~0x7FFFF000) | address)
 
 /**
  * Page Directory Entry Format (4K)
@@ -33,7 +40,8 @@ typedef enum {
 	PAGE_PDE_USER					= 0x4,
 	PAGE_PDE_WRITE_THROUGH			= 0x8,
 	PAGE_PDE_DISABLE_CACHE			= 0x10,
-	PAGE_PDE_4MB					= 0x8
+	PAGE_PDE_4MB					= 0x80,
+	PAGE_PDE_FRAME					= 0x7FFFF000
 } PAGE_PDE_FLAGS;
 
 /**
@@ -59,7 +67,28 @@ typedef enum {
 	PAGE_PTE_DISABLE_CACHE			= 0x10,
 	PAGE_PTE_DIRTY					= 0x40,
 	PAGE_PTE_PAT					= 0x80,
-	PAGE_PTE_GLOBAL					= 0x100
+	PAGE_PTE_GLOBAL					= 0x100,
+	PAGE_PTE_FRAME					= 0x7FFFF000
 } PAGE_PTE_FLAGS;
+
+typedef uint32_t pd_entry;
+typedef uint32_t pt_entry;
+typedef uint32_t address;
+
+/**
+ * PAge directory: array of PAGES_PER_TABLE entries
+ * 1024 page tables * 4MB = 4GB
+ */
+typedef struct {
+	pd_entry entries[PAGES_PER_TABLE];
+} page_directory;
+
+/**
+ * Page table: array of PAGES_PER_TABLE entries
+ * 1024 * 4096 = 4MB each
+ */
+typedef struct {
+	pt_entry entries[TABLES_PER_DIR];
+} page_table;
 
 #endif /* !MM_VMM_H */
