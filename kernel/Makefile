@@ -4,15 +4,9 @@ ARCHDIR:=arch/$(HOSTARCH)
 # define flags if not already defined
 CFLAGS?=-O2 -g
 CPPFLAGS?=
-LDFLAGS?=-Ttext=0x8000 --oformat=binary
+LDFLAGS?=-Tkernel.ld --oformat=binary
 ASFLAGS?=
 LIBS?=
-
-DESTDIR?=
-PREFIX?=/usr/local
-EXEC_PREFIX?=$(PREFIX)
-KERNELDIR?=$(EXEC_PREFIX)/kernel
-INCLUDEDIR?=$(PREFIX)/include
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
@@ -20,35 +14,12 @@ CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I.
 LDFLAGS:=$(LDFLAGS) -L../libc
 LIBS:=$(LIBS) -nostdlib -lk
 
-# include arch-specific flags if any
-include $(ARCHDIR)/make.config
-
-# final flags containing the default, the extra and
-# the arch-specific ones
-CFLAGS:=$(CFLAGS) $(KERNEL_ARCH_CFLAGS)
-CPPFLAGS:=$(CPPFLAGS) $(KERNEL_ARCH_CPPFLAGS)
-LDFLAGS:=$(LDFLAGS) $(KERNEL_ARCH_LDFLAGS)
-LIBS:=$(LIBS) $(KERNEL_ARCH_LIBS)
-
 KERNEL_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_SOURCES_S:=$(shell find . -type f -name '*.S')
+KERNEL_DEPS:=$(shell find . -type f -name '*.d')
 
 KERNEL_OBJS:=$(KERNEL_SOURCES_C:.c=.o)
 KERNEL_OBJS:=$(KERNEL_OBJS) $(KERNEL_SOURCES_S:.S=.o)
-
-KERNEL_OBJS:=$(filter-out ./arch/i386/kernel_entry.o, $(KERNEL_OBJS))
-KERNEL_OBJS:=./arch/i386/kernel_entry.o $(KERNEL_OBJS)
-
-# KERNEL_OBJS:=\
-# $(KERNEL_ARCH_OBJS) \
-# arch/i386/kernel_entry.o \
-# kernel.o \
-# arch/i386/gdt.o \
-# arch/i386/gdt_flush.o \
-# arch/i386/tty.o \
-# arch/i386/io_port.o \
-# arch/i386/idt.o \
-# arch/i386/idt_as.o
 
 OBJS=\
 $(KERNEL_OBJS)
@@ -68,10 +39,10 @@ all: $(BINARIES)
 kernel.bin: $(OBJS)
 	$(LD) $(LINK_LIST) -o $@
 
-.c.o:
+%.o: %.c
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
 
-.S.o:
+%.o: %.S
 	$(AS) $(ASFLAGS) $< -o $@
 
 clean:
@@ -84,5 +55,5 @@ install-headers:
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-kernel: $(BINARIES)
-	mkdir -p $(DESTDIR)$(KERNELDIR)
-	cp $(BINARIES) $(DESTDIR)$(KERNELDIR)/.
+
+-include $(KERNEL_DEPS)

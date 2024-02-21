@@ -4,6 +4,7 @@
 .code32
 .global _start
 .extern kmain
+.section kernel_entry
 
 _start:
 	call kmain			# call kernel main

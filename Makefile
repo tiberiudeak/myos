@@ -23,32 +23,32 @@ export CPPFLAGS:=
 
 export SYSROOT:=$(shell pwd)/sysroot
 export DESTDIR:=$(SYSROOT)
+
+# set system root directory for the compiler
+# sysroot=<directory> means that the compiler will look
+# for libraries and headers in <directory>
 export CC:=$(CC) --sysroot=$(SYSROOT)
 
 export PREFIX:=/usr
-export BOOTDIR:=/boot
 export INCLUDEDIR:=$(PREFIX)/include
 export LIBDIR:=$(PREFIX)/lib
-export KERNELDIR:=/kernel
 
 QEMU:=qemu-system-i386
 QEMUFLAGS:=
 
-# check if the HOST contains the string `elf` and add
-# the include path to the compiler using the -isystem flag
-ifneq ($(findstring -elf,$(HOST)),)
-	CC:=$(CC) -isystem=$(INCLUDEDIR)
-endif
+# isystem=<directory> means that the compiler will look
+# for system headers in <directory>
+CC:=$(CC) -isystem=$(INCLUDEDIR)
 
 # directories containing the source code for the projects
 BOOT_SRC_DIR:=boot
 KERNEL_SRC_DIR:=kernel
 LIBC_SRC_DIR:=libc
 
-# final paths to the binaries (relative to the sysroot)
-BOOT_BIN:=$(SYSROOT)$(BOOTDIR)/bootloader.bin
-KERNEL_BIN:=$(SYSROOT)$(KERNELDIR)/kernel.bin
-LIBC_AR:=$(SYSROOT)$(LIBDIR)/libc.a
+# final paths to the binaries
+BOOT_BIN:=$(BOOT_SRC_DIR)/bootloader.bin
+KERNEL_BIN:=$(KERNEL_SRC_DIR)/kernel.bin
+LIBC_AR:=$(LIBC_SRC_DIR)/libc.a
 
 # list of all the binaries
 BINARIES:=\

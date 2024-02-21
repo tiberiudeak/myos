@@ -8,12 +8,6 @@ LDFLAGS?=
 ASFLAGS?=
 LIBS?=
 
-DESTDIR?=
-PREFIX?=/usr/local
-EXEC_PREFIX?=$(PREFIX)
-INCLUDEDIR?=$(PREFIX)/include
-LIBDIR?=$(EXEC_PREFIX)/lib
-
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
 CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/include
@@ -21,32 +15,8 @@ LDFLAGS:=$(LDFLAGS)
 LIBK_CFLAGS:=$(CFLAGS)
 LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk
 
-# include arch-specific flags if any
-include $(ARCHDIR)/make.config
-
-# final flags containing the default, the extra and
-# the arch-specific ones
-CFLAGS:=$(CFLAGS) $(ARCH_CFLAGS)
-CPPFLAGS:=$(CPPFLAGS) $(ARCH_CPPFLAGS)
-LDFLAGS:=$(LDFLAGS) $(ARCH_LDFLAGS)
-LIBK_CFLAGS:=$(LIBK_CFLAGS) $(ARCH_CFLAGS)
-LIBK_CPPFLAGS:=$(LIBK_CPPFLAGS) $(ARCH_CPPFLAGS)
-
 FREEOBJS=$(shell find . -type f -name '*.c')
 FREEOBJS:=$(FREEOBJS:.c=.o)
-
-# FREEOBJS=\
-# $(ARCH_FREEOBJS) \
-# string/memcmp.o \
-# string/memcpy.o \
-# string/memmove.o \
-# string/memset.o \
-# string/strlen.o \
-# stdio/puts.o \
-# stdio/putchar.o \
-# stdio/printf.o \
-# stdio/putcharc.o \
-# stdio/printfc.o
 
 OBJS=\
 $(FREEOBJS)
@@ -62,7 +32,7 @@ all: $(BINARIES)
 libk.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
 
-.c.o:
+%.o: %.c
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
 
 clean:

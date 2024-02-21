@@ -83,6 +83,53 @@ char *exception_messages[] = {
 };
 
 /**
+ * @brief Page fault handler function
+ *
+ * This is a basic page fault handler function that only prints information
+ * about the page fault and halts the system.
+ *
+ * @param r Pointer to the interrupt registers struct
+ */
+void page_fault_handler(interrupt_regs *r) {
+	printfc(4, "%s\n", exception_messages[r->int_no]);
+	printf("Error Code: %d\n", r->err_code);
+
+	if (r->err_code & 0x1) {
+		printf("Page not present\n");
+	}
+
+	if (r->err_code & 0x2) {
+		printf("Operation that caused the #PF was a write\n");
+	}
+	else {
+		printf("Operation that caused the #PF was a read\n");
+	}
+
+	if (r->err_code & 0x4) {
+		printf("Processor was running in ring 3\n");
+	}
+	else {
+		printf("Processor was running in ring 0\n");
+	}
+
+	if (r->err_code & 0x8) {
+		printf("#PF occured because reserved bits were written over\n");
+	}
+
+	if (r->err_code & 0x10) {
+		printf("#PF occured during an instruction fetch\n");
+	}
+
+	// CR2 has the address that caused the page fault
+	uint32_t address = 0;
+	__asm__ __volatile__ ("movl %%cr2, %0" : "=r"(address));
+
+	printf("Bad Address: %x\n", address);
+
+	__asm__ __volatile__ ("cli; hlt");
+}
+
+/**
  * @brief Interrupt Service Routine (ISR) handler.
  *
  * This function is called when an interrupt is received. It
@@ -92,13 +139,18 @@ char *exception_messages[] = {
  */
 void isr_handler(interrupt_regs *r) {
 	if (r->int_no < 32) {
-		printf("Received interrupt: ");
-		printfc(4, "%s\n", exception_messages[r->int_no]);
-		printf("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi, r->esi);
-		printf("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx, r->edx);
-		printf("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax, r->int_no, r->err_code);
-		printf("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip, r->cs, r->eflags, r->useresp, r->ss);
-		printf("Kernel Panic - System Halted!\n");
-		for (;;);
+		if (r->int_no == 14) {
+			page_fault_handler(r);
+		}
+		else {
+			printf("Received interrupt: ");
+			printfc(4, "%s\n", exception_messages[r->int_no]);
+			printf("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi, r->esi);
+			printf("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx, r->edx);
+			printf("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax, r->int_no, r->err_code);
+			printf("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip, r->cs, r->eflags, r->useresp, r->ss);
+			printf("Kernel Panic - System Halted!\n");
+			for (;;);
+		}
 	}
 }
