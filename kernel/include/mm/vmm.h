@@ -36,7 +36,7 @@
  */
 typedef enum {
 	PAGE_PDE_PRESENT				= 0x1,
-	PAGE_PDE_WRITEABLE				= 0x2,
+	PAGE_PDE_WRITABLE				= 0x2,
 	PAGE_PDE_USER					= 0x4,
 	PAGE_PDE_WRITE_THROUGH			= 0x8,
 	PAGE_PDE_DISABLE_CACHE			= 0x10,
@@ -90,5 +90,7 @@ typedef struct {
 typedef struct {
 	pt_entry entries[TABLES_PER_DIR];
 } page_table;
+
+uint8_t initialize_virtual_memory(void);
 
 #endif /* !MM_VMM_H */

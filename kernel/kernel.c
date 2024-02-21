@@ -8,6 +8,7 @@
 #include <kernel/shell.h>
 #include <arch/i386/pit.h>
 #include <mm/pmm.h>
+#include <mm/vmm.h>
 
 void kmain() {
 	terminal_initialize();
@@ -38,6 +39,13 @@ void kmain() {
 	initialize_memory();
 	printf("\n");
 
+	uint8_t ret = initialize_virtual_memory();
+	if (ret) {
+		printf("Error initializing the virtual memory manager!\n");
+	}
+
+	uint32_t *test = (uint32_t*)0x00054123;
+	*test = 1;
 
 	printf("Welcome to MyOS!\n");
 	shell_init();
