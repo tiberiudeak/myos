@@ -3,8 +3,8 @@
 #include <kernel/io.h>
 #include <stdio.h>
 
-uint64_t ticks;
-uint64_t uptime;
+uint32_t ticks;
+uint32_t uptime;
 
 /**
  * @brief Increment ticks
@@ -50,7 +50,7 @@ void PIT_init() {
 void wait_millis(uint16_t millis) {
 	ticks = 0;
 
-	while (ticks != millis) {}
+	while (ticks != millis) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 /**

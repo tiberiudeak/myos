@@ -9,6 +9,7 @@
 #include <arch/i386/pit.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <time.h>
 
 void kmain() {
 	terminal_initialize();
@@ -38,7 +39,8 @@ void kmain() {
 
 	__asm__ __volatile__ ("movl $0, %eax; int $0x80");
 	__asm__ __volatile__ ("movl $1, %eax; int $0x80");
-	__asm__ __volatile__ ("movl $2, %eax; int $0x80");
+
+	sleep(3000);
 
 	initialize_memory();
 	printf("\n");

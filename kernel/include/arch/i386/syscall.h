@@ -2,20 +2,42 @@
 #define KERNEL_SYSCALL_H 1
 
 #include <stdio.h>
+#include <arch/i386/pit.h>
 
-#define MAX_SYSCALLS	2
+#define MAX_SYSCALLS	3
 
+/**
+ * Test syscall
+ */
 void syscall_test0(void) {
 	printf("Syscall test 0 works\n");
 }
 
+/**
+ * Test syscall
+ */
 void syscall_test1(void) {
 	printf("Syscall test 1 works\n");
 }
 
+/**
+ * @brief Sleep syscall
+ *
+ * This function reads the number of milliseconds to wait from EBX and
+ * calls wait_millis.
+ */
+void syscall_sleep(void) {
+	uint16_t millis = 0;
+
+	__asm__ __volatile__ ("movl %%ebx, %%ecx" : "=c"(millis) : );
+
+	wait_millis(millis);
+}
+
 void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
-	syscall_test1
+	syscall_test1,
+	syscall_sleep
 };
 
 /**
@@ -31,7 +53,7 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $2, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cmp $3, %eax\n"	// check if syscall exists
 											// number has to match MAX_SYSCALLS!
 	"jge syscall_invalid\n"					// if not, invalid syscall
 	"push %eax\n"
@@ -45,8 +67,8 @@ __attribute__ ((naked)) void syscall_handler(void) {
 	"push %ecx\n"
 	"push %ebx\n"
 	"push %esp\n"
-	"movl $4, %ebx\n"				// move value 4 in ebx
-	"mul %ebx\n"					// eax = eax * ebx
+	"movl $4, %edx\n"				// move value 4 in ebx
+	"mul %edx\n"					// eax = eax * ebx
 	"add $syscalls, %eax\n"			// add offset in eax to the beginning of the
 	"call (%eax)\n"					// syscalls array to get the right syscall
 	"add $4, %esp\n"
