@@ -36,6 +36,10 @@ void kmain() {
 
 	PIT_init();
 
+	__asm__ __volatile__ ("movl $0, %eax; int $0x80");
+	__asm__ __volatile__ ("movl $1, %eax; int $0x80");
+	__asm__ __volatile__ ("movl $2, %eax; int $0x80");
+
 	initialize_memory();
 	printf("\n");
 

@@ -15,7 +15,8 @@ LDFLAGS:=$(LDFLAGS)
 LIBK_CFLAGS:=$(CFLAGS)
 LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk
 
-FREEOBJS=$(shell find . -type f -name '*.c')
+DEPS:=$(shell find . -type f -name '*.d')
+FREEOBJS:=$(shell find . -type f -name '*.c')
 FREEOBJS:=$(FREEOBJS:.c=.o)
 
 OBJS=\
@@ -47,3 +48,5 @@ install-headers:
 install-libs: $(BINARIES)
 	mkdir -p $(DESTDIR)$(LIBDIR)
 	cp $(BINARIES) $(DESTDIR)$(LIBDIR)/.
+
+-include $(DEPS)

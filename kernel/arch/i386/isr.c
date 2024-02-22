@@ -1,5 +1,6 @@
 #include <arch/i386/isr.h>
 #include <arch/i386/idt.h>
+#include <arch/i386/syscall.h>
 #include <stdio.h>
 
 /**
@@ -43,8 +44,7 @@ void add_isrs_to_idt() {
 	set_idt_gate(30, (uint32_t)isr30, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
 	set_idt_gate(31, (uint32_t)isr31, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
 
-	set_idt_gate(128, (uint32_t)isr128, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(177, (uint32_t)isr177, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(128, (uint32_t)syscall_handler, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING3 | IDT_FLAGS_PRESENT);
 }
 
 char *exception_messages[] = {
