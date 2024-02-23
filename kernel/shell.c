@@ -2,6 +2,7 @@
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
 #include <arch/i386/pit.h>
+#include <arch/i386/rtc.h>
 #include <mm/pmm.h>
 #include <string.h>
 #include <stdio.h>
@@ -19,6 +20,9 @@ void shell_exec_command(char *command) {
 	}
 	else if (strcmp(command, "pmeminfo") == 0) {
 		print_phymem_info();
+	}
+	else if (strcmp(command, "datetime") == 0) {
+		rtc_print_datetime();
 	}
 	else {
 		printf("%s: unknown command\n", command);

@@ -70,7 +70,7 @@ __attribute__ ((naked)) void syscall_handler(void) {
 	"movl $4, %edx\n"				// move value 4 in ebx
 	"mul %edx\n"					// eax = eax * ebx
 	"add $syscalls, %eax\n"			// add offset in eax to the beginning of the
-	"call (%eax)\n"					// syscalls array to get the right syscall
+	"call *(%eax)\n"				// syscalls array to get the right syscall
 	"add $4, %esp\n"
 	"pop %ebx\n"
 	"pop %ecx\n"
