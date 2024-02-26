@@ -34,7 +34,7 @@ export INCLUDEDIR:=$(PREFIX)/include
 export LIBDIR:=$(PREFIX)/lib
 
 QEMU:=qemu-system-i386
-QEMUFLAGS:=
+QEMUFLAGS:= -drive format=raw,file=myos.bin,if=ide,index=0,media=disk -rtc base=localtime,clock=host,driftfix=none
 
 # isystem=<directory> means that the compiler will look
 # for system headers in <directory>
@@ -80,7 +80,7 @@ $(LIBC_AR):
 	@$(MAKE) -C $(LIBC_SRC_DIR) install
 
 run: $(TARGET)
-	$(QEMU) $(QEMUFLAGS) $<
+	$(QEMU) $(QEMUFLAGS)
 
 clean:
 	@for PROJECT in $(PROJECTS); do \
