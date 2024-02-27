@@ -1,0 +1,15 @@
+# General
+CONFIG_ARCH_X86_64 (enables x86_64 architecture) (only x86_64 is supported at the moment)
+CONFIG_DEBUG (prints a lot of debug information to the screen)
+
+# RTC (Real Time Clock)
+CONFIG_RTC (enables the RTC with datetime support)
+
+# Physical Memory Manager
+CONFIG_PMM_FIRSTFIT (uses a first-fit algorithm to allocate memory)
+CONFIG_PMM_BESTFIT (uses a best-fit algorithm to allocate memory)
+
+# Virtual Memory Manager
+CONFIG_VMM_PAGING (enables paging)
+CONFIG_VMM_PAGING_4K (uses 4KB pages) (only 4KB pages are supported at the moment)
+CONFIG_VMM_PAGING_4M (uses 4MB pages)
