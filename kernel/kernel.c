@@ -10,6 +10,9 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <time.h>
+#include <disk/disk.h>
+
+extern char kernel_end[];
 
 void kmain() {
 	terminal_initialize();
@@ -48,8 +51,18 @@ void kmain() {
 		printf("Error initializing the virtual memory manager!\n");
 	}
 
-	uint32_t *test = (uint32_t*)0x00054123;
+	uint32_t *test = (uint32_t*)0x50000;
 	*test = 1;
+
+	ret = read_sectors(3, 1, 0x50000);
+
+	if (ret) {
+		printf("Error reading the disk! %d\n", ret);
+	}
+
+	printf("%x\n", *test);
+
+	printf("kernel end: %x\n", kernel_end);
 
 	printf("Welcome to MyOS!\n");
 	shell_init();
