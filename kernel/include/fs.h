@@ -31,13 +31,12 @@ typedef struct {
 	uint32_t root_inode_pointer;
 	uint8_t inodes_per_block;
 	uint8_t direct_entents_per_inode;
-	uint16_t extents_per_indorect_block;
+	uint16_t extents_per_indirect_block;
 	uint32_t first_free_inode_bit;			// used when creating a file
 	uint32_t first_free_data_bit;			// used when allocating data
 	uint8_t first_unreserved_inode;
-	uint16_t reference_number;
 
-	uint8_t padding[14];
+	uint8_t padding[16];
 } __attribute__ ((packed)) superblock_t;
 
 typedef struct {
@@ -63,8 +62,9 @@ typedef struct {
 	extent_block_t extend[4];
 	uint32_t single_indirect_block;
 	fs_datetime_t datetime;
+	uint16_t reference_number;
 
-	uint8_t padding[7];
+	uint8_t padding[5];
 } __attribute__ ((packed)) inode_block_t;
 
 
