@@ -11,37 +11,33 @@ typedef enum {
 	FILETYPE_DIR			= 0x1
 } FS_FILETYPES;
 
+// sizeof boot block: 4096B
 typedef struct {
-	uint8_t sectors[8][FS_SECTOR_SIZE];	// 8 sectors make a block (4K)
+	uint8_t sectors[8][FS_SECTOR_SIZE];		// 8 sectors make a block (4K)
 } __attribute__ ((packed)) boot_block_t;
 
+// sizeof superblock: 64B
 typedef struct {
-	uint32_t total_inodes;
-	uint16_t num_inode_bitmap_blocks;
-	uint16_t num_data_bitmap_blocks;
-	uint16_t first_inode_bitmap_block;
-	uint16_t first_data_bitmap_block;
-	uint32_t first_inode_block;
-	uint32_t first_data_block;
-	uint32_t max_file_size_bytes;
-	uint16_t block_size_bytes;
-	uint8_t inode_size_bytes;
-	uint16_t num_inode_blocks;
-	uint16_t num_data_blocks;
-	uint32_t root_inode_pointer;
-	uint8_t inodes_per_block;
-	uint8_t direct_entents_per_inode;
-	uint16_t extents_per_indirect_block;
-	uint32_t first_free_inode_bit;			// used when creating a file
-	uint32_t first_free_data_bit;			// used when allocating data
-	uint8_t first_unreserved_inode;
+	uint32_t total_inodes;					// total number of inodes
+	uint16_t inode_bitmap_blocks;			// total number of blocks for the inode bitmap
+	uint16_t data_bitmap_blocks;			// total number of blocks for the data bitmap
+	uint16_t first_inode_bitmap_block;		// starting block for the inode bitmap
+	uint16_t first_data_bitmap_block;		// starting block for the data bitmap
+	uint32_t first_inode_block;				// first inode block
+	uint32_t first_data_block;				// first data block
+	uint16_t inode_blocks;					// total number of inode blocks
+	uint16_t data_blocks;					// total number of data blocks
+	uint8_t extents_per_inode;				// number of direct entents per inode
+	uint32_t first_free_inode_bit;			// first free bit in the inode bitmap
+	uint32_t first_free_data_bit;			// first free bit in the data bitmap
 
-	uint8_t padding[16];
+	uint8_t padding[31];
 } __attribute__ ((packed)) superblock_t;
 
+// sizeof extent block: 8B
 typedef struct {
 	uint32_t first_block;
-	uint32_t length;
+	uint32_t length;						// length in blocks
 } __attribute__ ((packed)) extent_block_t;
 
 typedef struct {
@@ -54,12 +50,13 @@ typedef struct {
 	uint8_t padding;
 } __attribute__ ((packed)) fs_datetime_t;
 
+// sizeof inode: 64B => one block can have 64 inodes
 typedef struct {
-	uint32_t id;		// unique
-	uint8_t type;		// file type
+	uint32_t id;
+	uint8_t file_type;
 	uint32_t size_bytes;
-	uint32_t size_sectots;
-	extent_block_t extend[4];
+	uint32_t size_sectors;
+	extent_block_t extent[4];
 	uint32_t single_indirect_block;
 	fs_datetime_t datetime;
 	uint16_t reference_number;
@@ -67,9 +64,9 @@ typedef struct {
 	uint8_t padding[5];
 } __attribute__ ((packed)) inode_block_t;
 
-
+// sizeof directory: 64B
 typedef struct {
-	uint32_t id;
+	uint32_t id;		// should be the same with the inode's id
 	uint8_t name[60];
 } __attribute__ ((packed)) directory_entry_t;
 
