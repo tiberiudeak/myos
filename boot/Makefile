@@ -16,7 +16,8 @@ LIBS:=$(LIBS)
 
 BOOT_OBJS:=\
 $(ARCHDIR)/boot.o \
-$(ARCHDIR)/2nd_stage_boot.o
+$(ARCHDIR)/2nd_stage_boot.o \
+$(ARCHDIR)/3rd_stage_boot.o
 
 OBJS=\
 $(BOOT_OBJS)

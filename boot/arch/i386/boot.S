@@ -38,11 +38,14 @@ _start:
 	# move cursor to next line
 	call move_cursor_nl			# call cursor_next_line
 
-	# load 2nd stage boot sector
+	# load boot block and superblock at address 0x7E00 (starting with sector 2)
+	# boot block: 0x7C00 - 0x8C00
+	# superblock: 0x8C00 - 0x9C00
 	pop %dx						# pop drive number from stack to dx
 	push $0x2					# push 2 to stack (sector number)
 	push $0x7e00				# push 0x7e00 to stack (load address)
-	push $0x1 					# push 1 to stack (# sectors)
+	push $15 					# push 15 to stack (boot block and superblock)
+								# sector 1 is loaded by the BIOS
 	push %dx					# push dl to stack (drive number)
 	call disk_load				# call disk_load
 	add $0x08, %sp				# add 8 to stack pointer

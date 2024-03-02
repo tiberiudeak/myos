@@ -79,6 +79,24 @@ int write_boot_block(file_pointer_type files[], FILE *image_fp) {
 
 	written_bytes += FS_SECTOR_SIZE;
 
+	// read third stage bootloader sector
+	ret = fread((void*)boot_block.sectors[2], FS_SECTOR_SIZE, 1, files[0].fp);
+
+	if (ret == 0) {
+		printf("Error reading bootloader\n");
+		return 1;
+	}
+
+	// write third sector to image
+	ret = fwrite(boot_block.sectors[2], FS_SECTOR_SIZE, 1, image_fp);
+
+	if (ret == 0) {
+		printf("Error writing to file\n");
+		return 1;
+	}
+
+	written_bytes += FS_SECTOR_SIZE;
+
 	// fill rest of boot block with 0
 	uint32_t padding = padding_bytes(written_bytes, FS_BLOCK_SIZE);
 	uint8_t zero[FS_BLOCK_SIZE] = {0};
