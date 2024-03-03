@@ -69,9 +69,9 @@ _start3:
 							# address for the second inode (kernel) (skip first
 							# two inodes)
 	add $0x9, %di			# go to size in sectors information about the kernel
-	mov (%di), %ax
+	mov (%di), %ax			# store kernel's size in sectors in AX
 	add $0x8, %ax			# also add the sectors for the root directory
-	push %ax
+	push %ax				# push total number of sectors to stack
 
 	push %si				# push drive number to stack
 
@@ -112,7 +112,7 @@ protected_mode_init:
 	mov $0x90000, %ebp			# set the base pointer to 0x90000
 	mov %ebp, %esp				# set the stack pointer to base pointer
 
-	call %cx					# jump to kernel data
+	call %cx					# jump to kernel code
 
 g:
 	jmp g

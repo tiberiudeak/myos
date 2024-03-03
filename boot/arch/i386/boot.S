@@ -56,7 +56,7 @@ _start:
 
 .include "./include/print_string.S"
 .include "./include/reset_screen.S"
-.include "./include/print_hex.S"
+#.include "./include/print_hex.S"
 .include "./include/a20.S"
 .include "./include/disk_load.S"
 .include "./include/cursor_next_line.S"

@@ -1,6 +1,17 @@
 /**
- * Create the disk image with the OS
-*/
+ * Create the disk image with the OS. Image layout:
+ *
+ * |--------|------------|---------------|--------------|--------|--------|
+ * | Boot   | Superblock | Inode Bitmap  | Data Bitmap  | Inode  | Data   |
+ * | block  |            |    blocks     |    blocks    | blocks | blocks |
+ * |--------|------------|---------------|--------------|--------|--------|
+ *
+ * There will be only one boot block (so the bootloader has to fit in 4K)
+ * and one superblock.
+ *
+ * Block size: 	4096B
+ * Sector size:	512B
+ */
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -502,7 +513,17 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 	return 0;
 }
 
+void usage(void) {
+	printf("Usage:\n");
+	printf("\t./create_disk_image <image_name>\n");
+}
+
 int main(int argc, char *argv[]) {
+
+	if (argc != 2) {
+		usage();
+		return 1;
+	}
 
 	file_pointer_type files[] = {
 		{"boot/bootloader.bin", 0, NULL},
@@ -511,7 +532,8 @@ int main(int argc, char *argv[]) {
 		{"pr1.o", 0, NULL}
 	};
 
-	char image_name[] = "test.bin";
+	char image_name[20];
+	strcpy(image_name, argv[1]);
 	FILE *image_fp = fopen(image_name, "wb");
 	uint32_t total_file_blocks = 0;
 
