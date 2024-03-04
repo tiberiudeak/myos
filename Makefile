@@ -62,7 +62,8 @@ TARGET:=myos.bin
 all: $(TARGET)
 
 $(TARGET): $(BINARIES)
-	cat $^ > $@
+	gcc create_disk_image.c -o create_disk_image
+	./create_disk_image $(TARGET)
 
 $(BOOT_BIN):
 	@mkdir -p $(SYSROOT)
@@ -87,4 +88,4 @@ clean:
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(SYSROOT) $(TARGET)
+	rm -rf $(SYSROOT) $(TARGET) create_disk_image

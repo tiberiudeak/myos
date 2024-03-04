@@ -11,63 +11,83 @@ _start2:
 
 	call move_cursor_nl		# call the move_cursor_nl function
 
-	# load the kernel to 0x8000 (after the bootloader)
-	pop %dx					# pop drive number from stack to dx
-	push $0x3				# push 3 to the stack (sector number)
-	push $0x8000			# push 0x8000 to the stack (load address)
-	push $0x30				# push 48 to the stack (sector count)
-	push $0x80				# push 0 to the stack (drive number)
-	call disk_load			# call the disk_load function
-	add $0x8, %sp			# remove the 3 pushed values from the stack
-	push %dx				# push the drive number back to the stack
+	# load inode bitmap into memory (0x9C00 - 0x.... depending on the size)
+	pop %si					# pop drive number from stack to SI
+	mov (0x8C08), %ax		# first inode bitmap block
+	mov $8, %bx				# put 8 into BX to get the sector number
+	mul %bx					# AX = AX * 8 (sector number)
+	mov %ax, %dx			# put result into DX
+	inc %dx					# sector count starts from 1 so add 1
+	push %dx				# push starting sector to the stack
 
+	push $0x9C00			# push load address to the stack
+
+	mov (0x8C04), %ax		# number of blocks for the inode bitmap
+	mov $8, %bx				# each block has 8 sectors
+	mul %bx					# AX = AX * 8 (number of sectors)
+	push %ax				# push number of sectors to stack
+
+	push %si				# push drive number to stack
+
+	call disk_load			# call disk load function
+	add $0x8, %sp			# restore stack pointer
+	push %si				# push drive number back to stack
+
+	# at this point, AX will have the number of sectors for the inode bitmap
+	mov %ax, %cx			# save that value in CX that will be used later to
+							# calculate the starting address for the data bitmap
+
+	# load data bitmap into memory
+	pop %si					# pop drive number from stack
+	mov (0x8C0A), %ax		# first data bitmap block
+	mov $8, %bx				# put 8 into BX to get the sector number
+	mul %bx					# AX = AX * 8 (sector number)
+	mov %ax, %dx			# put result into DX
+	inc %dx					# sector count starts from 1 so add 1
+	push %dx				# push starting sector to the stack
+
+	# calculate starting address for the data bitmap
+	mov $512, %ax			# move size of a sector into AX
+	mul %cx					# multiply that size with the number of sectors
+							# occupied by the inode bitmap
+	add $0x9C00, %ax		# add total size of the inode bitmap to the
+							# starting address of the inode bitmap in order
+							# to get the starting address for the data bitmap
+	push %ax				# push the resulted address to the stack
+	mov %ax, %di			# save starting address in DI
+
+	mov (0x8C06), %ax		# number of blocks for the inode bitmap
+	mov $8, %bx				# each block has 8 sectors
+	mul %bx					# AX = AX * 8 (number of sectors)
+	push %ax				# push number of sectors to stack
+
+	push %si				# push drive number to stack
+
+	call disk_load			# call disk load function
+	add $0x8, %sp			# restore stack pointer
+	push %si				# push drive number back to stack
+
+	# at this point, AX will have the number of sectors for the data bitmap
+	# and DI will have the starting address for the data bitmap blocks
+	# information that will be used in the third stage of the bootloader
+	# to load the inodes and finally the kernel data
 
 	# detect memory
 	push $0x1000			# push 0x1000 to the stack (memory loc.)
 	call detect_memory		# call the detect_memory function
 	add $0x2, %sp			# remove the pushed value from the stack
 
+	call move_cursor_nl
 
-	# empty stack
-	pop %dx
-
-
-	# make switch to protected mode
-	cli						# disable interrupts
-	lgdt gdt_descriptor		# load the gdt descriptor
-
-	mov %cr0, %eax			# move the value of cr0 to eax
-	or $0x1, %eax			# set the first bit of eax to 1 (protected mode)
-	mov %eax, %cr0			# move the value of eax to cr0
-
-	ljmp $CODE_SEG, $protected_mode_init	# jump to protected mode
+	jmp 0x8000				# jump to third stage bootloader
 
 .include "./include/print_string.S"
-# .include "./include/print_hex.S"
+#.include "./include/print_hex.S"
 .include "./include/cursor_next_line.S"
 .include "./include/disk_load.S"
-.include "./include/gdt.S"
 .include "./include/detect_memory.S"
 
 msg2:
 	.asciz "Entered 2nd stage boot"
-
-
-.code32
-protected_mode_init:
-	mov $DATA_SEG, %ax	        # load data segment into ax
-	mov %ax, %ds                # load ax into data segment register
-	mov %ax, %es                # load ax into extra segment register
-	mov %ax, %fs                # load ax into fs segment register
-	mov %ax, %gs                # load ax into gs segment register
-	mov %ax, %ss                # load ax into stack segment register
-
-	mov $0x90000, %ebp			# set the base pointer to 0x90000
-	mov %ebp, %esp				# set the stack pointer to base pointer
-
-	call 0x8000
-
-g:
-	jmp g
 
 .space 512 - (. - _start2)		# fill the rest of the bytes with 0

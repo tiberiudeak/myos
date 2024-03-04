@@ -58,7 +58,6 @@ TODO
 ## Description
 
 ### The Bootloader
-Currently, I've implemented a two stage bootloader. The first stage sets up the stack, enables the A20 line and loads the second stage from the disk. The second stage is responsible for setting up the environment for the kernel, loading it from the disk and jumping to it, as well as creating the memory map.
 
 ### The Kernel
 
