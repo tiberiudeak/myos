@@ -45,24 +45,17 @@ _start3:
 	mov %ax, %cx			# save AX into CX
 
 
-	# load root dir and kernel data into main memory
+	# load kernel data into main memory
 	pop %si					# pop drive number from stack
 	mov (0x8C10), %ax		# first data block
+	inc %ax					# go to kernel data (skip root dir)
 	mov $8, %bx				# put 8 into BX to get the sector number
 	mul %bx					# AX = AX * 8 (sector number)
 	mov %ax, %dx			# put result into DX
 	inc %dx					# sector count starts from 1 so add 1
 	push %dx				# push starting sector to the stack
 
-	# calculate starting address for the data blocks (root and kernel only)
-	mov $512, %ax			# move size of a sector into AX
-	mul %cx					# multiply that size with the number of sectors
-							# occupied by the inode bitmap
-	add %di, %ax			# add total size of the inode bitmap to the
-							# starting address of the inode bitmap in order
-							# to get the starting address for the data bitmap
-	push %ax				# push the resulted address to the stack
-	mov %ax, %cx			# save starting address in CX
+	push $0xF000			# starting address for the kernel data is 0xF000
 
 	add $0x80, %di			# DI, that previously contains the starting address
 							# for the inode block, will now point to the starting
@@ -70,7 +63,6 @@ _start3:
 							# two inodes)
 	add $0x9, %di			# go to size in sectors information about the kernel
 	mov (%di), %ax			# store kernel's size in sectors in AX
-	add $0x8, %ax			# also add the sectors for the root directory
 	push %ax				# push total number of sectors to stack
 
 	push %si				# push drive number to stack
@@ -79,7 +71,8 @@ _start3:
 	add $0x8, %sp			# restore stack pointer
 	push %si				# push drive number back to stack
 
-	add $0x1000, %cx		# skip root dir data, go to kernel data address
+	# empty stack
+	add $0x2, %sp
 
 	# make switch to protected mode
 	cli						# disable interrupts
@@ -112,7 +105,7 @@ protected_mode_init:
 	mov $0x90000, %ebp			# set the base pointer to 0x90000
 	mov %ebp, %esp				# set the stack pointer to base pointer
 
-	call %cx					# jump to kernel code
+	call 0xF000					# jump to kernel code
 
 g:
 	hlt

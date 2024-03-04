@@ -1,6 +1,6 @@
 SECTIONS
 {
-	.text 0xDC00 :
+	.text 0xF000 :
 	{
 		*(kernel_entry);
 		*(.text*);
