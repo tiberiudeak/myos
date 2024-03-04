@@ -115,6 +115,7 @@ protected_mode_init:
 	call %cx					# jump to kernel code
 
 g:
+	hlt
 	jmp g
 
 .space 512 - (. - _start3)		# fill the rest of the bytes with 0

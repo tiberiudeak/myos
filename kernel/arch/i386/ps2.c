@@ -12,7 +12,8 @@ int PS2_dual_port;
  * is performed, followed by a test for both interfaces. The available
  * ports are enabled at the end.
  */
-void PS2_init() {
+int PS2_init() {
+	printf("Initializing PS2 Controller\n");
 	int ret;
 
 	// disable device
@@ -25,35 +26,36 @@ void PS2_init() {
 	ret = PS2_self_test();
 
 	if (ret) {
-		printf("PS/2 self test passed\n");
+		printf("\tPS/2 self test passed\n");
 	}
 	else {
-		printf("PS/2 self test failed\n");
-		return;
+		printf("\tPS/2 self test failed\n");
+		return 1;
 	}
 
 	// perform interface tests
 	ret = PS2_interfaces_test();
 
 	if (ret == 0) {
-		printf("No PS/2 interfaces available\n");
-		return;
+		printf("\tNo PS/2 interfaces available\n");
+		return 1;
 	}
 
 	if (ret == 3) {
-		printf("PS/2 available interfaces: 2\n");
+		printf("\tPS/2 available interfaces: 2\n");
 		PS2_enable_devices(1, 1);
-		return;
+		return 0;
 	}
 
 	if (ret == 2) {
-		printf("Only second PS/2 interface available\n");
+		printf("\tOnly second PS/2 interface available\n");
 		PS2_enable_devices(0, 1);
-		return;
+		return 0;
 	}
 
-	printf("Only first PS/2 interface available\n");
+	printf("\tOnly first PS/2 interface available\n");
 	PS2_enable_devices(1, 0);
+	return 0;
 }
 
 /**

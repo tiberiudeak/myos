@@ -83,7 +83,7 @@ typedef enum {
  * FPD: first port data (output)
 */
 
-void PS2_init(void);
+int PS2_init(void);
 void PS2_disable_devices(void);
 void PS2_enable_devices(int, int);
 uint8_t PS2_flush_output_buffer(void);

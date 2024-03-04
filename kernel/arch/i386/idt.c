@@ -2,6 +2,7 @@
 #include <arch/i386/irq.h>
 #include <arch/i386/pic.h>
 #include <string.h>
+#include <stdio.h>
 
 idt_gate_t idt_entries[256];
 idt_ptr_t idt_ptr_reg;
@@ -37,6 +38,7 @@ void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
  * PICs and are used to handle hardware interrupts.
  */
 void init_idt() {
+	printf("Initializing IDT");
 	idt_ptr_reg.limit = (sizeof(idt_gate_t) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t)&idt_entries;
 
@@ -49,4 +51,6 @@ void init_idt() {
 
 	__asm__ __volatile__("lidt %0" : : "m" (idt_ptr_reg));
 	__asm__ __volatile__("sti");
+
+	printfc(2, "\t\tdone\n");
 }
