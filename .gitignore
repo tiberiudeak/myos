@@ -1,3 +1,6 @@
 tmp
 ata-pio
 pr1.o
+compile_commands.json
+
+.cache

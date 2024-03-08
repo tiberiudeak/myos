@@ -8,6 +8,7 @@
 #include <arch/i386/pit.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <mm/kmalloc.h>
 #include <stdio.h>
 
 extern char kernel_end[];
@@ -56,4 +57,8 @@ void kmain() {
 
 	printf("Welcome to MyOS!\n");
 	shell_init();
+
+    int *p = (int*)kmalloc(1);
+    kfree(p);
+
 }

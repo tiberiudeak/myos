@@ -18,8 +18,8 @@ typedef struct {
 
 void print_mem_map(void);
 void initialize_memory(void);
-void *kalloc(uint32_t);
-void kfree(void*, uint32_t);
+void *allocate_blocks(uint32_t);
+void free_blocks(void*, uint32_t);
 void print_phymem_info(void);
 
 #endif /* !MM_PMM_H */

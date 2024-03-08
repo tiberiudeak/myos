@@ -183,7 +183,7 @@ void pmm_self_test() {
 
 	printf("Allocating one block (4K)");
 	// request one block (4K)
-	uint32_t *a = (uint32_t*) kalloc(1);
+	uint32_t *a = (uint32_t*) allocate_blocks(1);
 
 	if (test_free_blocks == 0 && a != NULL) {
 		printfc(4, "\t\tFAILED\n");
@@ -204,7 +204,7 @@ void pmm_self_test() {
 	}
 
 	printf("Allocating two more blocks (8K)");
-	uint32_t *b = (uint32_t*) kalloc(2);
+	uint32_t *b = (uint32_t*) allocate_blocks(2);
 
 	if (test_free_blocks < 2 && b != NULL) {
 		printfc(4, "\t\tFAILED\n");
@@ -225,7 +225,7 @@ void pmm_self_test() {
 	}
 
 	printf("Freeing first block");
-	kfree(a, 1);
+	free_blocks(a, 1);
 
 	if ((max_blocks - used_blocks) - test_free_blocks != 1) {
 		printfc(4, "\t\t\t\t\tFAILED\n");
@@ -244,7 +244,7 @@ void pmm_self_test() {
 	}
 
 	printf("Freeing the two allocated blocks");
-	kfree(b, 2);
+	free_blocks(b, 2);
 
 	if ((max_blocks - used_blocks) - test_free_blocks != 2) {
 		printfc(4, "\tFAILED\n");
@@ -263,7 +263,7 @@ void pmm_self_test() {
 
 	// printf("Allocating max number of blocks");
 	// uint32_t size = max_blocks - used_blocks;
-	// a = (uint32_t*) kalloc(size);
+	// a = (uint32_t*) allocate_blocks(size);
 
 	// if (a == NULL) {
 	// 	printfc(4, "\t\tFAILED\n");
@@ -276,7 +276,7 @@ void pmm_self_test() {
 	// }
 
 	// printf("Allocating one block");
-	// b = (uint32_t*)kalloc(1);
+	// b = (uint32_t*)allocate_blocks(1);
 
 	// if (b != NULL) {
 	// 	printfc(4, "\t\t\t\tFAILED\n");
@@ -286,7 +286,7 @@ void pmm_self_test() {
 	// }
 
 	// printf("Freeing all memory");
-	// kfree(a, size);
+	// free_blocks(a, size);
 
 	// if (initial_free_blocks != max_blocks - used_blocks) {
 	// 	printfc(4, "\t\t\t\t\tFAILED\n");
@@ -396,7 +396,7 @@ uint32_t __find_first_fit(uint32_t req_num_blocks) {
  *
  * @return Starting physical address for the requested region
  */
-void *kalloc(uint32_t num_blocks) {
+void *allocate_blocks(uint32_t num_blocks) {
 	if (num_blocks == 0) {
 		return NULL;
 	}
@@ -432,7 +432,7 @@ void *kalloc(uint32_t num_blocks) {
  * @param address 		Starting address
  * @param num_blocks	Number of blocks to free
  */
-void kfree(void *address, uint32_t num_blocks) {
+void free_blocks(void *address, uint32_t num_blocks) {
 	uint32_t block_index = (uint32_t)address / BLOCK_SIZE;
 
 	// override entire block with 1

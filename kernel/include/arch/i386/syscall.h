@@ -34,6 +34,24 @@ void syscall_sleep(void) {
 	wait_millis(millis);
 }
 
+//void syscall_kmalloc(void) {
+//    uint32_t size_bytes;
+//
+//    // get size in bytes from EBX
+//    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(size_bytes));
+//
+//}
+
+//void syscall_kfree(void) {
+//    printf("kernel free called");
+//    uint32_t addr = 0;
+//
+//    //get address from EBX
+//    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(addr));
+//
+//    printf("%x\n", addr);
+//}
+
 void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
 	syscall_test1,

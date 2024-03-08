@@ -61,7 +61,7 @@ pd_entry *get_pd_entry(page_directory *pd, address virtual_address) {
  * @return Address allocated by the physical memory manager
  */
 void *allocate_page(pt_entry *pte) {
-	void *block = kalloc(1);
+	void *block = allocate_blocks(1);
 
 	if (block != NULL) {
 		SET_FRAME(pte, (address)block);
@@ -83,7 +83,7 @@ void free_page(pt_entry *pte) {
 	void *address = (void*) PAGE_GET_PHY_ADDRESS(pte);
 
 	if (address != NULL) {
-		kfree(address, 1);
+		free_blocks(address, 1);
 	}
 
 	CLEAR_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
@@ -145,7 +145,7 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = kalloc(1);
+		void *block = allocate_blocks(1);
 
 		if (block == NULL) {
 			return 1;
@@ -229,7 +229,7 @@ void unmap_page(void *virtual_address) {
  */
 uint8_t initialize_virtual_memory(void) {
 	// allocate physical block for the page directory
-	page_directory *pd = (page_directory*) kalloc(1);
+	page_directory *pd = (page_directory*) allocate_blocks(1);
 
 	if (pd == NULL) {
 		return 1;
@@ -245,7 +245,7 @@ uint8_t initialize_virtual_memory(void) {
 
 	// allocate physical block for the page table that will be used
 	// for the identity mapping of the first 4MB
-	page_table *pt = (page_table*) kalloc(1);
+	page_table *pt = (page_table*) allocate_blocks(1);
 
 	if (pt == NULL) {
 		return 1;
@@ -256,7 +256,7 @@ uint8_t initialize_virtual_memory(void) {
 
 	// allocate physical block for the page table that will be used
 	// for the higher half kernel
-	page_table *pt3gb = (page_table*) kalloc(1);
+	page_table *pt3gb = (page_table*) allocate_blocks(1);
 
 	if (pt3gb == NULL) {
 		return 1;
@@ -313,3 +313,4 @@ uint8_t initialize_virtual_memory(void) {
 
 	return 0;
 }
+

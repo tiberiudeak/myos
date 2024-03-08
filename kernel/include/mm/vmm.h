@@ -92,5 +92,8 @@ typedef struct {
 } page_table;
 
 uint8_t initialize_virtual_memory(void);
+uint8_t map_page(void*, void*);
+void unmap_page(void*);
+pt_entry *get_page(address);
 
 #endif /* !MM_VMM_H */
