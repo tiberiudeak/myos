@@ -1,4 +1,4 @@
-#include "include/mm/kmalloc.h"
+#include <mm/kmalloc.h>
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-extern char kernel_end[];
+extern char kernel_end[];           // symbol from the kernel linker script
 kblock_meta *metadata_blk_header;
 
 // starting virtual address will be the starting virtual address of the kernel (which
@@ -15,6 +15,17 @@ kblock_meta *metadata_blk_header;
 uint32_t starting_virtual_address = 0;
 uint32_t current_virtual_address = 0;
 
+/**
+ * @brief Called for the first kmalloc(), initializes the metadata structure
+ *
+ * This function requests physical memory from the physical memory manager to cover the
+ * requested size and maps it to virtual address. The starting virtual address (kernel heap)
+ * is determined as described above. After this, the metadata block header is populated.
+ *
+ * @param size Requested size
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
 uint8_t kmalloc_init(size_t size) {
     // determine starting virtual address
     uint32_t kernel_size_bytes = (uint32_t) (kernel_end - KERNEL_ADDRESS);
@@ -64,6 +75,11 @@ uint8_t kmalloc_init(size_t size) {
     return 0;
 }
 
+/**
+ * @brief Print list
+ *
+ * This function prints the current list
+ */
 void kmalloc_print_list(void) {
     kblock_meta *current = metadata_blk_header;
 
@@ -73,6 +89,16 @@ void kmalloc_print_list(void) {
     }
 }
 
+/**
+ * @brief Find best block that fits the requested size
+ *
+ * This function goes through the list and searches for the block with the smallest available size
+ * that fits the requested size.
+ *
+ * @param size The requested size
+ *
+ * @return The block address if one is found, NULL otherwise
+ */
 void *kmalloc_find_best_fit(uint32_t size) {
     kblock_meta *current = metadata_blk_header;
     kblock_meta *best_fit = NULL;
@@ -93,6 +119,17 @@ void *kmalloc_find_best_fit(uint32_t size) {
     return best_fit;
 }
 
+/**
+ * @brief Split the given block in two according to the given size
+ *
+ * This function splits the given block in a block that is allocated and has the given
+ * size and a free block that has the remaining size from the initial block.
+ *
+ * @param block Pointer to the block that is to be split
+ * @param size  The size that the allocated block has to have
+ *
+ * @return The address of the block that is allocated (same as the parameter)
+ */
 void *kmalloc_split_block(kblock_meta *block, uint32_t size) {
     kblock_meta *new_block = (void*)block + METADATA_BLK_SIZE + ALIGN(size, ALIGNMENT);
 
@@ -107,6 +144,20 @@ void *kmalloc_split_block(kblock_meta *block, uint32_t size) {
     return block;
 }
 
+/**
+ * @brief Increases the heap
+ *
+ * This function is called when there is not sufficient space on the heap for an incoming
+ * allocation request. The missing size is determined and a number of blocks to cover it is
+ * requested from the physical memory allocator. The physical addresses are mapped to the
+ * corresponding virtual addresses. Now, if the last node in the list is free, then its size
+ * is increased with the new size and it is split if possible. If the node is not free, then
+ * a new node is appended to the list and it is split if possible.
+ *
+ * @param size The requested size
+ *
+ * @return Pointer to the node in the list that accommodated the requested size
+ */
 void *kmalloc_expand_memory(uint32_t size) {
     kblock_meta *current = metadata_blk_header;
 
@@ -179,6 +230,17 @@ void *kmalloc_expand_memory(uint32_t size) {
     return new_block;
 }
 
+/**
+ * @brief Allocate dynamic memory (called by the kernel)
+ *
+ * This function initializes the memory metadata structure if necessary and searches for the
+ * best fit for the requested size. If a best fit is found, then the block is split if possible.
+ * If one is not found, then the memory is expanded.
+ *
+ * @param size The requested size in bytes
+ *
+ * @return Starting virtual address
+ */
 void *kmalloc(size_t size) {
     if (size == 0) return NULL;
 
@@ -221,6 +283,15 @@ void *kmalloc(size_t size) {
     return (void*)block + METADATA_BLK_SIZE;
 }
 
+/**
+ * @brief Free dynamic memory (called by the kernel)
+ *
+ * This function goes through the list and searches for the given virtual address.
+ * If it is found, the status of the block is changed to STATUS_FREE and the block
+ * is coalesced with its predecessor and successor (if possible)
+ *
+ * @param ptr   Virtual address
+ */
 void kfree(void *ptr) {
     if (ptr == NULL) return;
 
@@ -259,5 +330,16 @@ void kfree(void *ptr) {
 
         current = (kblock_meta*)current->next;
     }
+
+    /*
+     * TODO: also free physical memory when possible: detect if an entire block of memory is free
+     * (meaning that there is a node in the list that has STATUS_FREE and its size is
+     * PAGE_SIZE - METADATA_BLK_SIZE. I think this is only possible for the last node (as memory
+     * has to be contiguous). Get physical address from virtual address:
+     * page_table_entry = get_page(virtual_address)
+     * physical_address = page_table_entry & 0x7FFFF000
+     *
+     * Make sure also to modify current_virtual_address.
+     */
 }
 
