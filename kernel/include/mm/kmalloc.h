@@ -14,7 +14,7 @@
 #define METADATA_BLK_SIZE       ALIGN(sizeof(kblock_meta), ALIGNMENT)
 
 // structure for the block metadata
-typedef struct {
+typedef struct kblock_meta {
     size_t size;
     uint8_t status;
     struct kblock_meta *next;
