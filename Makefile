@@ -88,4 +88,4 @@ clean:
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(SYSROOT) $(TARGET) create_disk_image
+	rm -rf $(TARGET) create_disk_image

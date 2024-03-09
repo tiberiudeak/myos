@@ -2,18 +2,21 @@
 #define MM_KMALLOC_H 1
 
 #include <stddef.h>
+#include <stdint.h>
 
-#define STATUS_FREE         0
-#define STATUS_ALLOC        1
+#define STATUS_FREE             0
+#define STATUS_ALLOC            1
 
-#define PAGE_SIZE           4096
-#define ALIGNMENT           8
-#define ALIGN(size)         (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+#define ALIGNMENT               8
+//#define ALIGN(size)           (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
+//#define ALIGN_TO_PAGE(size)   (((size) + (PAGE_SIZE - 1)) & ~(PAGE_SIZE - 1))
+#define ALIGN(size, alignment)  (((size) + (alignment - 1)) & ~(alignment - 1))
+#define METADATA_BLK_SIZE       ALIGN(sizeof(kblock_meta), ALIGNMENT)
 
 // structure for the block metadata
 typedef struct {
     size_t size;
-    int status;
+    uint8_t status;
     struct kblock_meta *next;
     struct kblock_meta *prev;
 } kblock_meta;

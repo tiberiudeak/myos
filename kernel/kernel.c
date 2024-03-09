@@ -58,7 +58,7 @@ void kmain() {
 	printf("Welcome to MyOS!\n");
 	shell_init();
 
-    int *p = (int*)kmalloc(1);
+    int *p = (int*)kmalloc(5000);
     kfree(p);
 
 }
