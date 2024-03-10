@@ -1,5 +1,5 @@
 #ifndef FS_H
-#define FS_H
+#define FS_H 1
 
 #include <stdint.h>
 
@@ -77,7 +77,7 @@ typedef struct {
  *
  * @param bytes Number of bytes
  */
-uint32_t bytes_to_blocks(uint32_t bytes) {
+static uint32_t bytes_to_blocks(uint32_t bytes) {
 	if (bytes == 0) {
 		return 0;
 	}
@@ -100,7 +100,7 @@ uint32_t bytes_to_blocks(uint32_t bytes) {
  *
  * @param bytes Number of bytes
  */
-uint32_t bytes_to_sectors(uint32_t bytes) {
+static uint32_t bytes_to_sectors(uint32_t bytes) {
 	if (bytes == 0) {
 		return 0;
 	}
@@ -115,4 +115,8 @@ uint32_t bytes_to_sectors(uint32_t bytes) {
 
 	return bytes / FS_SECTOR_SIZE;
 }
+
+void print_superblock_info(void);
+void ls_root_dir(void);
+
 #endif /* !FS_H */

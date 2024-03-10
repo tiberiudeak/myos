@@ -13,3 +13,8 @@ CONFIG_PMM_BESTFIT (uses a best-fit algorithm to allocate memory)
 CONFIG_VMM_PAGING (enables paging)
 CONFIG_VMM_PAGING_4K (uses 4KB pages) (only 4KB pages are supported at the moment)
 CONFIG_VMM_PAGING_4M (uses 4MB pages)
+
+# Kernem malloc and free
+CONFIG_READ_AFTER_FREE_PROT (after each free the memory is zeroed)
+CONFIG_KVMM_BESTFIT (uses best-fit algorithm to allocate dynamic memory)
+

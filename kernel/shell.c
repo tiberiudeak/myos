@@ -4,6 +4,7 @@
 #include <arch/i386/pit.h>
 #include <arch/i386/rtc.h>
 #include <mm/pmm.h>
+#include <fs.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -23,6 +24,12 @@ void shell_exec_command(char *command) {
 	}
 	else if (strcmp(command, "datetime") == 0) {
 		rtc_print_datetime();
+	}
+	else if (strcmp(command, "dl") == 0) {
+		print_superblock_info();
+	}
+	else if (strcmp(command, "ls") == 0) {
+		ls_root_dir();
 	}
 	else {
 		printf("%s: unknown command\n", command);
