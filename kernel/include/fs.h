@@ -118,5 +118,7 @@ static uint32_t bytes_to_sectors(uint32_t bytes) {
 
 void print_superblock_info(void);
 void ls_root_dir(void);
+uint8_t fs_init(void);
+uint8_t fs_print_dir(void);
 
 #endif /* !FS_H */

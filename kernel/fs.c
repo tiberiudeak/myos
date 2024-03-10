@@ -6,6 +6,8 @@
 #include <stdio.h>
 
 superblock_t *superblock = (superblock_t*)SUPERBLOCK_ADDRESS;
+inode_block_t current_directory;
+inode_block_t parent_directory;
 
 void print_superblock_info(void) {
     printf("memory layout information (from the superblock):\n");
@@ -34,8 +36,6 @@ void print_superblock_info(void) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t load_file(inode_block_t *inode, uint32_t address) {
-    if (inode->file_type == FILETYPE_DIR) return 1;
-
     uint32_t number_of_blocks = bytes_to_blocks(inode->size_bytes);
     uint32_t read_blocks = 0;
     uint32_t offset = 0;
@@ -60,7 +60,38 @@ uint8_t load_file(inode_block_t *inode, uint32_t address) {
     return 0;
 }
 
-uint8_t fs_print_dir(char *path) {
+// print files in current directory (to ls other directory, you'll have to go
+// to that one and then ls)
+uint8_t fs_print_dir(void) {
+    uint32_t needed_bytes = bytes_to_blocks(current_directory.size_bytes) * FS_BLOCK_SIZE;
+    int ret;
+
+    void *addr = kmalloc(needed_bytes);
+
+    if (addr == NULL) {
+        printf("out of memory\n");
+        return 1;
+    }
+
+    // load data
+    ret = load_file(&current_directory, (uint32_t)addr);
+
+    if (ret) {
+        return 1;
+    }
+
+    int limit = FS_BLOCK_SIZE / sizeof(directory_entry_t);
+
+    for (int i = 0; i < limit; i++) {
+        directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+
+        if (dir_entry->id != 0) {
+            printf("%s\n", dir_entry->name);
+        }
+    }
+
+    kfree(addr);
+
     return 0;
 }
 
@@ -97,5 +128,35 @@ void ls_root_dir(void) {
 
         kfree(addr);
     }
+}
+
+// this function sets the current directory to the root dir
+uint8_t fs_init(void) {
+    // load first inode block from memory and save rood directory node
+    uint32_t starting_sector = superblock->first_inode_block * (FS_BLOCK_SIZE / FS_SECTOR_SIZE) + 1;
+    uint32_t number_of_sectors = FS_BLOCK_SIZE / FS_SECTOR_SIZE;
+    int ret;
+
+    void *addr = kmalloc(FS_BLOCK_SIZE);
+
+    if (addr != NULL) {
+        ret = read_sectors(starting_sector, number_of_sectors, (uint32_t)addr);
+
+        if (ret) {
+            printf("error loading block from disk\n");
+            return 1;
+        }
+
+        // go to inode with id 1 (root dir) (second inode in the block)
+        inode_block_t *root_dir_inode = (inode_block_t*) ((void*)addr + sizeof(inode_block_t));
+
+        current_directory = *root_dir_inode;
+
+        kfree(addr);
+
+        return 0;
+    }
+
+    return 1;
 }
 

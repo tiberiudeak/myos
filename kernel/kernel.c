@@ -10,6 +10,7 @@
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
 #include <stdio.h>
+#include <fs.h>
 
 extern char kernel_end[];
 
@@ -50,7 +51,15 @@ void kmain() {
 
 	if (ret) {
 		printf("Error initializing the virtual memory manager!\n");
+        halt_processor();
 	}
+
+    ret = fs_init();
+
+    if (ret) {
+        printf("Error initializing the file system\n");
+        halt_processor();
+    }
 
 	// TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// is the same as 0xC0000000

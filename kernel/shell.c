@@ -29,7 +29,7 @@ void shell_exec_command(char *command) {
 		print_superblock_info();
 	}
 	else if (strcmp(command, "ls") == 0) {
-		ls_root_dir();
+		fs_print_dir();
 	}
 	else {
 		printf("%s: unknown command\n", command);
