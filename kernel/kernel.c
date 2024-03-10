@@ -58,8 +58,17 @@ void kmain() {
 	printf("Welcome to MyOS!\n");
 	shell_init();
 
-    int *p = (int*)kmalloc(1);
-    int* ap = kmalloc(2);
-    kfree(p);
-    int *t = kmalloc(1);
+    // test kmalloc and kfree
+    //int *p = (int*)kmalloc(1);
+    //printf("got the virtual address: %x\n", p);
+    //int* ap = kmalloc(2);
+    //printf("got the virtual address: %x\n", ap);
+    //kfree(p);
+    //int *t = kmalloc(1);
+    //printf("got the virtual address: %x\n", t);
+    //kfree(ap);
+    //ap = kmalloc(999);
+    //printf("got the virtual address: %x\n", ap);
+    //kfree(ap);
+    //kfree(t);
 }

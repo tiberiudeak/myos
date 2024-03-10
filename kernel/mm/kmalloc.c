@@ -4,6 +4,7 @@
 #include <mm/vmm.h>
 #include <global_addresses.h>
 
+#include <string.h>
 #include <stdio.h>
 
 extern char kernel_end[];           // symbol from the kernel linker script
@@ -45,8 +46,8 @@ uint8_t kmalloc_init(size_t size) {
             return 1;
         }
 
-        printf("physical address: %x ", starting_phys_addr);
-        printf("will be mapped to virtual address: %x\n", virt);
+        // printf("physical address: %x ", starting_phys_addr);
+        // printf("will be mapped to virtual address: %x\n", virt);
 
         map_page((void*)(starting_phys_addr), (void*)virt);
 
@@ -66,11 +67,10 @@ uint8_t kmalloc_init(size_t size) {
     metadata_blk_header->next = NULL;
     metadata_blk_header->prev = NULL;
 
-    printf("initial metadata block:\n");
-    printf("\tsize: %d\n", metadata_blk_header->size);
-    printf("\tstatus: %d\n", metadata_blk_header->status);
-    printf("\tstarting virtual address: %x\n", (void*)metadata_blk_header + METADATA_BLK_SIZE);
-    printf("sizeof metadata struct block: %d\n", METADATA_BLK_SIZE);
+    // printf("initial metadata block:\n");
+    // printf("\tsize: %d\n", metadata_blk_header->size);
+    // printf("\tstatus: %d\n", metadata_blk_header->status);
+    // printf("\tstarting virtual address: %x\n", (void*)metadata_blk_header + METADATA_BLK_SIZE);
 
     return 0;
 }
@@ -187,8 +187,8 @@ void *kmalloc_expand_memory(uint32_t size) {
             return NULL;
         }
 
-        printf("physical address: %x ", starting_phys_addr);
-        printf("will be mapped to virtual address: %x\n", virt);
+        // printf("physical address: %x ", starting_phys_addr);
+        // printf("will be mapped to virtual address: %x\n", virt);
 
         map_page((void*)(starting_phys_addr), (void*)virt);
 
@@ -203,7 +203,6 @@ void *kmalloc_expand_memory(uint32_t size) {
     // if last block is free
     if (current->status == STATUS_FREE) {
         current->size += (req_pages * PAGE_SIZE);
-        printf("current node free space: %d\n", current->size);
 
         // split block if possible
         if (current->size - ALIGN(size, ALIGNMENT) >= METADATA_BLK_SIZE + ALIGN(1, ALIGNMENT)) {
@@ -245,7 +244,6 @@ void *kmalloc(size_t size) {
     if (size == 0) return NULL;
 
     int ret;
-    printf("kmalloc called with size: %d\n", size);
 
     // initialize metadata if necessary
     if (metadata_blk_header == NULL) {
@@ -263,12 +261,10 @@ void *kmalloc(size_t size) {
 
             split_block->status = STATUS_ALLOC;
 
-            kmalloc_print_list();
             return (void*) split_block + METADATA_BLK_SIZE;
         }
 
         best_fit->status = STATUS_ALLOC;
-        kmalloc_print_list();
         return (void*)best_fit + METADATA_BLK_SIZE;
     }
 
@@ -279,7 +275,6 @@ void *kmalloc(size_t size) {
 
     block->status = STATUS_ALLOC;
 
-    kmalloc_print_list();
     return (void*)block + METADATA_BLK_SIZE;
 }
 
@@ -301,30 +296,29 @@ void kfree(void *ptr) {
         if ((void*)current + METADATA_BLK_SIZE == ptr) {
             current->status = STATUS_FREE;
 
+            // fill memory with zeros
+            memset((void*)current + METADATA_BLK_SIZE, 0, current->size);
+
             // coalesce if possible
             if (current->prev != NULL && current->prev->status == STATUS_FREE &&
                 current->next != NULL && current->next->status == STATUS_FREE) {
                 current->prev->size += current->size + current->next->size + 2 * METADATA_BLK_SIZE;
                 current->prev->next = current->next->next;
-                kmalloc_print_list();
                 return;
             }
 
-            if (current->prev != NULL && current->status == STATUS_FREE) {
+            if (current->prev != NULL && current->prev->status == STATUS_FREE) {
                 current->prev->size += current->size + METADATA_BLK_SIZE;
                 current->prev->next = current->next;
-                kmalloc_print_list();
                 return;
             }
 
             if (current->next != NULL && current->next->status == STATUS_FREE) {
                 current->size += current->next->size + METADATA_BLK_SIZE;
                 current->next = current->next->next;
-                kmalloc_print_list();
                 return;
             }
             
-            kmalloc_print_list();
             return;
         }
 
