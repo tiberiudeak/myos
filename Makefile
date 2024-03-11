@@ -62,7 +62,7 @@ TARGET:=myos.bin
 all: $(TARGET)
 
 $(TARGET): $(BINARIES)
-	gcc create_disk_image.c -o create_disk_image
+	gcc create_disk_image.c -o create_disk_image -lm
 	./create_disk_image $(TARGET)
 
 $(BOOT_BIN):

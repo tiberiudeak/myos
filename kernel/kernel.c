@@ -54,7 +54,7 @@ void kmain() {
         halt_processor();
 	}
 
-    ret = fs_init();
+    ret = fs_init();    // initialize the file system
 
     if (ret) {
         printf("Error initializing the file system\n");

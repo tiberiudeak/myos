@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
+#include <math.h>
 #include "kernel/include/fs.h"
 
 typedef struct {
@@ -330,6 +332,10 @@ int write_data_bitmap(FILE *image_fp, superblock_t *superblock) {
 int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_pointer_type files[]) {
 	uint32_t written_bytes = 0;
 	inode_block_t inode = {0};
+    time_t t;
+    struct tm ts;
+    time(&t);
+    ts = *localtime(&t);
 
 	// inode 0
 	int ret = fwrite(&inode, sizeof(inode_block_t), 1, image_fp);
@@ -352,6 +358,10 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
 		.length = bytes_to_blocks(inode.size_bytes)
 	};
 
+    inode.datetime.day = ts.tm_mday;
+    inode.datetime.month = ts.tm_mon + 1;
+    inode.datetime.year = ts.tm_year + 1900;
+
 	ret = fwrite(&inode, sizeof(inode_block_t), 1, image_fp);
 
 	if (ret == 0) {
@@ -372,6 +382,10 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
 		inode.file_type = FILETYPE_FILE;
 		inode.size_bytes = files[i].size;
 		inode.size_sectors = bytes_to_sectors(files[i].size);
+
+        inode.datetime.day = ts.tm_mday;
+        inode.datetime.month = ts.tm_mon;
+        inode.datetime.year = ts.tm_year + 1900;
 
 		inode.extent[0] = (extent_block_t) {
 			.first_block = current_file_first_block,

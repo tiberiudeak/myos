@@ -6,6 +6,8 @@
 #define FS_BLOCK_SIZE		4096
 #define FS_SECTOR_SIZE		512
 
+#define MAX_PATH_LENGTH     1024
+
 typedef enum {
 	FILETYPE_FILE			= 0x0,
 	FILETYPE_DIR			= 0x1
@@ -120,5 +122,6 @@ void print_superblock_info(void);
 void ls_root_dir(void);
 uint8_t fs_init(void);
 uint8_t fs_print_dir(void);
+char *get_current_path(void);
 
 #endif /* !FS_H */

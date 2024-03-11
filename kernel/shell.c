@@ -73,5 +73,5 @@ void shell_scancode(uint8_t scancode) {
 
 /* for now, the initialization only prints the prompt */
 void shell_init() {
-	printf("> ");
+	printf("%s > ", get_current_path());
 }
