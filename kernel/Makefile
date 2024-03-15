@@ -55,5 +55,6 @@ install-headers:
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-kernel: $(BINARIES)
+	cp $(BINARIES) ../bin
 
 -include $(KERNEL_DEPS)

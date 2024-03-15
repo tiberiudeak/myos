@@ -13,6 +13,8 @@ static int index;
 
 void shell_exec_command(char *command) {
 
+    // TODO: remove spaces at the beginning
+
 	if (strcmp(command, "memmap") == 0) {
 		print_mem_map();
 	}
