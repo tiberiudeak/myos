@@ -6,6 +6,44 @@ vbe_get_info:
 
     push %di                    # save DI register
 
+
+
+
+    # get font from VGA BIOS and store it at address 0x5000 using the 
+    # BIOS interrupt 0x10 0x1130
+    push %bp                    # save BP; the BIOS int 0x10 0x1130 6 will return the address
+                                # of ROM 8x16 at ES:BP
+    xor %ax, %ax                # AX = 0
+    mov %ax, %es                # make ES 0
+    mov $0x5000, %di            # store 0x5000 into DI
+
+    push %ds                    # store DS and ES
+    push %es
+
+    mov $0x1130, %ax            # move 0x1130 into Ax (get current character generator info)
+    mov $6, %bh                 # request code 6: get addr of ROM 8x16 font
+    int $0x10                   # perform BIOS interrupt
+
+    push %es                    # store ES to stack
+    pop %ds                     # DS will now be ES
+    pop %es                     # pop ES
+
+    mov %bp, %si                # move stack pointer to SI
+    mov $256, %ax               # store number of ascii characters times 16 bits each
+                                # divided by 4 (move 4 bytes at a time)
+    mov $16, %cx
+    mul %cx
+    mov $4, %cx
+    div %cx
+    mov %ax, %cx
+
+    rep movsd                   # move from ds:esi to es:edi
+    pop %ds                     # restore DS
+    pop %bp                     # restore BP
+
+
+
+    # populate the VbeInfoBlock
     xor %ax, %ax                # set AT to 0
     mov %ax, %es                # set ES to AX
     mov $0x4F, %ah              # AX will be 0x4F00 (get controller info)
@@ -47,30 +85,30 @@ vbe_get_info:
     jne .vbe_error
 
 
-    # print mode information
-    mov (VbeModeInfoBlock+18), %bx
-    push %bx
-    call print_hex
-    add $0x2, %sp
-    mov $0xE20, %ax
-    int $0x10
+    # print mode information (debug)
+    # mov (VbeModeInfoBlock+18), %bx
+    # push %bx
+    # call print_hex
+    # add $0x2, %sp
+    # mov $0xE20, %ax
+    # int $0x10
 
-    mov (VbeModeInfoBlock+20), %bx
-    push %bx
-    call print_hex
-    add $0x2, %sp
-    mov $0xE20, %ax
-    int $0x10
+    # mov (VbeModeInfoBlock+20), %bx
+    # push %bx
+    # call print_hex
+    # add $0x2, %sp
+    # mov $0xE20, %ax
+    # int $0x10
 
-    mov (VbeModeInfoBlock+25), %bx
-    and $0x00FF, %bx
-    push %bx
-    call print_hex
-    add $0x2, %sp
-    mov $0xE0A, %ax
-    int $0x10
-    mov $0x0D, %al
-    int $0x10
+    # mov (VbeModeInfoBlock+25), %bx
+    # and $0x00FF, %bx
+    # push %bx
+    # call print_hex
+    # add $0x2, %sp
+    # mov $0xE0A, %ax
+    # int $0x10
+    # mov $0x0D, %al
+    # int $0x10
 
     # check if current mode is the one we wanted
     mov (VbeModeInfoBlock+18), %ax  # move the width in AX
@@ -100,9 +138,11 @@ vbe_get_info:
     cmp $0x4F, %ax                  # if AX != 0x004F, error
     jne .vbe_error
 
-
-
-    bla: jmp bla
+    # write VbeModeInfoBlock to address 0x4E00 (right before the font)
+    mov $VbeModeInfoBlock, %si      # store starting address of VbeModeInfoBlock in SI
+    mov $0x4E00, %di                # store info at addr 0x4E00
+    mov $128, %cx                   # 512 bytes are 128 double words
+    rep movsd                       # copy data
 
     pop %di                         # restore registers
     mov %bp, %sp
@@ -133,6 +173,7 @@ vbe_get_info:
     push $.vbe_end_msg
     call print_string
     add $0x2, %sp
+    jmp .vbe_error
 
 .vbe_error_msg:
     .asciz  "vbe error"
@@ -140,9 +181,10 @@ vbe_get_info:
     .asciz  "vbe info success"
 .vbe_end_msg:
     .asciz  "end of list"
+
 # My VBE information
-vbe_width:      .word   800
-vbe_height:     .word   600
+vbe_width:      .word   1920
+vbe_height:     .word   1080
 vbe_bpp:        .byte   32
 vbe_offset:     .word   0
 vbe_segment:    .word   0

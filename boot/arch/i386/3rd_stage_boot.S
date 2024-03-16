@@ -74,6 +74,7 @@ _start3:
 	# empty stack
 	add $0x2, %sp
 
+
 	# make switch to protected mode
 	cli						# disable interrupts
 	lgdt gdt_descriptor		# load the gdt descriptor
@@ -87,7 +88,7 @@ _start3:
 
 .include "./include/gdt.S"
 .include "./include/print_string.S"
-# .include "./include/print_hex.S"
+.include "./include/print_hex.S"
 .include "./include/disk_load.S"
 
 m:

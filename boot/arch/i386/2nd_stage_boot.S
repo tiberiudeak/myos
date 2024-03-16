@@ -81,9 +81,8 @@ _start2:
 
     # VESA BIOS Extension
     call vbe_get_info       # call vbe get info function
-    a: jmp a
 
-	jmp 0x8400				# jump to third stage bootloader
+	jmp 0x8600				# jump to third stage bootloader
 
 .include "./include/print_string.S"
 .include "./include/print_hex.S"
@@ -95,5 +94,5 @@ _start2:
 msg2:
 	.asciz "Entered 2nd stage boot"
 
-.space 1536 - (. - _start2)		# fill the rest of the bytes with 0
+.space 2048 - (. - _start2)		# fill the rest of the bytes with 0
 

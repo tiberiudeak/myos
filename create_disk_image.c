@@ -75,7 +75,7 @@ int write_boot_block(file_pointer_type files[], FILE *image_fp) {
 	written_bytes += FS_SECTOR_SIZE;
 
 	// read second stage bootloader sectors (now including the VESA BIOS Ext.)
-	ret = fread((void*)boot_block.sectors[1], FS_SECTOR_SIZE, 3, files[0].fp);
+	ret = fread((void*)boot_block.sectors[1], FS_SECTOR_SIZE, 4, files[0].fp);
 
 	if (ret == 0) {
 		printf("Error reading bootloader\n");
@@ -83,14 +83,14 @@ int write_boot_block(file_pointer_type files[], FILE *image_fp) {
 	}
 
 	// write second sector to image
-	ret = fwrite(boot_block.sectors[1], FS_SECTOR_SIZE, 3, image_fp);
+	ret = fwrite(boot_block.sectors[1], FS_SECTOR_SIZE, 4, image_fp);
 
 	if (ret == 0) {
 		printf("Error writing to file\n");
 		return 1;
 	}
 
-	written_bytes += 3 * FS_SECTOR_SIZE;
+	written_bytes += 4 * FS_SECTOR_SIZE;
 
 	// read third stage bootloader sector
 	ret = fread((void*)boot_block.sectors[2], FS_SECTOR_SIZE, 1, files[0].fp);
