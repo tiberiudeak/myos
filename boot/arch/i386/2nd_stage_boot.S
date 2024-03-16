@@ -80,6 +80,8 @@ _start2:
 	call move_cursor_nl
 
     # VESA BIOS Extension
+    call vbe_get_info       # call vbe get info function
+    a: jmp a
 
 	jmp 0x8400				# jump to third stage bootloader
 
@@ -88,55 +90,10 @@ _start2:
 .include "./include/cursor_next_line.S"
 .include "./include/disk_load.S"
 .include "./include/detect_memory.S"
+.include "./include/vbe.S"
 
 msg2:
 	.asciz "Entered 2nd stage boot"
-
-VbeInfoBlock:
-    .byte   'V','E','S','A'     # signature: "VESA"
-    .word   0x0300              # VbeVersion: 0x0300
-    .long   0x0                 # OemStringPtr
-    .long   0x0                 # Capabilities
-    .long   0x0                 # VideoModePtr
-    .word   0x0                 # Total Memory
-    .space  222                 # Reserved
-    .space  256                 # OemData
-
-VbeModeInfoBlock:
-    .word   0x0                 # attributes
-    .byte   0x0                 # window_a
-    .byte   0x0                 # window_b
-    .word   0x0                 # granularity
-    .word   0x0                 # window size
-    .word   0x0                 # segment_a
-    .word   0x0                 # segment_b
-    .long   0x0                 #
-    .word   0x0                 # bytes per scanline
-    .word   0x0                 # width in pixels
-    .word   0x0                 # height in pixels
-    .byte   0x0                 #
-    .byte   0x0                 #
-    .byte   0x0                 # planes
-    .byte   0x0                 # bits per pixel in this mode
-    .byte   0x0                 # banks
-    .byte   0x0                 # memory model
-    .byte   0x0                 # bank size
-    .byte   0x0                 # image pages
-    .byte   0x0                 # reserved
-    .byte   0x0                 # red mask
-    .byte   0x0                 # red position
-    .byte   0x0                 # green mask
-    .byte   0x0                 # green position
-    .byte   0x0                 # blue mask
-    .byte   0x0                 # blue position
-    .byte   0x0                 # reserved mask
-    .byte   0x0                 # reserved position
-    .byte   0x0                 # direct color attributes
-    .long   0x0                 # framebuffer
-    .long   0x0                 # off screen mem off
-    .word   0x0                 # off screen mem size
-    .space  206                 # reserved
-
 
 .space 1536 - (. - _start2)		# fill the rest of the bytes with 0
 
