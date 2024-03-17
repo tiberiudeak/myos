@@ -1,9 +1,11 @@
 #include <mm/vmm.h>
 #include <mm/pmm.h>
+#include <kernel/tty.h>
 
 #include <string.h>
 #include <stddef.h>
 #include "global_addresses.h"
+#include "include/kernel/tty.h"
 
 page_directory *current_page_directory = 0;
 
@@ -292,6 +294,20 @@ uint8_t initialize_virtual_memory(void) {
 		// put the PTE in the page table at the corresponding index
 		pt3gb->entries[PAGE_TABLE_INDEX(virt)] = pte;
 	}
+
+    // identity map VESA BIOS framebuffer
+    //vbe_mode_info_block mode_info = get_mode_info();
+    //uint32_t framebuffer_size = mode_info.width * mode_info.pitch;
+    //uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+    //if (framebuffer_size_pages % PAGE_SIZE > 0) {
+    //    framebuffer_size_pages++;
+    //}
+
+    //framebuffer_size_pages *= 2;
+
+    //for (uint32_t i = 0, fb_start = mode_info.framebuffer; i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
+    //    map_page((void*)fb_start, (void*)fb_start);
+    //}
 
 	// put the pt3gb page table in the page directory at the corresponding index
 	// and set the present and writable bits

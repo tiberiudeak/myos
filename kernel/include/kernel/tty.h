@@ -13,6 +13,7 @@ void terminal_setcolor(uint8_t color);
 void terminal_backspace_cursor();
 #endif /* TTY_VGA */
 
+
 typedef struct {
     uint16_t attributes;
     uint8_t window_a;
@@ -51,11 +52,32 @@ typedef struct {
 	uint8_t reserved1[206];
 } __attribute__ ((packed)) vbe_mode_info_block;
 
+// VBE version of the VGA colors (the fformat is AARRGGBB: alpha, blue, green, red)
+typedef enum vbe_colors {
+    VBE_COLOR_BLACK             = 0xFF000000,
+    VBE_COLOR_BLUE              = 0xFF0000FF,
+    VBE_COLOR_GREEN             = 0xFF00FF00,
+    VBE_COLOR_CYAN              = 0xFF00FFFF,
+    VBE_COLOR_RED               = 0xFFFF0000,
+    VBE_COLOR_MAGENTA           = 0xFFFF00FF,
+    VBE_COLOR_BROWN             = 0xFFA52A2A,
+    VBE_COLOR_LIGHT_GREY        = 0xFFC0C0C0,
+    VBE_COLOR_DARK_GREY         = 0xFF808080,
+    VBE_COLOR_LIGHT_BLUE        = 0xFFADD8E6,
+    VBE_COLOR_LIGHT_GREEN       = 0xFF90EE90,
+    VBE_COLOR_LIGHT_CYAN        = 0xFFE0FFFF,
+    VBE_COLOR_LIGHT_RED         = 0xFFFFC0CB,
+    VBE_COLOR_LIGHT_MAGENTA     = 0xFFFFB6C1,
+    VBE_COLOR_LIGHT_BROWN       = 0xFFCD853F,
+    VBE_COLOR_WHITE             = 0xFFFFFFFF
+} vbe_colors;
+
 void terminal_initialize(void);
 void terminal_putchar(char c);
 void terminal_write(const char* data, size_t size);
 void terminal_writestring(const char *data);
 void terminal_setcolor(uint8_t color);
 void terminal_backspace_cursor();
+uint8_t map_framebuffer(void);
 
 #endif // _KERNEL_TTYP_H

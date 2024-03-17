@@ -5,7 +5,7 @@ ARCHDIR:=arch/$(HOSTARCH)
 CFLAGS?=-O2 -g
 CPPFLAGS?=
 LDFLAGS?=-Tboot.ld --oformat=binary
-ASFLAGS?=-I$(ARCHDIR)
+ASFLAGS?=-I$(ARCHDIR) --defsym TTY_VBE=1
 LIBS?=
 
 # add extra flags if needed

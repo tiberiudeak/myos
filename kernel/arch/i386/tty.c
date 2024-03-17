@@ -3,11 +3,13 @@
 #include <stdint.h>
 #include <string.h>
 #include <kernel/tty.h>
-#include <kernel/io.h>
 #include "include/global_addresses.h"
-#include "vga.h"
+#include "include/kernel/tty.h"
 
 #ifdef TTY_VGA
+#include <kernel/io.h>
+#include "vga.h"
+
 #define REG_SCREEN_CTRL 0x3D4
 #define REG_SCREEN_DATA 0x3D5
 
@@ -207,9 +209,10 @@ void terminal_backspace_cursor() {
 
 
 
-// ifdef TTY_VBE
+#ifdef TTY_VBE
 
 #include <global_addresses.h>
+#include <mm/vmm.h>
 
 static uint8_t *font = (uint8_t*)VGA_BIOS_FONT;
 static const vbe_mode_info_block *vbe_mode = (vbe_mode_info_block*)VBE_MODE_INFO;
@@ -291,9 +294,6 @@ void terminal_scroll(void) {
         }
     }}
 
-void terminal_backspace_cursor() {}
-void terminal_writestring(const char* data) {}
-void terminal_write(const char* data, size_t size) {}
 void terminal_putchar(char c) {
 
 	unsigned char uc = c;
@@ -305,12 +305,12 @@ void terminal_putchar(char c) {
 			terminal_column += (4 - terminal_column % 4);
 		}
 
-		if (terminal_column >= VBE_WIDTH) {
-			terminal_column = terminal_column - VBE_WIDTH;
+		if (terminal_column >= (VBE_WIDTH / 8)) {
+			terminal_column = terminal_column - (VBE_WIDTH / 8);
 
-			if (++terminal_row == VBE_HEIGHT) {
+			if (++terminal_row == (VBE_HEIGHT / 16)) {
 				terminal_scroll();
-				terminal_row = VBE_HEIGHT - 1;
+				terminal_row = (VBE_HEIGHT / 16) - 1;
 			}
 		}
 
@@ -346,13 +346,92 @@ void terminal_putchar(char c) {
 	// set_cursor(terminal_column, terminal_row);
 }
 
-void terminal_setcolor(uint8_t color) {
-    terminal_color = color;
+void terminal_write(const char* data, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        terminal_putchar(data[i]);
+    }
 }
 
+void terminal_writestring(const char* data) {
+    terminal_write(data, strlen(data));
+}
 
+void terminal_setcolor(uint8_t color) {
+    switch (color) {
+        case 0:
+            terminal_color = VBE_COLOR_BLACK;
+            break;
+        case 1:
+            terminal_color = VBE_COLOR_BLUE;
+            break;
+        case 2:
+            terminal_color = VBE_COLOR_GREEN;
+            break;
+        case 3:
+            terminal_color = VBE_COLOR_CYAN;
+            break;
+        case 4:
+            terminal_color = VBE_COLOR_RED;
+            break;
+        case 5:
+            terminal_color = VBE_COLOR_MAGENTA;
+            break;
+        case 6:
+            terminal_color = VBE_COLOR_BROWN;
+            break;
+        case 7:
+            terminal_color = VBE_COLOR_LIGHT_GREY;
+            break;
+        case 8:
+            terminal_color = VBE_COLOR_DARK_GREY;
+            break;
+        case 9:
+            terminal_color = VBE_COLOR_LIGHT_BLUE;
+            break;
+        case 10:
+            terminal_color = VBE_COLOR_LIGHT_GREEN;
+            break;
+        case 11:
+            terminal_color = VBE_COLOR_LIGHT_CYAN;
+            break;
+        case 12:
+            terminal_color = VBE_COLOR_LIGHT_RED;
+            break;
+        case 13:
+            terminal_color = VBE_COLOR_LIGHT_MAGENTA;
+            break;
+        case 14:
+            terminal_color = VBE_COLOR_LIGHT_BROWN;
+            break;
+        case 15:
+            terminal_color = VBE_COLOR_WHITE;
+            break;
+        default:
+            terminal_color = VBE_COLOR_WHITE;
+    }
+}
 
+uint8_t map_framebuffer(void) {
+    uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
+    uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+    if (framebuffer_size_pages % PAGE_SIZE > 0) {
+        framebuffer_size_pages++;
+    }
 
+    framebuffer_size_pages *= 2;
+    int ret;
 
+    for (uint32_t i = 0, fb_start = vbe_mode->framebuffer; i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
+        ret = map_page((void*)fb_start, (void*)fb_start);
+        if (ret) {
+            return ret;
+        }
+    }
 
+    return 0;
+}
+
+void terminal_backspace_cursor() {}
+
+#endif /* TTY_VBE */
 
