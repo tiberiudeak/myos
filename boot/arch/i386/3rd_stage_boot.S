@@ -106,6 +106,9 @@ protected_mode_init:
 	mov $0x90000, %ebp			# set the base pointer to 0x90000
 	mov %ebp, %esp				# set the stack pointer to base pointer
 
+    #mov (0x4E28), %ebx
+    #mov $0xFFFFFFFF, (%ebx)
+
 	call 0xF000					# jump to kernel code
 
 g:

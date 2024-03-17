@@ -3,5 +3,8 @@
 
 #define KERNEL_ADDRESS		0xF000
 #define SUPERBLOCK_ADDRESS	0x8C00
+#define MEMORY_MAP_E820     0x1000
+#define VGA_BIOS_FONT       0x5000
+#define VBE_MODE_INFO       0x4E00
 
 #endif

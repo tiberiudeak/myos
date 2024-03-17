@@ -144,6 +144,11 @@ vbe_get_info:
     mov $128, %cx                   # 512 bytes are 128 double words
     rep movsd                       # copy data
 
+    #mov (0x4E2A), %bx
+    #push %bx
+    #call print_hex
+    #add $0x2, %sp
+
     pop %di                         # restore registers
     mov %bp, %sp
     pop %bp
