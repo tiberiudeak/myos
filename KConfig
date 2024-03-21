@@ -1,0 +1,19 @@
+mainmenu "MyOS x86_32 Kernel Configuration"
+
+menu "General Setup"
+
+config TTY_VGA
+    bool "VGA text mode"
+    help
+        Use text mode with default 80x25 resolution
+    default n
+
+
+config TTY_VBE
+    bool "VESA BIOS Extension graphics mode"
+    help
+        Use VESA BIOS Extension for graphics mode (bigger resolutions)
+    default y
+
+endmenu
+

@@ -6,7 +6,7 @@
 #include "include/global_addresses.h"
 #include "include/kernel/tty.h"
 
-#ifdef TTY_VGA
+#ifdef CONFIG_TTY_VGA
 #include <kernel/io.h>
 #include "vga.h"
 
@@ -201,16 +201,16 @@ void terminal_writestring(const char* data) {
  *
  * This function moves the cursor back one space.
  */
-void terminal_backspace_cursor() {
+void terminal_backspace_cursor(char c) {
     --terminal_column;
-    printf(" ");
+    terminal_writestring(" ");
 	set_cursor(--terminal_column, terminal_row);
 }
-#endif /* TTY_VGA */
+#endif /* CONFIG_TTY_VGA */
 
 
 
-
+#ifdef CONFIG_TTY_VBE
 
 #include <global_addresses.h>
 #include <mm/vmm.h>
@@ -432,4 +432,5 @@ void terminal_backspace_cursor(char c) {
     terminal_putentryat(c, VBE_COLOR_BLACK, terminal_column, terminal_row);
 }
 
+#endif /* CONFIG_TTY_VBE */
 

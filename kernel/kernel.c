@@ -53,10 +53,12 @@ void kmain() {
         halt_processor();
 	}
 
+#ifdef CONFIG_TTY_VBE
     ret = map_framebuffer();    // map the framebuffer
     if (ret) {
         halt_processor();
     }
+#endif /* CONFIG_TTY_VBE */
 
     ret = fs_init();            // initialize the file system
 

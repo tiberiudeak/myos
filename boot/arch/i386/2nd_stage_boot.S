@@ -80,7 +80,7 @@ _start2:
 	call move_cursor_nl
 
     # VESA BIOS Extension
-.IFDEF TTY_VBE
+.IFDEF CONFIG_TTY_VBE
     call vbe_get_info       # call vbe get info function
 .ENDIF
 

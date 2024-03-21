@@ -12,13 +12,15 @@ ifeq ($(findstring i[0-9]86,$(HOST)),)
 	HOSTARCH+=i386
 endif
 
+HEADER_FILE := config.h
+
 export MAKE:=make
 export AR:=$(HOST)-ar
 export AS:=$(HOST)-as
 export CC:=$(HOST)-gcc
 export LD:=$(HOST)-ld
 
-export CFLAGS:=-O0 -g -fno-stack-protector
+export CFLAGS:=-O0 -g -fno-stack-protector -include ../$(HEADER_FILE)
 export CPPFLAGS:=
 
 export SYSROOT:=$(shell pwd)/sysroot
@@ -65,12 +67,12 @@ $(TARGET): $(BINARIES)
 	gcc create_disk_image.c -o create_disk_image -lm
 	./create_disk_image $(TARGET)
 
-$(BOOT_BIN):
+$(BOOT_BIN): $(HEADER_FILE)
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(BOOT_SRC_DIR) install
 
-$(KERNEL_BIN): $(LIBC_AR)
+$(KERNEL_BIN): $(LIBC_AR) $(HEADER_FILE)
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(KERNEL_SRC_DIR) install
@@ -80,6 +82,9 @@ $(LIBC_AR):
 
 	@$(MAKE) -C $(LIBC_SRC_DIR) install
 
+$(HEADER_FILE):
+	./generate_config_header.sh
+
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
 
@@ -88,4 +93,4 @@ clean:
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(TARGET) create_disk_image
+	rm -rf $(TARGET) create_disk_image $(HEADER_FILE)
