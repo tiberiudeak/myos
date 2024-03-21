@@ -10,7 +10,7 @@ void terminal_putchar(char c);
 void terminal_write(const char* data, size_t size);
 void terminal_writestring(const char *data);
 void terminal_setcolor(uint8_t color);
-void terminal_backspace_cursor();
+void terminal_backspace_cursor(char);
 #endif /* TTY_VGA */
 
 
@@ -77,7 +77,7 @@ void terminal_putchar(char c);
 void terminal_write(const char* data, size_t size);
 void terminal_writestring(const char *data);
 void terminal_setcolor(uint8_t color);
-void terminal_backspace_cursor();
+void terminal_backspace_cursor(char);
 uint8_t map_framebuffer(void);
 
 #endif // _KERNEL_TTYP_H

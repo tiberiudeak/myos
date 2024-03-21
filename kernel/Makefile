@@ -10,7 +10,7 @@ LIBS?=
 
 # add extra flags if needed
 CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -DTTY_VBE -I.
+CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I.
 LDFLAGS:=$(LDFLAGS) -L../libc
 LIBS:=$(LIBS) -nostdlib -lk
 

@@ -42,7 +42,6 @@ vbe_get_info:
     pop %bp                     # restore BP
 
 
-
     # populate the VbeInfoBlock
     xor %ax, %ax                # set AT to 0
     mov %ax, %es                # set ES to AX

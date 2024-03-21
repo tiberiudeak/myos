@@ -51,11 +51,9 @@ void shell_scancode(uint8_t scancode) {
 	// check if scancode is backspace -> delete last character
 	if (scancode == BACKSPACE) {
 		if (index > 0) {
-			key_buffer[--index] = '\0';
-
-			terminal_backspace_cursor();
-			printf(" ");
-			terminal_backspace_cursor();
+            index--;
+			terminal_backspace_cursor(key_buffer[index]);
+			key_buffer[index] = '\0';
 		}
 		return;
 	}

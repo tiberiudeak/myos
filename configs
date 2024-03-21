@@ -1,6 +1,8 @@
 # General
 CONFIG_ARCH_X86_64 (enables x86_64 architecture) (only x86_64 is supported at the moment)
 CONFIG_DEBUG (prints a lot of debug information to the screen)
+CONFIG_TTY_VGA (choose VGA driver, 80x20 resolution)
+CONFIG_TTY_VBE (use the VESA BIOS Extension, 1920x1080 resolution)
 
 # RTC (Real Time Clock)
 CONFIG_RTC (enables the RTC with datetime support)

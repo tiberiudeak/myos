@@ -202,6 +202,8 @@ void terminal_writestring(const char* data) {
  * This function moves the cursor back one space.
  */
 void terminal_backspace_cursor() {
+    --terminal_column;
+    printf(" ");
 	set_cursor(--terminal_column, terminal_row);
 }
 #endif /* TTY_VGA */
@@ -209,7 +211,6 @@ void terminal_backspace_cursor() {
 
 
 
-#ifdef TTY_VBE
 
 #include <global_addresses.h>
 #include <mm/vmm.h>
@@ -274,25 +275,19 @@ void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 void terminal_scroll(void) {
     int row_size = VBE_WIDTH * sizeof(uint32_t);
 
-    // move each row up by 16 pixels
-    for (size_t y = 0; y < VBE_HEIGHT - 16; y++) {
-        // calculate the destination address for the current row
+    for (size_t y = 0; y < VBE_HEIGHT - 16; ++y) {
+        uint32_t* src = framebuffer + (y + 16) * VBE_WIDTH;
         uint32_t* dest = framebuffer + y * VBE_WIDTH;
 
-        // calculate the source address for the row below
-        uint32_t* src = framebuffer + (y + 16) * VBE_WIDTH;
-
-        // copy the row below to the current row
-        memcpy(dest, src, row_size);
+        for (size_t x = 0; x < VBE_WIDTH; ++x) {
+            dest[x] = src[x];
+        }
     }
 
     // clear the bottom 16 rows to black
-    for (size_t y = VBE_HEIGHT - 16; y < VBE_HEIGHT; y++) {
-        uint32_t* row = framebuffer + y * VBE_WIDTH;
-        for (size_t x = 0; x < VBE_WIDTH; x++) {
-            row[x] = 0x00000000;
-        }
-    }}
+    uint32_t* bottom_row = framebuffer + (VBE_HEIGHT - 16) * VBE_WIDTH;
+    memset(bottom_row, 0, 16 * row_size);
+}
 
 void terminal_putchar(char c) {
 
@@ -414,6 +409,7 @@ void terminal_setcolor(uint8_t color) {
 uint8_t map_framebuffer(void) {
     uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
     uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+
     if (framebuffer_size_pages % PAGE_SIZE > 0) {
         framebuffer_size_pages++;
     }
@@ -431,7 +427,9 @@ uint8_t map_framebuffer(void) {
     return 0;
 }
 
-void terminal_backspace_cursor() {}
+void terminal_backspace_cursor(char c) {
+    terminal_column--;
+    terminal_putentryat(c, VBE_COLOR_BLACK, terminal_column, terminal_row);
+}
 
-#endif /* TTY_VBE */
 
