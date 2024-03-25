@@ -14,6 +14,14 @@
 
 extern char kernel_end[];
 
+// the system-wide table of open files
+open_files_table_t *open_files_table;
+inode_block_t *open_inodes_table;
+
+// current available index in the tables defined above
+uint8_t current_open_fd = 3;
+uint8_t current_open_inode_idx = 3;
+
 void halt_processor(void) {
 	__asm__ __volatile__ ("cli; hlt");
 }
@@ -67,8 +75,23 @@ void kmain() {
         halt_processor();
     }
 
+    ret = init_open_files_table(open_files_table);
+    
+    if (ret) {
+        printfc(4, "failed to init open files table!\n");
+        halt_processor();
+    }
+
+    ret = init_open_inodes_table(open_inodes_table);
+
+    if (ret) {
+        printfc(4, "failed to init open inodes table!\n");
+        halt_processor();
+    }
+
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
+    get_inode_from_path("./.././tesat.txt");
 
 	printf("Welcome to MyOS!\n");
 	shell_init();

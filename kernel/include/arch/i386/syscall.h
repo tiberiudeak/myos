@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <arch/i386/pit.h>
 
-#define MAX_SYSCALLS	3
+#define MAX_SYSCALLS	4
 
 /**
  * Test syscall
@@ -34,6 +34,21 @@ void syscall_sleep(void) {
 	wait_millis(millis);
 }
 
+/**
+ * @brief Open syscall
+ *
+ * the filepath will be in EBX
+ * the flags will be in ECX
+ */
+void syscall_open(void) {
+    int32_t fd = -1;
+    char *path = 0;
+    uint32_t flags = 0;
+
+    __asm__ __volatile__ ("mov %%ebx, %0\n"
+                          "mov %%ecx, %1" : "=b"(path), "=c"(flags));
+}
+
 //void syscall_kmalloc(void) {
 //    uint32_t size_bytes;
 //
@@ -55,7 +70,8 @@ void syscall_sleep(void) {
 void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
 	syscall_test1,
-	syscall_sleep
+	syscall_sleep,
+    syscall_open
 };
 
 /**
@@ -71,7 +87,7 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $3, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cmp $4, %eax\n"	// check if syscall exists
 											// number has to match MAX_SYSCALLS!
 	"jge syscall_invalid\n"					// if not, invalid syscall
 	"push %eax\n"

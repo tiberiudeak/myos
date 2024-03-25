@@ -7,6 +7,7 @@
 #define FS_SECTOR_SIZE		512
 
 #define MAX_PATH_LENGTH     1024
+#define MAX_OPEN_FILES      256
 
 typedef enum {
 	FILETYPE_FILE			= 0x0,
@@ -72,6 +73,15 @@ typedef struct {
 	uint8_t name[60];
 } __attribute__ ((packed)) directory_entry_t;
 
+// sizeof open files table: 16B
+typedef struct {
+    uint8_t *address;               // virtual address - where file is loaded
+    uint32_t offset;                // offset from base address
+    inode_block_t *inode;           // file's inode
+    uint32_t flags;
+} __attribute__ ((packed)) open_files_table_t;
+
+
 /**
  * @brief Convert bytes to blocks
  *
@@ -123,5 +133,9 @@ void ls_root_dir(void);
 uint8_t fs_init(void);
 uint8_t fs_print_dir(void);
 char *get_current_path(void);
+uint8_t init_open_files_table(open_files_table_t*);
+uint8_t init_open_inodes_table(inode_block_t*);
+inode_block_t get_inode_from_path(char*);
 
 #endif /* !FS_H */
+

@@ -251,6 +251,7 @@ uint8_t fs_init(void) {
         inode_block_t *root_dir_inode = (inode_block_t*) ((void*)addr + sizeof(inode_block_t));
 
         current_directory = *root_dir_inode;
+        parent_directory = current_directory;   // parent of root is root
         strcpy(current_path, "/");  // initial path is the root direcotry
 
         kfree(addr);
@@ -259,5 +260,194 @@ uint8_t fs_init(void) {
     }
 
     return 1;
+}
+
+
+// get inode of the requested file (last file in the given path)
+inode_block_t get_inode_from_path(char *path) {
+    
+    char *character = path;
+    inode_block_t current_directory_copy = current_directory;
+    inode_block_t parent_directory_copy = parent_directory;
+    int file_found = 0;
+
+    if (*character == '/') {
+        current_directory_copy = get_inode_from_id(1);   // root has always id 1
+        parent_directory_copy = current_directory_copy;
+    }
+
+    while (*character != '\0') {
+        if (*character == '/') {
+            character++;
+            continue;
+        }
+
+        if (*character == '.' && (*(character+1) == '/' || *(character+1) == '\0')) {
+            character++;
+            continue;
+        }
+
+        if (strncmp(character, "..", 2) == 0) {
+            // current directory -> parent directory
+            // parent directory -> get inode from the id of ".."
+            current_directory_copy = parent_directory_copy;
+
+            
+            uint32_t needed_bytes = bytes_to_blocks(current_directory_copy.size_bytes) * FS_BLOCK_SIZE;
+            int ret;
+
+            void *addr = kmalloc(needed_bytes);
+
+            if (addr == NULL) {
+                printf("out of memory\n");
+                return (inode_block_t){0};
+            }
+
+            // load data blocks containing direcory entries
+            ret = load_file(&current_directory_copy, (uint32_t)addr);
+
+            if (ret) {
+                kfree(addr);
+                return (inode_block_t){0};
+            }
+
+            int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
+
+
+            for (int i = 0; i < limit; i++) {
+                directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+
+                if (strcmp((char*)dir_entry->name, "..") == 0) {
+                    printf("parent inode has id: %d\n", dir_entry->id);
+                    parent_directory_copy = get_inode_from_id(dir_entry->id);
+                }
+            }
+
+            character += 2;
+            kfree(addr);
+            continue;
+        }
+        
+        // get directory/file name
+
+        char *name = character;
+        file_found = 0;
+
+        while (*character != '/' && *character != '\0') {
+            character++;
+        }
+
+        name[character - name] = '\0';
+
+        // look for the name in the current directory and get the inode
+
+        uint32_t needed_bytes = bytes_to_blocks(current_directory_copy.size_bytes) * FS_BLOCK_SIZE;
+        int ret;
+
+        void *addr = kmalloc(needed_bytes);
+
+        if (addr == NULL) {
+            printf("out of memory\n");
+            return (inode_block_t){0};
+        }
+
+        // load data blocks containing direcory entries
+        ret = load_file(&current_directory_copy, (uint32_t)addr);
+
+        if (ret) {
+            kfree(addr);
+            return (inode_block_t){0};
+        }
+
+        int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
+        inode_block_t tmp_inode;
+
+        // go through each entry in the directory and search for the file name
+        for (int i = 0; i < limit; i++) {
+            directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+
+            if (strcmp((char*)dir_entry->name, name) == 0) {
+                printf("file found!\n");
+                file_found = 1;
+                if (*character == '/') {
+                    // this means that the found file is a directory
+                    tmp_inode = get_inode_from_id(dir_entry->id);
+                    if (tmp_inode.file_type != FILETYPE_DIR) {
+                        kfree(addr);
+                        return (inode_block_t){0};
+                    }
+
+                    parent_directory_copy = current_directory_copy;
+                    current_directory_copy = tmp_inode;
+                }
+                else {
+                    // final file reached!
+                    tmp_inode = get_inode_from_id(dir_entry->id);
+                    if (tmp_inode.file_type == FILETYPE_DIR) {
+                        kfree(addr);
+                        return (inode_block_t){0};
+                    }
+
+                    printf("e bine\n");
+                    return tmp_inode;
+                }
+            }
+        }
+
+        if (file_found == 0) {
+            kfree(addr);
+            printf("wrong path or file doesn't exist\n");
+            return (inode_block_t){0};
+        }
+
+        kfree(addr);
+    }
+
+
+    
+    // !!! I can get the parent inode of the current inode by looking (this inodes
+    // are inodes representing directories) at the id of "..". I can then get the
+    // inode of the found index using the get_inode_from_id() function
+
+    return (inode_block_t){0};
+}
+
+
+
+
+
+
+
+
+
+
+uint8_t init_open_files_table(open_files_table_t *oft) {
+    oft = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
+
+    if (oft == NULL) {
+        return 1;
+    }
+
+    // initialize table with zeros
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        oft[i] = (open_files_table_t){0};
+    }
+
+    return 0;
+}
+
+uint8_t init_open_inodes_table(inode_block_t *oit) {
+    oit = (inode_block_t*) kmalloc(sizeof(inode_block_t) * MAX_OPEN_FILES);
+
+    if (oit == NULL) {
+        return 1;
+    }
+
+    // initialize table with zeros
+    for (int i = 0; i < MAX_OPEN_FILES; i++) {
+        oit[i] = (inode_block_t){0};
+    }
+
+    return 0;
 }
 
