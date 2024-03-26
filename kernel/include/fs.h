@@ -78,7 +78,8 @@ typedef struct {
     uint8_t *address;               // virtual address - where file is loaded
     uint32_t offset;                // offset from base address
     inode_block_t *inode;           // file's inode
-    uint32_t flags;
+    uint16_t flags;
+    uint16_t reference_number;
 } __attribute__ ((packed)) open_files_table_t;
 
 

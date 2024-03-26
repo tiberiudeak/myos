@@ -412,15 +412,6 @@ inode_block_t get_inode_from_path(char *path) {
     return (inode_block_t){0};
 }
 
-
-
-
-
-
-
-
-
-
 uint8_t init_open_files_table(open_files_table_t *oft) {
     oft = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
 

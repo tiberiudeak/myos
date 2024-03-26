@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <arch/i386/pit.h>
+#include <fs.h>
 
 #define MAX_SYSCALLS	4
 
@@ -45,8 +46,78 @@ void syscall_open(void) {
     char *path = 0;
     uint32_t flags = 0;
 
+    // data from kernel
+    extern open_files_table_t *open_files_table;
+    extern inode_block_t *open_inodes_table;
+    extern uint8_t current_open_fd;
+    extern uint8_t current_open_inode_idx;
+
     __asm__ __volatile__ ("mov %%ebx, %0\n"
                           "mov %%ecx, %1" : "=b"(path), "=c"(flags));
+
+    // get file inode
+    inode_block_t inode = get_inode_from_path(path);
+
+    // file doesn't exist
+    // TODO: check for O_CREAT flag
+    if (inode.id == 0) {
+        __asm__ __volatile__ ("mov $-1, %eax");
+        return;
+    }
+
+    // search for the inode in the open inodes table
+    inode_block_t *tmp = open_inodes_table;
+    uint32_t tmp_idx = 0;
+    int32_t free_idx = -1;
+
+    while (tmp->id != inode.id && tmp_idx < MAX_OPEN_FILES) {
+        
+        // store first free place in the table
+        if (tmp->id == 0) {
+            free_idx = tmp_idx;
+        }
+        tmp_idx++;
+        tmp++;
+    }
+
+
+    if (tmp->id == inode.id) {
+        // inode found, increase ref count
+        tmp->reference_number++;
+    }
+    else {
+        // add inode in table
+        if (free_idx != -1) {
+            *(open_inodes_table + free_idx) = inode;
+        }
+        else {
+            // max open inodes reached, error
+            printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
+            __asm__ __volatile__ ("mov $-1, %eax");
+            return;
+        }
+    }
+
+    // add to open files table
+    open_files_table_t *tmp_oft = open_files_table;
+    tmp_idx = 0;
+    free_idx = -1;
+
+    // search for an empty place for the file
+    while (tmp_idx < MAX_OPEN_FILES && tmp_oft->address == 0) {
+        tmp_idx++;
+        tmp_oft++;
+    }
+
+    if (tmp_idx == MAX_OPEN_FILES) {
+        printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
+        __asm__ __volatile__ ("mov $-1, %eax");
+        return;
+    }
+
+    // add new open_files_table_t entry at the found free position and return the position
+    tmp_oft->inode = &inode;
+    tmp_oft->reference_number = 0;
 }
 
 //void syscall_kmalloc(void) {
