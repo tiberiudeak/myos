@@ -134,9 +134,10 @@ void ls_root_dir(void);
 uint8_t fs_init(void);
 uint8_t fs_print_dir(void);
 char *get_current_path(void);
-uint8_t init_open_files_table(open_files_table_t*);
-uint8_t init_open_inodes_table(inode_block_t*);
+void* init_open_files_table(void);
+void* init_open_inodes_table(void);
 inode_block_t get_inode_from_path(char*);
+uint8_t load_file(inode_block_t *, uint32_t);
 
 #endif /* !FS_H */
 

@@ -367,7 +367,6 @@ inode_block_t get_inode_from_path(char *path) {
             directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
 
             if (strcmp((char*)dir_entry->name, name) == 0) {
-                printf("file found!\n");
                 file_found = 1;
                 if (*character == '/') {
                     // this means that the found file is a directory
@@ -388,7 +387,6 @@ inode_block_t get_inode_from_path(char *path) {
                         return (inode_block_t){0};
                     }
 
-                    printf("e bine\n");
                     return tmp_inode;
                 }
             }
@@ -412,33 +410,33 @@ inode_block_t get_inode_from_path(char *path) {
     return (inode_block_t){0};
 }
 
-uint8_t init_open_files_table(open_files_table_t *oft) {
-    oft = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
+void* init_open_files_table(void) {
+    open_files_table_t *tmp = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
 
-    if (oft == NULL) {
-        return 1;
+    if (tmp == NULL) {
+        printf("out of memory\n");
+        return NULL;
     }
 
-    // initialize table with zeros
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
-        oft[i] = (open_files_table_t){0};
+        tmp[i] = (open_files_table_t){0};
     }
 
-    return 0;
+    return tmp;
 }
 
-uint8_t init_open_inodes_table(inode_block_t *oit) {
-    oit = (inode_block_t*) kmalloc(sizeof(inode_block_t) * MAX_OPEN_FILES);
+void* init_open_inodes_table(void) {
+    inode_block_t *tmp = (inode_block_t*) kmalloc(sizeof(inode_block_t) * MAX_OPEN_FILES);
 
-    if (oit == NULL) {
-        return 1;
+    if (tmp == NULL) {
+        printf("out of memory\n");
+        return NULL;
     }
 
-    // initialize table with zeros
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
-        oit[i] = (inode_block_t){0};
+        tmp[i] = (inode_block_t){0};
     }
 
-    return 0;
+    return tmp;
 }
 

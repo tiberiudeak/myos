@@ -9,8 +9,11 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <fcntl.h>
 #include <fs.h>
+#include <string.h>
 
 extern char kernel_end[];
 
@@ -75,24 +78,53 @@ void kmain() {
         halt_processor();
     }
 
-    ret = init_open_files_table(open_files_table);
+    open_files_table = init_open_files_table();
     
-    if (ret) {
+    if (open_files_table == NULL) {
         printfc(4, "failed to init open files table!\n");
         halt_processor();
     }
 
-    ret = init_open_inodes_table(open_inodes_table);
+    open_inodes_table = init_open_inodes_table();
 
-    if (ret) {
+    if (open_inodes_table == NULL) {
         printfc(4, "failed to init open inodes table!\n");
         halt_processor();
     }
 
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
-    get_inode_from_path("./.././tesat.txt");
+    int fd = open("test.txt", 1);
 
+    if (fd == -1) {
+        printf("file not found kenrel!\n");
+    }
+    else {
+        printf("kernel fd received: %d\n", fd);
+    }
+
+    open_files_table_t test = open_files_table[fd];
+    printf("test: %x\n", test.address);
+
+    char pp[20];
+    char *p = (char*)test.address;
+    strncpy(pp, p, 10);
+    printf("%s\n", pp);
+
+
+    fd = open("pr1.o", 1);
+
+    if (fd == -1) {
+        printf("file not found kenrel!\n");
+    }
+    else {
+        printf("kernel fd received: %d\n", fd);
+    }
+
+    test = open_files_table[fd];
+    printf("test: %x\n", test.address);
+
+    printf("%d\n", test.inode->id);
 	printf("Welcome to MyOS!\n");
 	shell_init();
 }

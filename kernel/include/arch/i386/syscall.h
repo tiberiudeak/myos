@@ -3,6 +3,7 @@
 
 #include <stdio.h>
 #include <arch/i386/pit.h>
+#include <mm/kmalloc.h>
 #include <fs.h>
 
 #define MAX_SYSCALLS	4
@@ -61,14 +62,16 @@ void syscall_open(void) {
     // file doesn't exist
     // TODO: check for O_CREAT flag
     if (inode.id == 0) {
-        __asm__ __volatile__ ("mov $-1, %eax");
-        return;
+        goto err;
     }
 
     // search for the inode in the open inodes table
     inode_block_t *tmp = open_inodes_table;
-    uint32_t tmp_idx = 0;
+    uint32_t tmp_idx = current_open_inode_idx;
     int32_t free_idx = -1;
+
+    // skip first three entries (reserved for fd 0, 1 and 2)
+    tmp += 3;
 
     while (tmp->id != inode.id && tmp_idx < MAX_OPEN_FILES) {
         
@@ -93,31 +96,71 @@ void syscall_open(void) {
         else {
             // max open inodes reached, error
             printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
-            __asm__ __volatile__ ("mov $-1, %eax");
-            return;
+            goto err;
         }
     }
 
     // add to open files table
     open_files_table_t *tmp_oft = open_files_table;
-    tmp_idx = 0;
-    free_idx = -1;
+    tmp_idx = current_open_fd;
+
+    // skip first three entries in the table (stdin, stdout and stderr)
+    tmp_oft += 3;
 
     // search for an empty place for the file
-    while (tmp_idx < MAX_OPEN_FILES && tmp_oft->address == 0) {
+    while (tmp_idx < MAX_OPEN_FILES && tmp_oft->address != 0) {
         tmp_idx++;
         tmp_oft++;
     }
 
     if (tmp_idx == MAX_OPEN_FILES) {
         printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
-        __asm__ __volatile__ ("mov $-1, %eax");
-        return;
+        goto err;
     }
 
     // add new open_files_table_t entry at the found free position and return the position
-    tmp_oft->inode = &inode;
+
+    // allocate memory for the inode (as the inode is a local variable here)
+    void *addr = kmalloc(sizeof(inode_block_t));
+
+    if (addr == NULL) {
+        printf("out of memory\n");
+        goto err;
+    }
+
+    *(inode_block_t*)addr = inode;
+
+    tmp_oft->inode = addr;
     tmp_oft->reference_number = 0;
+    tmp_oft->offset = 0;
+    tmp_oft->flags = 0;
+
+    // allocate memory for the file's data
+    uint32_t needed_bytes = bytes_to_blocks(inode.size_bytes) * FS_BLOCK_SIZE;
+
+    addr = kmalloc(needed_bytes);
+
+    if (addr == NULL) {
+        printf("out of memory\n");
+        goto err;
+    }
+
+    int ret = load_file(&inode, (uint32_t)addr);
+
+    if (ret) {
+        printf("error loading block from disk\n");
+        goto err;
+    }
+
+    tmp_oft->address = addr;
+
+    // put index in the open files table into EAX and return
+    __asm__ __volatile__ ("mov %%ebx, %%eax" : : "b"(tmp_idx));
+    return;
+
+err:
+    __asm__ __volatile__ ("mov $-1, %eax");
+    return;
 }
 
 //void syscall_kmalloc(void) {
