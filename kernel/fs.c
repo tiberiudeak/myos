@@ -313,7 +313,6 @@ inode_block_t get_inode_from_path(char *path) {
 
             int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
 
-
             for (int i = 0; i < limit; i++) {
                 directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
 
@@ -340,7 +339,6 @@ inode_block_t get_inode_from_path(char *path) {
         name[character - name] = '\0';
 
         // look for the name in the current directory and get the inode
-
         uint32_t needed_bytes = bytes_to_blocks(current_directory_copy.size_bytes) * FS_BLOCK_SIZE;
         int ret;
 
@@ -387,6 +385,7 @@ inode_block_t get_inode_from_path(char *path) {
                         return (inode_block_t){0};
                     }
 
+                    kfree(addr);
                     return tmp_inode;
                 }
             }

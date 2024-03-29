@@ -23,6 +23,7 @@ typedef struct kblock_meta {
 
 void *kmalloc(size_t size);
 void kfree(void *ptr);
+void kmalloc_print_list(void);
 
 #endif /* !MM_KMALLOC_H */
 

@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <fcntl.h>
+#include <unistd.h>
 #include <fs.h>
 #include <string.h>
 
@@ -19,11 +20,6 @@ extern char kernel_end[];
 
 // the system-wide table of open files
 open_files_table_t *open_files_table;
-inode_block_t *open_inodes_table;
-
-// current available index in the tables defined above
-uint8_t current_open_fd = 3;
-uint8_t current_open_inode_idx = 3;
 
 void halt_processor(void) {
 	__asm__ __volatile__ ("cli; hlt");
@@ -64,6 +60,7 @@ void kmain() {
         halt_processor();
 	}
 
+
 #ifdef CONFIG_TTY_VBE
     ret = map_framebuffer();    // map the framebuffer
     if (ret) {
@@ -85,13 +82,6 @@ void kmain() {
         halt_processor();
     }
 
-    open_inodes_table = init_open_inodes_table();
-
-    if (open_inodes_table == NULL) {
-        printfc(4, "failed to init open inodes table!\n");
-        halt_processor();
-    }
-
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
     int fd = open("test.txt", 1);
@@ -101,16 +91,17 @@ void kmain() {
     }
     else {
         printf("kernel fd received: %d\n", fd);
+
+        open_files_table_t test = open_files_table[fd];
+        printf("test: %x\n", test.address);
+
+        char pp[20];
+        char *p = (char*)test.address;
+        strncpy(pp, p, 18);
+        printf("%s\n", pp);
+
+        close(fd);
     }
-
-    open_files_table_t test = open_files_table[fd];
-    printf("test: %x\n", test.address);
-
-    char pp[20];
-    char *p = (char*)test.address;
-    strncpy(pp, p, 10);
-    printf("%s\n", pp);
-
 
     fd = open("pr1.o", 1);
 
@@ -119,12 +110,13 @@ void kmain() {
     }
     else {
         printf("kernel fd received: %d\n", fd);
+
+        open_files_table_t test = open_files_table[fd];
+        printf("test: %x\n", test.address);
+
+        close(fd);
     }
 
-    test = open_files_table[fd];
-    printf("test: %x\n", test.address);
-
-    printf("%d\n", test.inode->id);
 	printf("Welcome to MyOS!\n");
 	shell_init();
 }

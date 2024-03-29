@@ -6,7 +6,7 @@
 #include <mm/kmalloc.h>
 #include <fs.h>
 
-#define MAX_SYSCALLS	4
+#define MAX_SYSCALLS	5
 
 /**
  * Test syscall
@@ -43,15 +43,11 @@ void syscall_sleep(void) {
  * the flags will be in ECX
  */
 void syscall_open(void) {
-    int32_t fd = -1;
     char *path = 0;
     uint32_t flags = 0;
 
     // data from kernel
     extern open_files_table_t *open_files_table;
-    extern inode_block_t *open_inodes_table;
-    extern uint8_t current_open_fd;
-    extern uint8_t current_open_inode_idx;
 
     __asm__ __volatile__ ("mov %%ebx, %0\n"
                           "mov %%ecx, %1" : "=b"(path), "=c"(flags));
@@ -65,44 +61,9 @@ void syscall_open(void) {
         goto err;
     }
 
-    // search for the inode in the open inodes table
-    inode_block_t *tmp = open_inodes_table;
-    uint32_t tmp_idx = current_open_inode_idx;
-    int32_t free_idx = -1;
-
-    // skip first three entries (reserved for fd 0, 1 and 2)
-    tmp += 3;
-
-    while (tmp->id != inode.id && tmp_idx < MAX_OPEN_FILES) {
-        
-        // store first free place in the table
-        if (tmp->id == 0) {
-            free_idx = tmp_idx;
-        }
-        tmp_idx++;
-        tmp++;
-    }
-
-
-    if (tmp->id == inode.id) {
-        // inode found, increase ref count
-        tmp->reference_number++;
-    }
-    else {
-        // add inode in table
-        if (free_idx != -1) {
-            *(open_inodes_table + free_idx) = inode;
-        }
-        else {
-            // max open inodes reached, error
-            printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
-            goto err;
-        }
-    }
-
     // add to open files table
     open_files_table_t *tmp_oft = open_files_table;
-    tmp_idx = current_open_fd;
+    int tmp_idx = 3; // skip first three entries
 
     // skip first three entries in the table (stdin, stdout and stderr)
     tmp_oft += 3;
@@ -160,7 +121,40 @@ void syscall_open(void) {
 
 err:
     __asm__ __volatile__ ("mov $-1, %eax");
+}
+
+void syscall_close(void) {
+    int fd = -1;
+
+    // get file descriptor from EBX
+    __asm__ __volatile__ ("mov %%ebx, %0" : "=b"(fd));
+
+    if (fd < 0 || fd >= MAX_OPEN_FILES) {
+        goto err;
+    }
+
+    // data from kernel
+    extern open_files_table_t *open_files_table;
+
+    // get entry at fd index from the open files table
+    // free the allocated memory and the entry
+    open_files_table_t entry = open_files_table[fd];
+
+    // free memory allocated for the inode
+    kfree(entry.inode);
+
+    // free memory allocated for the file's data
+    kfree(entry.address);
+
+    // empty entry
+    open_files_table[fd] = (open_files_table_t){0};
+
+    // return 0 on success
+    __asm__ __volatile__ ("mov $0, %eax");
     return;
+
+err:
+    __asm__ __volatile__ ("mov $-1, %eax");
 }
 
 //void syscall_kmalloc(void) {
@@ -185,7 +179,8 @@ void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
 	syscall_test1,
 	syscall_sleep,
-    syscall_open
+    syscall_open,
+    syscall_close
 };
 
 /**
@@ -201,7 +196,7 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $4, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cmp $5, %eax\n"	// check if syscall exists
 											// number has to match MAX_SYSCALLS!
 	"jge syscall_invalid\n"					// if not, invalid syscall
 	"push %eax\n"
