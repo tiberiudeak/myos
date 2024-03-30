@@ -1,3 +1,4 @@
+#include <string.h>
 #ifndef KERNEL_SYSCALL_H
 #define KERNEL_SYSCALL_H 1
 
@@ -6,7 +7,7 @@
 #include <mm/kmalloc.h>
 #include <fs.h>
 
-#define MAX_SYSCALLS	5
+#define MAX_SYSCALLS	6
 
 /**
  * Test syscall
@@ -157,6 +158,59 @@ err:
     __asm__ __volatile__ ("mov $-1, %eax");
 }
 
+void syscall_read(void) {
+    // data from kernel
+    extern open_files_table_t *open_files_table;
+
+    int fd = -1, read_bytes = 0;
+    size_t count = 0;
+    void *buf = NULL;
+
+    //__asm__ __volatile__ ("mov %%ebx, %0\n"
+    //                      "mov %%ecx, %1\n"
+    //                      "mov %%edx, %2": "=b"(fd), "=c"(buf), "=d"(count)::
+    //                      "edi", "esi");
+
+    __asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
+    __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
+    __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
+
+    printf("read parameters: fd: %d, count: %d, buf: %x\n", fd, count, buf);
+
+    if (fd < 0 || fd >= MAX_OPEN_FILES || buf == NULL)
+        goto err;
+
+    if (count == 0) {
+        __asm__ __volatile__ ("mov $0, %eax");
+        return;
+    }
+
+    open_files_table_t *oft = open_files_table + fd;
+
+    if (oft->address == 0)
+        goto err;
+
+    // TODO: check for flags the file was opened with
+    
+    if (oft->inode->size_bytes < count) {
+        // if number of requested bytes to read is bigger than the actual data
+        read_bytes = oft->inode->size_bytes;
+    }
+    else {
+        read_bytes = count;
+    }
+
+    // copy bytes
+    memcpy(buf, oft->address, read_bytes);
+
+    __asm__ __volatile__ ("mov %0, %%eax" : : "r"(read_bytes));
+
+    return;
+
+err:
+    __asm__ __volatile__ ("mov $-1, %eax");
+}
+
 //void syscall_kmalloc(void) {
 //    uint32_t size_bytes;
 //
@@ -180,7 +234,8 @@ void *syscalls[MAX_SYSCALLS] = {
 	syscall_test1,
 	syscall_sleep,
     syscall_open,
-    syscall_close
+    syscall_close,
+    syscall_read
 };
 
 /**
@@ -196,7 +251,7 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $5, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cmp $6, %eax\n"	// check if syscall exists
 											// number has to match MAX_SYSCALLS!
 	"jge syscall_invalid\n"					// if not, invalid syscall
 	"push %eax\n"
@@ -210,8 +265,8 @@ __attribute__ ((naked)) void syscall_handler(void) {
 	"push %ecx\n"
 	"push %ebx\n"
 	"push %esp\n"
-	"movl $4, %edx\n"				// move value 4 in ebx
-	"mul %edx\n"					// eax = eax * ebx
+	"movl $4, %edi\n"				// move value 4 in edx
+	"mul %edi\n"					// eax = eax * edx
 	"add $syscalls, %eax\n"			// add offset in eax to the beginning of the
 	"call *(%eax)\n"				// syscalls array to get the right syscall
 	"add $4, %esp\n"

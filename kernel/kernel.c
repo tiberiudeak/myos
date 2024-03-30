@@ -95,27 +95,31 @@ void kmain() {
         open_files_table_t test = open_files_table[fd];
         printf("test: %x\n", test.address);
 
-        char pp[20];
-        char *p = (char*)test.address;
-        strncpy(pp, p, 18);
-        printf("%s\n", pp);
+        char buf[30];
+
+        printf("calling the read function...\n");
+        ret = read(fd, buf, 30);
+
+        printf("function returned: %d\n", ret);
+
+        printf("data read from file: %s", buf);
 
         close(fd);
     }
 
-    fd = open("pr1.o", 1);
+    //fd = open("pr1.o", 1);
 
-    if (fd == -1) {
-        printf("file not found kenrel!\n");
-    }
-    else {
-        printf("kernel fd received: %d\n", fd);
+    //if (fd == -1) {
+    //    printf("file not found kenrel!\n");
+    //}
+    //else {
+    //    printf("kernel fd received: %d\n", fd);
 
-        open_files_table_t test = open_files_table[fd];
-        printf("test: %x\n", test.address);
+    //    open_files_table_t test = open_files_table[fd];
+    //    printf("test: %x\n", test.address);
 
-        close(fd);
-    }
+    //    close(fd);
+    //}
 
 	printf("Welcome to MyOS!\n");
 	shell_init();

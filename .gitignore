@@ -1,8 +1,20 @@
 tmp
 ata-pio
-pr1.o
 compile_commands.json
 .cache
 sysroot
 bin
+
+
+*~
+*.swp
+*.o
+*.obj
+*.a
+*.so
+*.dll
+*.lib
+*.gz
+*.bz2
+*.zip
 
