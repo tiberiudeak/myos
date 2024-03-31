@@ -104,6 +104,19 @@ void kmain() {
 
         printf("data read from file: %s", buf);
 
+        printf("calling the write function...\n");
+
+        char q[10];
+        strcpy(q, "hmm");
+
+        ret = write(fd, q, 10);
+
+        printf("write function returned %d\n", ret);
+
+        ret = read(fd, buf, 30);
+        printf("function returned: %d\n", ret);
+
+        printf("data read from file: %s", buf);
         close(fd);
     }
 

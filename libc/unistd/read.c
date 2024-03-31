@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <stdio.h>
 
 /**
  * @brief Read count bytes from the file given through the file descriptor into buf

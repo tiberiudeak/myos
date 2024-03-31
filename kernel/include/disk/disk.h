@@ -63,5 +63,6 @@ typedef enum {
 } ATA_PIO_STATUS_REG;
 
 uint8_t read_sectors(uint8_t, uint8_t, uint32_t);
+uint8_t write_sectors(uint8_t, uint8_t, uint32_t);
 
 #endif /* !DISK_H */

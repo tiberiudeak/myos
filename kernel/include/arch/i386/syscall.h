@@ -8,7 +8,7 @@
 #include <fs.h>
 #include <fcntl.h>
 
-#define MAX_SYSCALLS	6
+#define MAX_SYSCALLS	7
 
 /**
  * Test syscall
@@ -201,7 +201,6 @@ void syscall_read(void) {
     if (oft->address == 0)
         goto err;
 
-    // TODO: check for flags the file was opened with
     if (oft->flags & O_WRONLY)
         goto err;
     
@@ -218,6 +217,72 @@ void syscall_read(void) {
 
     __asm__ __volatile__ ("mov %0, %%eax" : : "r"(read_bytes));
 
+    return;
+
+err:
+    __asm__ __volatile__ ("mov $-1, %eax");
+}
+
+void syscall_write(void) {
+    // data from kernel
+    extern open_files_table_t *open_files_table;
+
+    int fd;
+    size_t count, written_bytes = 0;
+    void *buf = NULL;
+
+    __asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
+    __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
+    __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
+
+    printf("write function called, fd: %d, buf: %x, count: %d\n", fd, buf, count);
+
+    if (fd < 0 || fd >= MAX_OPEN_FILES)
+        goto err;
+
+    if (count == 0) {
+        __asm__ __volatile__ ("mov $0, %eax");
+        return;
+    }
+
+    open_files_table_t *oft = open_files_table + fd;
+
+    if (oft->address == 0)
+        goto err;
+
+
+    if (oft->flags & O_RDONLY)
+        goto err;
+
+    // TODO: add O_APPEND flag and file offset
+    
+    if (oft->inode->size_bytes >= count) {
+        // if number of requested bytes to write is smaller than the actual data, then
+        // write count bytes
+        written_bytes = count;
+    }
+    else {
+        // else write maximum oft->inode->size_bytes bytes
+        // TODO: increase size of file on disk
+        written_bytes = oft->inode->size_bytes;
+    }
+
+    memcpy(oft->address, buf, written_bytes);
+
+    // update inode info
+    oft->inode->size_bytes = written_bytes;
+    oft->inode->size_sectors = bytes_to_sectors(written_bytes);
+
+    // update inode info on disk
+    int ret = update_inode_data_disk(oft->inode);
+
+    printf("ret: %d\n", ret);
+    if (ret)
+        goto err;
+
+    // update data block on disk
+
+    __asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
     return;
 
 err:
@@ -248,7 +313,8 @@ void *syscalls[MAX_SYSCALLS] = {
 	syscall_sleep,
     syscall_open,
     syscall_close,
-    syscall_read
+    syscall_read,
+    syscall_write
 };
 
 /**
@@ -264,7 +330,7 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $6, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cmp $7, %eax\n"	// check if syscall exists
 											// number has to match MAX_SYSCALLS!
 	"jge syscall_invalid\n"					// if not, invalid syscall
 	"push %eax\n"

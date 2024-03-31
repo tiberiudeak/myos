@@ -411,9 +411,50 @@ inode_block_t get_inode_from_path(char *path) {
 
 inode_block_t create_file(char *path) {
 
-
     // add directory entry in the current directory
     return (inode_block_t){0};
+}
+
+uint8_t update_inode_data_disk(inode_block_t *inode) {
+    uint32_t *tmp_sector = kmalloc(FS_SECTOR_SIZE);
+    int ret;
+
+    if (tmp_sector == NULL)
+        return 1;
+
+    // 8 = number of sectors per block
+    // 8 = inodes per sector
+    ret = read_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
+
+    if (ret)
+        goto err;
+
+    inode_block_t *tmp_inode = (inode_block_t*) tmp_sector + (inode->id % 8);
+    printf("test test: %d\n", tmp_inode->size_bytes);
+    *tmp_inode = *inode;
+
+    tmp_inode = (inode_block_t*)tmp_sector + (inode->id % 8);
+    printf("test test: %d\n", tmp_inode->size_bytes);
+
+    ret = write_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
+
+    if (ret)
+        goto err;
+
+    ret = read_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
+
+    if (ret)
+        goto err;
+
+    tmp_inode = (inode_block_t*) tmp_sector;
+    printf("test test after write: %d\n", tmp_inode->id);
+
+    kfree(tmp_sector);
+    return 0;
+
+err:
+    kfree(tmp_sector);
+    return 1;
 }
 
 void* init_open_files_table(void) {
