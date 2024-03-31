@@ -6,6 +6,7 @@
 #include <arch/i386/pit.h>
 #include <mm/kmalloc.h>
 #include <fs.h>
+#include <fcntl.h>
 
 #define MAX_SYSCALLS	6
 
@@ -59,7 +60,17 @@ void syscall_open(void) {
     // file doesn't exist
     // TODO: check for O_CREAT flag
     if (inode.id == 0) {
-        goto err;
+        if (flags & O_CREAT) {
+            inode = create_file(path);
+
+            if (inode.id == 0) {
+                printf("file count not be created\n");
+                goto err;
+            }
+        }
+        else {
+            goto err;
+        }
     }
 
     // add to open files table
@@ -95,7 +106,7 @@ void syscall_open(void) {
     tmp_oft->inode = addr;
     tmp_oft->reference_number = 0;
     tmp_oft->offset = 0;
-    tmp_oft->flags = 0;
+    tmp_oft->flags = flags;
 
     // allocate memory for the file's data
     uint32_t needed_bytes = bytes_to_blocks(inode.size_bytes) * FS_BLOCK_SIZE;
@@ -191,6 +202,8 @@ void syscall_read(void) {
         goto err;
 
     // TODO: check for flags the file was opened with
+    if (oft->flags & O_WRONLY)
+        goto err;
     
     if (oft->inode->size_bytes < count) {
         // if number of requested bytes to read is bigger than the actual data

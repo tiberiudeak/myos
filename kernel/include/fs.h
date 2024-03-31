@@ -138,6 +138,7 @@ void* init_open_files_table(void);
 void* init_open_inodes_table(void);
 inode_block_t get_inode_from_path(char*);
 uint8_t load_file(inode_block_t *, uint32_t);
+inode_block_t create_file(char*);
 
 #endif /* !FS_H */
 

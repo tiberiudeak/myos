@@ -409,6 +409,13 @@ inode_block_t get_inode_from_path(char *path) {
     return (inode_block_t){0};
 }
 
+inode_block_t create_file(char *path) {
+
+
+    // add directory entry in the current directory
+    return (inode_block_t){0};
+}
+
 void* init_open_files_table(void) {
     open_files_table_t *tmp = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
 

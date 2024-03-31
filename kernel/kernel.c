@@ -32,7 +32,7 @@ void kmain() {
 	printfc(3, "%s", a);
 	printf(" World!\n\n");
 
-	uint8_t ret;
+	int8_t ret;
 
 	init_gdt();			    // initialize global descriptor table
 	init_idt();			    // initialize interrupt descriptor table
@@ -84,7 +84,7 @@ void kmain() {
 
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
-    int fd = open("test.txt", 1);
+    int fd = open("test.txt", O_RDWR);
 
     if (fd == -1) {
         printf("file not found kenrel!\n");
