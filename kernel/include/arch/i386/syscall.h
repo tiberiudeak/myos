@@ -7,6 +7,7 @@
 #include <mm/kmalloc.h>
 #include <fs.h>
 #include <fcntl.h>
+#include <kernel/tty.h>
 
 #define MAX_SYSCALLS	7
 
@@ -58,7 +59,6 @@ void syscall_open(void) {
     inode_block_t inode = get_inode_from_path(path);
 
     // file doesn't exist
-    // TODO: check for O_CREAT flag
     if (inode.id == 0) {
         if (flags & O_CREAT) {
             inode = create_file(path);
@@ -243,6 +243,11 @@ void syscall_write(void) {
     if (count == 0) {
         __asm__ __volatile__ ("mov $0, %eax");
         return;
+    }
+
+    // chech for special file descriptors: stdin, stdout, stderr
+    if (fd == stdout || fd == stderr) {
+        terminal_writestring(buf);
     }
 
     open_files_table_t *oft = open_files_table + fd;

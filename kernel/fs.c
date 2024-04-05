@@ -393,7 +393,6 @@ inode_block_t get_inode_from_path(char *path) {
 
         if (file_found == 0) {
             kfree(addr);
-            printf("wrong path or file doesn't exist\n");
             return (inode_block_t){0};
         }
 

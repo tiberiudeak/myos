@@ -9,6 +9,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
+#include <tests/tests.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <fcntl.h>
@@ -84,55 +85,12 @@ void kmain() {
 
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
-    int fd = open("test.txt", O_RDWR);
+    ret = test_open_close_syscalls();
 
-    if (fd == -1) {
-        printf("file not found kenrel!\n");
+    if (ret) {
+        printfc(4, "open and close syscalls test failed!\n");
+        halt_processor();
     }
-    else {
-        printf("kernel fd received: %d\n", fd);
-
-        open_files_table_t test = open_files_table[fd];
-        printf("test: %x\n", test.address);
-
-        char buf[30];
-
-        printf("calling the read function...\n");
-        ret = read(fd, buf, 30);
-
-        printf("function returned: %d\n", ret);
-
-        printf("data read from file: %s", buf);
-
-        printf("calling the write function...\n");
-
-        char q[10];
-        strcpy(q, "hmm");
-
-        ret = write(fd, q, 10);
-
-        printf("write function returned %d\n", ret);
-
-        ret = read(fd, buf, 30);
-        printf("function returned: %d\n", ret);
-
-        printf("data read from file: %s", buf);
-        close(fd);
-    }
-
-    //fd = open("pr1.o", 1);
-
-    //if (fd == -1) {
-    //    printf("file not found kenrel!\n");
-    //}
-    //else {
-    //    printf("kernel fd received: %d\n", fd);
-
-    //    open_files_table_t test = open_files_table[fd];
-    //    printf("test: %x\n", test.address);
-
-    //    close(fd);
-    //}
 
 	printf("Welcome to MyOS!\n");
 	shell_init();
