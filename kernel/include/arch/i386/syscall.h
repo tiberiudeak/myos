@@ -227,7 +227,7 @@ void syscall_write(void) {
     // data from kernel
     extern open_files_table_t *open_files_table;
 
-    int fd;
+    int fd, ret = 0;
     size_t count, written_bytes = 0;
     void *buf = NULL;
 
@@ -273,14 +273,18 @@ void syscall_write(void) {
     oft->inode->size_bytes = written_bytes;
     oft->inode->size_sectors = bytes_to_sectors(written_bytes);
 
-    // update inode info on disk
-    int ret = update_inode_data_disk(oft->inode);
+    // update inode info on disk TODO: fix
+    //int ret = update_inode_data_disk(oft->inode);
 
-    printf("ret: %d\n", ret);
-    if (ret)
-        goto err;
+    //printf("ret: %d\n", ret);
+    //if (ret)
+    //    goto err;
 
-    // update data block on disk
+    // update data block on disk TODO: fix
+    //ret = update_data_block_disk(oft->inode, (uint32_t)oft->address);
+
+    //if (ret)
+    //    goto err;
 
     __asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
     return;

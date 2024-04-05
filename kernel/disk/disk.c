@@ -15,7 +15,7 @@
  *
  * @return Error code or 0 if successful
  */
-uint8_t read_sectors(uint8_t starting_sector, uint8_t size, uint32_t addr) {
+uint8_t read_sectors(uint32_t starting_sector, uint32_t size, uint32_t addr) {
 
 	port_byte_out(ATA_PIO_PR_SCR, size);
 	port_byte_out(ATA_PIO_PR_SNR, starting_sector & 0xFF);
@@ -67,7 +67,7 @@ uint8_t read_sectors(uint8_t starting_sector, uint8_t size, uint32_t addr) {
  *
  * @return Error code or 0 if successful
  */
-uint8_t write_sectors(uint8_t starting_sector, uint8_t size, uint32_t addr) {
+uint8_t write_sectors(uint32_t starting_sector, uint32_t size, uint32_t addr) {
 
 	port_byte_out(ATA_PIO_PR_SCR, size);
 	port_byte_out(ATA_PIO_PR_SNR, starting_sector & 0xFF);

@@ -441,13 +441,13 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
     if (ret)
         goto err;
 
-    ret = read_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
+    //ret = read_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
 
-    if (ret)
-        goto err;
+    //if (ret)
+    //    goto err;
 
-    tmp_inode = (inode_block_t*) tmp_sector;
-    printf("test test after write: %d\n", tmp_inode->id);
+    //tmp_inode = (inode_block_t*) tmp_sector;
+    //printf("test test after write: %d\n", tmp_inode->id);
 
     kfree(tmp_sector);
     return 0;
@@ -455,6 +455,23 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
 err:
     kfree(tmp_sector);
     return 1;
+}
+
+
+uint8_t update_data_block_disk(inode_block_t *inode, uint32_t addr) {
+    uint32_t nr_blocks = bytes_to_blocks(inode->size_bytes);
+    int ret;
+
+    for (size_t i = 0; i < superblock->extents_per_inode && nr_blocks > 0; i++) {
+        ret = write_sectors(inode->extent[i].first_block * 8,
+                inode->extent[i].length * 8,
+                addr);
+
+        if (ret)
+            return -1;
+    }
+
+    return 0;
 }
 
 void* init_open_files_table(void) {
