@@ -49,3 +49,5 @@ install: install-headers install-boot
 install-headers: ;
 
 install-boot: $(BINARIES)
+	cp $(BINARIES) ../bin
+

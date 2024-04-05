@@ -1,0 +1,7 @@
+# This file contains the files that will be included in the OS image.
+# Add one per line. Lines starting with a '#' are ignored.
+bin/bootloader.bin
+bin/kernel.bin
+bin/test.txt
+bin/pr1.o
+

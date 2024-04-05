@@ -58,6 +58,7 @@ $(BOOT_BIN) \
 $(KERNEL_BIN)
 
 TARGET:=myos.bin
+INCLUDED_FILES:=files.txt
 
 .PHONY: all kernel clean run
 
@@ -65,7 +66,7 @@ all: $(TARGET)
 
 $(TARGET): $(BINARIES)
 	gcc create_disk_image.c -o create_disk_image -lm
-	./create_disk_image $(TARGET)
+	./create_disk_image $(TARGET) $(INCLUDED_FILES)
 
 $(BOOT_BIN): $(HEADER_FILE)
 	@mkdir -p $(SYSROOT)

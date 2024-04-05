@@ -14,6 +14,7 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <math.h>
@@ -529,31 +530,67 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 
 void usage(void) {
 	printf("Usage:\n");
-	printf("\t./create_disk_image <image_name>\n");
+	printf("\t./create_disk_image <image_name> <file_with_included_files>\n");
 }
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 2) {
+	if (argc != 3) {
 		usage();
 		return 1;
 	}
 
-	file_pointer_type files[] = {
-		{"boot/bootloader.bin", 0, NULL},
-		{"bin/kernel.bin", 0, NULL},
-		{"bin/test.txt", 0, NULL},
-		{"bin/pr1.o", 0, NULL}
-	};
 
 	char image_name[20];
 	strcpy(image_name, argv[1]);
-	FILE *image_fp = fopen(image_name, "wb");
+	FILE *image_fp = fopen(image_name, "wb"), *files_fp;
 	uint32_t total_file_blocks = 0;
 
 	printf("Creating the OS disk image %s...\n", image_name);
 
-	const uint32_t num_files = sizeof files / sizeof files[0];
+    files_fp = fopen("files.txt", "r");
+
+    if (files_fp == NULL) {
+        printf("error opening files.txt. Is the file present?\n");
+        return 1;
+    }
+
+    // add files from files.txt to the files[] arrray
+    char *file_name = malloc(sizeof(char) * 30);
+    size_t read, len = 30, index = 0;
+	uint32_t num_files = 0;
+
+    while ((read = getline(&file_name, &len, files_fp)) != -1) {
+        if (strlen(file_name) == 1)
+            continue;
+
+        if (file_name[0] == '#')
+            continue;
+
+        num_files++;
+    }
+
+    fseek(files_fp, 0, SEEK_SET);
+
+    file_pointer_type files[num_files];
+
+    while ((read = getline(&file_name, &len, files_fp)) != -1) {
+        if (strlen(file_name) == 1)
+            continue;
+
+        if (file_name[0] == '#')
+            continue;
+
+        file_name[strlen(file_name) - 1] = '\0';    // get rid of the '\n' at the end
+                                                    //
+        strcpy(files[index].name, file_name);
+        files[index].fp = NULL;
+        files[index].size = 0;
+        index++;
+    }
+
+    free(file_name);
+
 	printf("total files in the image: %d\n", num_files);
 
 	for (uint32_t i = 0; i < num_files; i++) {
