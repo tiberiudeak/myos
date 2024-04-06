@@ -15,14 +15,14 @@
  * Test syscall
  */
 void syscall_test0(void) {
-	printf("Syscall test 0 works\n");
+	printk("Syscall test 0 works\n");
 }
 
 /**
  * Test syscall
  */
 void syscall_test1(void) {
-	printf("Syscall test 1 works\n");
+	printk("Syscall test 1 works\n");
 }
 
 /**
@@ -64,7 +64,7 @@ void syscall_open(void) {
             inode = create_file(path);
 
             if (inode.id == 0) {
-                printf("file count not be created\n");
+                printk("file could not be created\n");
                 goto err;
             }
         }
@@ -87,7 +87,7 @@ void syscall_open(void) {
     }
 
     if (tmp_idx == MAX_OPEN_FILES) {
-        printf("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
+        printk("limit of open files reached: %d! close some to open more!\n", MAX_OPEN_FILES);
         goto err;
     }
 
@@ -97,7 +97,7 @@ void syscall_open(void) {
     void *addr = kmalloc(sizeof(inode_block_t));
 
     if (addr == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         goto err;
     }
 
@@ -114,14 +114,14 @@ void syscall_open(void) {
     addr = kmalloc(needed_bytes);
 
     if (addr == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         goto err;
     }
 
     int ret = load_file(&inode, (uint32_t)addr);
 
     if (ret) {
-        printf("error loading block from disk\n");
+        printk("error loading block from disk\n");
         goto err;
     }
 
@@ -186,7 +186,7 @@ void syscall_read(void) {
     __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
     __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
 
-    printf("read parameters: fd: %d, count: %d, buf: %x\n", fd, count, buf);
+    // printk("read parameters: fd: %d, count: %d, buf: %x\n", fd, count, buf);
 
     if (fd < 0 || fd >= MAX_OPEN_FILES || buf == NULL)
         goto err;
@@ -235,7 +235,7 @@ void syscall_write(void) {
     __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
     __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
 
-    printf("write function called, fd: %d, buf: %x, count: %d\n", fd, buf, count);
+    // printk("write function called, fd: %d, buf: %x, count: %d\n", fd, buf, count);
 
     if (fd < 0 || fd >= MAX_OPEN_FILES)
         goto err;
@@ -248,6 +248,10 @@ void syscall_write(void) {
     // chech for special file descriptors: stdin, stdout, stderr
     if (fd == stdout || fd == stderr) {
         terminal_writestring(buf);
+        written_bytes = strlen(buf);
+
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
+        return;
     }
 
     open_files_table_t *oft = open_files_table + fd;
@@ -281,7 +285,7 @@ void syscall_write(void) {
     // update inode info on disk TODO: fix
     //int ret = update_inode_data_disk(oft->inode);
 
-    //printf("ret: %d\n", ret);
+    //printk("ret: %d\n", ret);
     //if (ret)
     //    goto err;
 
@@ -307,13 +311,13 @@ err:
 //}
 
 //void syscall_kfree(void) {
-//    printf("kernel free called");
+//    printk("kernel free called");
 //    uint32_t addr = 0;
 //
 //    //get address from EBX
 //    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(addr));
 //
-//    printf("%x\n", addr);
+//    printk("%x\n", addr);
 //}
 
 void *syscalls[MAX_SYSCALLS] = {

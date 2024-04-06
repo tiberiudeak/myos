@@ -4,15 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef CONFIG_TTY_VGA
-void terminal_initialize(void);
-void terminal_putchar(char c);
-void terminal_write(const char* data, size_t size);
-void terminal_writestring(const char *data);
-void terminal_setcolor(uint8_t color);
-void terminal_backspace_cursor(char);
-#endif /* CONFIG_TTY_VGA */
-
 #ifdef CONFIG_TTY_VBE
 typedef struct {
     uint16_t attributes;
@@ -72,14 +63,17 @@ typedef enum vbe_colors {
     VBE_COLOR_WHITE             = 0xFFFFFFFF
 } vbe_colors;
 
+uint8_t map_framebuffer(void);
+#endif /* CONFIG_TTY_VBE */
+
 void terminal_initialize(void);
 void terminal_putchar(char c);
 void terminal_write(const char* data, size_t size);
 void terminal_writestring(const char *data);
 void terminal_setcolor(uint8_t color);
 void terminal_backspace_cursor(char);
-uint8_t map_framebuffer(void);
+int printk(const char* __restrict, ...);
+int printkc(int, const char* __restrict, ...);
 
-#endif /* CONFIG_TTY_VBE */
 
 #endif // _KERNEL_TTYP_H

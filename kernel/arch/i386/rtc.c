@@ -1,6 +1,6 @@
 #include <arch/i386/rtc.h>
 #include <kernel/io.h>
-#include <stdio.h>
+#include <kernel/tty.h>
 
 /**
  * @brief Check if CMOS has an update in progress
@@ -96,7 +96,7 @@ void rtc_print_datetime(void) {
 
 	time1.year += century * 100;
 
-	printf("%d.%d.%d  %d:%d:%d\n", time1.day, time1.month, time1.year,
+	printk("%d.%d.%d  %d:%d:%d\n", time1.day, time1.month, time1.year,
 								time1.hour, time1.minutes, time1.seconds);
 }
 

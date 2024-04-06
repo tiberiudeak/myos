@@ -1,8 +1,8 @@
 /* Physical memory manager */
 #include <mm/pmm.h>
 #include <kernel/spinlock.h>
+#include <kernel/tty.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <math.h>
 #include <string.h>
 
@@ -26,7 +26,7 @@ void print_mem_map() {
 	for (size_t i = 0; i < *nr_entries; i++) {
 		mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + offset;
 
-		printf("E820: mem [%llx-%llx] %s\n", mem_map_entry->base_addr,
+		printk("E820: mem [%llx-%llx] %s\n", mem_map_entry->base_addr,
 			mem_map_entry->base_addr + mem_map_entry->region_length - 1,
 			mem_map_entry->region_type == 1 ? "usable" : "reserved");
 
@@ -173,7 +173,7 @@ void mark_e820_regions() {
  * works as expected.
  */
 void pmm_self_test() {
-	printf("Performing tests for the physical memory manager...\n");
+	printk("Performing tests for the physical memory manager...\n");
 
 	uint32_t initial_free_blocks = max_blocks - used_blocks;
 	uint32_t initial_used_blocks = used_blocks;
@@ -181,121 +181,121 @@ void pmm_self_test() {
 	uint32_t test_used_blocks = used_blocks;
 	uint32_t test_free_blocks = max_blocks - used_blocks;
 
-	printf("Allocating one block (4K)");
+	printk("Allocating one block (4K)");
 	// request one block (4K)
 	uint32_t *a = (uint32_t*) allocate_blocks(1);
 
 	if (test_free_blocks == 0 && a != NULL) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (test_free_blocks > 0 && a == NULL) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (a != NULL && used_blocks - test_used_blocks != 1) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else {
-		printfc(2, "\t\t\tOK\n");
+		printkc(2, "\t\t\tOK\n");
 		test_free_blocks--;
 		test_used_blocks++;
 	}
 
-	printf("Allocating two more blocks (8K)");
+	printk("Allocating two more blocks (8K)");
 	uint32_t *b = (uint32_t*) allocate_blocks(2);
 
 	if (test_free_blocks < 2 && b != NULL) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (test_free_blocks > 2 && b == NULL) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else if (b != NULL && used_blocks - test_used_blocks != 2) {
-		printfc(4, "\t\tFAILED\n");
+		printkc(4, "\t\tFAILED\n");
 	}
 	else {
-		printfc(2, "\t\tOK\n");
+		printkc(2, "\t\tOK\n");
 		test_free_blocks -= 2;
 		test_used_blocks += 2;
 	}
 
-	printf("Freeing first block");
+	printk("Freeing first block");
 	free_blocks(a, 1);
 
 	if ((max_blocks - used_blocks) - test_free_blocks != 1) {
-		printfc(4, "\t\t\t\t\tFAILED\n");
+		printkc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else if (test_used_blocks - used_blocks != 1) {
-		printfc(4, "\t\t\t\t\tFAILED\n");
+		printkc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else if (*a != 0x01010101) {
-		printf("%x\n", *a);
-		printfc(4, "\t\t\t\t\tFAILED\n");
+		printk("%x\n", *a);
+		printkc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else {
-		printfc(2, "\t\t\t\t\tOK\n");
+		printkc(2, "\t\t\t\t\tOK\n");
 		test_free_blocks += 1;
 		test_used_blocks -= 1;
 	}
 
-	printf("Freeing the two allocated blocks");
+	printk("Freeing the two allocated blocks");
 	free_blocks(b, 2);
 
 	if ((max_blocks - used_blocks) - test_free_blocks != 2) {
-		printfc(4, "\tFAILED\n");
+		printkc(4, "\tFAILED\n");
 	}
 	else if (test_used_blocks - used_blocks != 2) {
-		printfc(4, "\tFAILED\n");
+		printkc(4, "\tFAILED\n");
 	}
 	else if (*b != 0x01010101) {
-		printfc(4, "\tFAILED\n");
+		printkc(4, "\tFAILED\n");
 	}
 	else {
-		printfc(2, "\tOK\n");
+		printkc(2, "\tOK\n");
 		test_free_blocks += 2;
 		test_used_blocks -= 2;
 	}
 
-	// printf("Allocating max number of blocks");
+	// printk("Allocating max number of blocks");
 	// uint32_t size = max_blocks - used_blocks;
 	// a = (uint32_t*) allocate_blocks(size);
 
 	// if (a == NULL) {
-	// 	printfc(4, "\t\tFAILED\n");
+	// 	printkc(4, "\t\tFAILED\n");
 	// }
 	// else if (max_blocks - used_blocks != 0) {
-	// 	printfc(4, "\t\tFAILED\n");
+	// 	printkc(4, "\t\tFAILED\n");
 	// }
 	// else {
-	// 	printfc(2, "\t\tOK\n");
+	// 	printkc(2, "\t\tOK\n");
 	// }
 
-	// printf("Allocating one block");
+	// printk("Allocating one block");
 	// b = (uint32_t*)allocate_blocks(1);
 
 	// if (b != NULL) {
-	// 	printfc(4, "\t\t\t\tFAILED\n");
+	// 	printkc(4, "\t\t\t\tFAILED\n");
 	// }
 	// else {
-	// 	printfc(2, "\t\t\t\tOK\n");
+	// 	printkc(2, "\t\t\t\tOK\n");
 	// }
 
-	// printf("Freeing all memory");
+	// printk("Freeing all memory");
 	// free_blocks(a, size);
 
 	// if (initial_free_blocks != max_blocks - used_blocks) {
-	// 	printfc(4, "\t\t\t\t\tFAILED\n");
+	// 	printkc(4, "\t\t\t\t\tFAILED\n");
 	// }
 	// else if (initial_used_blocks != used_blocks) {
-	// 	printfc(4, "\t\t\t\t\tFAILED\n");
+	// 	printkc(4, "\t\t\t\t\tFAILED\n");
 	// }
 	// else {
-	// 	printfc(2, "\t\t\t\t\tOK\n");
+	// 	printkc(2, "\t\t\t\t\tOK\n");
 	// }
 }
 
@@ -309,7 +309,7 @@ void pmm_self_test() {
  * as reserved, then marked as free and then reserved.
  */
 void initialize_memory() {
-	printf("Initializing physical memory manager\n");
+	printk("Initializing physical memory manager\n");
 	// get base address and end address and calculate total size of RAM
 	uint64_t base_address;
 	uint64_t end_address;
@@ -323,13 +323,13 @@ void initialize_memory() {
 	end_address = mem_map_entry->base_addr + mem_map_entry->region_length - 1;
 
 	uint32_t total_ram_size = end_address - base_address;
-	printf("total RAM size: %x\n", total_ram_size);
+	printk("total RAM size: %x\n", total_ram_size);
 
 	// calculate bitmap size and place it in memory
 	bitmap_size = total_ram_size / BLOCK_SIZE;
 	bitmap_size = ceil(bitmap_size, 8);
 
-	printf("bitmap size in bytes: %d\n", bitmap_size);
+	printk("bitmap size in bytes: %d\n", bitmap_size);
 
 	bitmap = (uint32_t*) BITMAP_ADDRESS;
 	max_blocks = total_ram_size / BLOCK_SIZE;
@@ -344,9 +344,9 @@ void initialize_memory() {
 	// reserve lower part of memory until 0x100000 (kernel, BDA, mem map, etc.)
 	__mark_region_reserved(0, 0x100000);
 
-	printf("total number of blocks: %d\n", max_blocks);
-	printf("used blocks: %d\n", used_blocks);
-	printf("free blocks: %d\n\n", max_blocks - used_blocks);
+	printk("total number of blocks: %d\n", max_blocks);
+	printk("used blocks: %d\n", used_blocks);
+	printk("free blocks: %d\n\n", max_blocks - used_blocks);
 
 	// perform some tests to see that everything works as expected
 	pmm_self_test();
@@ -451,8 +451,8 @@ void free_blocks(void *address, uint32_t num_blocks) {
  * Print total number of blocks, used and free blocks and the block size.
  */
 void print_phymem_info() {
-	printf("total number of blocks: %d\n", max_blocks);
-	printf("used blocks: %d\n", used_blocks);
-	printf("free blocks: %d\n", max_blocks - used_blocks);
-	printf("block size: %dB\n", BLOCK_SIZE);
+	printk("total number of blocks: %d\n", max_blocks);
+	printk("used blocks: %d\n", used_blocks);
+	printk("free blocks: %d\n", max_blocks - used_blocks);
+	printk("block size: %dB\n", BLOCK_SIZE);
 }

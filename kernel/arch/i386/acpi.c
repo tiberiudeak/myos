@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <kernel/acpi.h>
+#include <kernel/tty.h>
 
 /**
  * @brief Detects the Root System Description Pointer (RSDP) in memory.
@@ -53,7 +53,7 @@ int RSDP_validate(RSDP_descriptor_t *rsdp) {
 	}
 
 	if (checksum != 0) {
-		printf("RSDP checksum is invalid\n");
+		printk("RSDP checksum is invalid\n");
 		return 1;
 	}
 
@@ -70,27 +70,27 @@ int RSDP_validate(RSDP_descriptor_t *rsdp) {
  * TODO: create a function  that displays the hardware information
  */
 void ACPI_init() {
-	printf("Detecting ACPI");
+	printk("Detecting ACPI");
 	RSDP_descriptor_t *rsdp = RSDP_detect();
 
 	if (rsdp == NULL) {
-		printfc(4, "\t\t\tRSDP not found\n");
+		printkc(4, "\t\t\tRSDP not found\n");
 		return;
 	}
 
 	if (RSDP_validate(rsdp)) {
-		printfc(4, "\t\t\tRSDP is invalid\n");
+		printkc(4, "\t\t\tRSDP is invalid\n");
 		return;
 	}
 
 	FADT *fadt = (FADT*) find_FACP((void *)rsdp->RsdtAddress);
 
 	if (fadt == NULL) {
-		printfc(4, "\t\t\tFADT not found!\n");
+		printkc(4, "\t\t\tFADT not found!\n");
 		return;
 	}
 
-	printfc(2, "\t\t\tdone\n");
+	printkc(2, "\t\t\tdone\n");
 }
 
 /**

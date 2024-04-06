@@ -1,7 +1,11 @@
 # This file contains the files that will be included in the OS image.
 # Add one per line. Lines starting with a '#' are ignored.
+
+# The bootloader and kernel HAVE to be included
 bin/bootloader.bin
 bin/kernel.bin
+
+# You can modify this file starting from here
 bin/test.txt
 bin/pr1.o
 

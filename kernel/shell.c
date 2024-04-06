@@ -19,7 +19,7 @@ void shell_exec_command(char *command) {
 		print_mem_map();
 	}
 	else if (strcmp(command, "uptime") == 0) {
-		printf("%d\n", get_uptime());
+		printk("%d\n", get_uptime());
 	}
 	else if (strcmp(command, "pmeminfo") == 0) {
 		print_phymem_info();
@@ -34,7 +34,7 @@ void shell_exec_command(char *command) {
 		fs_print_dir();
 	}
 	else {
-		printf("%s: unknown command\n", command);
+		printk("%s: unknown command\n", command);
 	}
 
 	index = 0;
@@ -60,7 +60,7 @@ void shell_scancode(uint8_t scancode) {
 
 	// check if scancode is enter -> execute command
 	if (scancode == ENTER) {
-		printf("\n");
+		printk("\n");
 		shell_exec_command(key_buffer);
 
 		return;
@@ -73,5 +73,5 @@ void shell_scancode(uint8_t scancode) {
 
 /* for now, the initialization only prints the prompt */
 void shell_init() {
-	printf("%s > ", get_current_path());
+	printk("%s > ", get_current_path());
 }

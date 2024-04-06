@@ -2,10 +2,10 @@
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
-#include <global_addresses.h>
+#include <kernel/tty.h>
 
 #include <string.h>
-#include <stdio.h>
+#include <global_addresses.h>
 
 extern char kernel_end[];           // symbol from the kernel linker script
 kblock_meta *metadata_blk_header;
@@ -46,8 +46,8 @@ uint8_t kmalloc_init(size_t size) {
             return 1;
         }
 
-        // printf("physical address: %x ", starting_phys_addr);
-        // printf("will be mapped to virtual address: %x\n", virt);
+        // printk("physical address: %x ", starting_phys_addr);
+        // printk("will be mapped to virtual address: %x\n", virt);
 
         map_page((void*)(starting_phys_addr), (void*)virt);
 
@@ -67,10 +67,10 @@ uint8_t kmalloc_init(size_t size) {
     metadata_blk_header->next = NULL;
     metadata_blk_header->prev = NULL;
 
-    // printf("initial metadata block:\n");
-    // printf("\tsize: %d\n", metadata_blk_header->size);
-    // printf("\tstatus: %d\n", metadata_blk_header->status);
-    // printf("\tstarting virtual address: %x\n", (void*)metadata_blk_header + METADATA_BLK_SIZE);
+    // printk("initial metadata block:\n");
+    // printk("\tsize: %d\n", metadata_blk_header->size);
+    // printk("\tstatus: %d\n", metadata_blk_header->status);
+    // printk("\tstarting virtual address: %x\n", (void*)metadata_blk_header + METADATA_BLK_SIZE);
 
     return 0;
 }
@@ -84,7 +84,7 @@ void kmalloc_print_list(void) {
     kblock_meta *current = metadata_blk_header;
 
     while (current != NULL) {
-        printf("node size: %d, status %d\n", current->size, current->status);
+        printk("node size: %d, status %d\n", current->size, current->status);
         current = (kblock_meta*)current->next;
     }
 }
@@ -183,12 +183,12 @@ void *kmalloc_expand_memory(uint32_t size) {
         uint32_t starting_phys_addr = (uint32_t) allocate_blocks(1);
 
         if ((void*)starting_phys_addr == NULL) {
-            printf("out of memory!\n");
+            printk("out of memory!\n");
             return NULL;
         }
 
-        // printf("physical address: %x ", starting_phys_addr);
-        // printf("will be mapped to virtual address: %x\n", virt);
+        // printk("physical address: %x ", starting_phys_addr);
+        // printk("will be mapped to virtual address: %x\n", virt);
 
         map_page((void*)(starting_phys_addr), (void*)virt);
 

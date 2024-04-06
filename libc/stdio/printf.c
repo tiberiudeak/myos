@@ -3,28 +3,48 @@
 #include <stddef.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdint.h>
+#include <unistd.h>
+#include <kernel/tty.h>
+
+// printf buffer
+char printf_buffer[PRINTF_BUFFER_SIZE];
+static uint8_t printf_index = 0;
+
 
 /**
- * @brief Write a string of given length to stdout.
+ * @brief Empty printf buffer and print its content to the stdout stream
  *
- * This function writes length characters from the string pointed to by
- * data to stdout
+ * This function prints the bytes in the printf buffer using the write syscall
+ * and then empties the buffer.
  *
- * @param data    The string to be written.
- * @param length  The number of characters to be written.
- *
- * @return True if the string was written successfully, false otherwise.
+ * @return EOF if error occured, 0 otherwise
  */
-static bool print (const char* data, size_t length) {
-	const unsigned char* bytes = (const unsigned char*) data;
+int fflush(void) {
+    size_t bytes_written = write(stdout, printf_buffer, printf_index);
 
-	for (size_t i = 0; i < length; i++) {
-		if (putchar(bytes[i]) == EOF) {
-			return false;
-		}
-	}
+    if (bytes_written != printf_index)
+        return EOF;
 
-	return true;
+    memset(printf_buffer, 0, printf_index);
+    printf_index = 0;
+
+    return 0;
+}
+
+/**
+ * @brief Add given length from string to the printf buffer
+ *
+ * This function copies the first len bytes from the given string into to
+ * printf buffer.
+ *
+ * @param str   String to copy from
+ * @param len   Length in bytes to copy
+ */
+void add_str_to_buffer(const char *str, size_t len) {
+    for (size_t i = 0; i < len; i++) {
+        printf_buffer[printf_index++] = str[i];
+    }
 }
 
 /**
@@ -47,18 +67,24 @@ int printf(const char* restrict format, ...) {
 	while (*format != '\0') {
 		if (format[0] != '%') {
 			// go through the string until a '%'
-			size_t index = 0;
+			size_t index = 0, offset = 0;
 			while (format[index] && format[index] != '%') {
+                // do a fflush if '\n' is in string
+                if (format[index] == '\n') {
+                    add_str_to_buffer(format, index+1);
+                    fflush();
+
+                    written += index;
+                    offset = index + 1;
+                }
+
 				index++;
 			}
 
-			// print the string until the '%'
-			if (!print(format, index)) {
-				return -1;
-			}
+            add_str_to_buffer(format + offset, index - offset);
 
 			format += index;
-			written += index;
+			written += index - offset;
 			continue;
 		}
 
@@ -70,9 +96,7 @@ int printf(const char* restrict format, ...) {
 			const char* str = va_arg(parameters, const char*);
 			size_t len = strlen(str);
 
-			if (!print(str, len)) {
-				return -1;
-			}
+            add_str_to_buffer(str, len);
 
 			written += len;
 		}
@@ -80,9 +104,7 @@ int printf(const char* restrict format, ...) {
 			format++;
 			char c = (char) va_arg(parameters, int);
 
-			if (!print(&c, sizeof(c))) {
-				return -1;
-			}
+            add_str_to_buffer(&c, sizeof(c));
 
 			written++;
 		}
@@ -93,9 +115,7 @@ int printf(const char* restrict format, ...) {
 			itoa(i, str, 10);
 
 			size_t len = strlen(str);
-			if (!print(str, len)) {
-				return -1;
-			}
+            add_str_to_buffer(str, len);
 
 			written += len;
 		}
@@ -106,9 +126,7 @@ int printf(const char* restrict format, ...) {
 			itoa(i, str, 16);
 
 			size_t len = strlen(str);
-			if (!print(str, len)) {
-				return -1;
-			}
+            add_str_to_buffer(str, len);
 
 			written += len;
 		}
@@ -122,9 +140,7 @@ int printf(const char* restrict format, ...) {
 				itoa(i, str, 10);
 
 				size_t len = strlen(str);
-				if (!print(str, len)) {
-					return -1;
-				}
+                add_str_to_buffer(str, len);
 
 				written += len;
 			}
@@ -135,9 +151,7 @@ int printf(const char* restrict format, ...) {
 				itoa(i, str, 16);
 
 				size_t len = strlen(str);
-				if (!print(str, len)) {
-					return -1;
-				}
+                add_str_to_buffer(str, len);
 
 				written += len;
 			}
@@ -151,9 +165,7 @@ int printf(const char* restrict format, ...) {
 					itoa(i, str, 10);
 
 					size_t len = strlen(str);
-					if (!print(str, len)) {
-						return -1;
-					}
+                    add_str_to_buffer(str, len);
 
 					written += len;
 				}
@@ -164,9 +176,7 @@ int printf(const char* restrict format, ...) {
 					itoa(i, str, 16);
 
 					size_t len = strlen(str);
-					if (!print(str, len)) {
-						return -1;
-					}
+                    add_str_to_buffer(str, len);
 
 					written += len;
 				}

@@ -1,6 +1,6 @@
 #include <arch/i386/gdt.h>
+#include <kernel/tty.h>
 #include <string.h>
-#include <stdio.h>
 
 extern void gdt_flush(uint32_t);
 extern void tss_flush();
@@ -24,7 +24,7 @@ tss_entry_t tss_entry;
  * and the TSS is loaded using the tss_flush function.
  */
 void init_gdt() {
-	printf("Initializing GDT");
+	printk("Initializing GDT");
 	gdt_ptr.limit = (sizeof(gdt_entry_t) * GDT_ENTRIES) - 1;
 	gdt_ptr.base = (uint32_t)&gdt_entries;
 
@@ -64,7 +64,7 @@ void init_gdt() {
 	gdt_flush((uint32_t)&gdt_ptr);
 	tss_flush();
 
-	printfc(2, "\t\tdone\n");
+	printkc(2, "\t\tdone\n");
 }
 
 /**

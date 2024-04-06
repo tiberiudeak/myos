@@ -29,9 +29,9 @@ void halt_processor(void) {
 void kmain() {
 	terminal_initialize();      // clear screen
 	char *a = "kernel";
-	printf("Hello, ");
-	printfc(3, "%s", a);
-	printf(" World!\n\n");
+	printk("Hello, ");
+	printkc(3, "%s", a);
+	printk(" World!\n\n");
 
 	int8_t ret;
 
@@ -41,7 +41,7 @@ void kmain() {
 	ret = PS2_init();	    // initialize PS/2 controller
 
 	if (ret) {
-		printfc(4, "failed");
+		printkc(4, "failed");
 		halt_processor();
 	}
 
@@ -53,7 +53,7 @@ void kmain() {
 	__asm__ __volatile__ ("movl $1, %eax; int $0x80");
 
 	initialize_memory();	// initialize physical memory manager
-	printf("\n");
+	printk("\n");
 
 	ret = initialize_virtual_memory();	// initialize virtual memory
 
@@ -72,14 +72,14 @@ void kmain() {
     ret = fs_init();            // initialize the file system
 
     if (ret) {
-        printf("Error initializing the file system\n");
+        printk("Error initializing the file system\n");
         halt_processor();
     }
 
     open_files_table = init_open_files_table();
     
     if (open_files_table == NULL) {
-        printfc(4, "failed to init open files table!\n");
+        printkc(4, "failed to init open files table!\n");
         halt_processor();
     }
 
@@ -88,11 +88,20 @@ void kmain() {
     ret = test_open_close_syscalls();
 
     if (ret) {
-        printfc(4, "open and close syscalls test failed!\n");
+        printkc(4, "open and close syscalls test failed!\n");
         halt_processor();
     }
+ 
+    int aaa = 1;
+    printf("test %d from printf function\nbla? %d", aaa, aaa);
+    ret = fflush();
 
-	printf("Welcome to MyOS!\n");
+    if (ret == -1) {
+        printk("error wirn\n");
+    }
+
+
+	printk("Welcome to MyOS!\n");
 	shell_init();
 }
 

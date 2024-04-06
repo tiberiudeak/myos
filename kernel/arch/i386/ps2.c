@@ -1,6 +1,6 @@
 #include <arch/i386/ps2.h>
 #include <kernel/io.h>
-#include <stdio.h>
+#include <kernel/tty.h>
 
 int PS2_dual_port;
 
@@ -13,7 +13,7 @@ int PS2_dual_port;
  * ports are enabled at the end.
  */
 int PS2_init() {
-	printf("Initializing PS2 Controller\n");
+	printk("Initializing PS2 Controller\n");
 	int ret;
 
 	// disable device
@@ -26,10 +26,10 @@ int PS2_init() {
 	ret = PS2_self_test();
 
 	if (ret) {
-		printf("\tPS/2 self test passed\n");
+		printk("\tPS/2 self test passed\n");
 	}
 	else {
-		printf("\tPS/2 self test failed\n");
+		printk("\tPS/2 self test failed\n");
 		return 1;
 	}
 
@@ -37,23 +37,23 @@ int PS2_init() {
 	ret = PS2_interfaces_test();
 
 	if (ret == 0) {
-		printf("\tNo PS/2 interfaces available\n");
+		printk("\tNo PS/2 interfaces available\n");
 		return 1;
 	}
 
 	if (ret == 3) {
-		printf("\tPS/2 available interfaces: 2\n");
+		printk("\tPS/2 available interfaces: 2\n");
 		PS2_enable_devices(1, 1);
 		return 0;
 	}
 
 	if (ret == 2) {
-		printf("\tOnly second PS/2 interface available\n");
+		printk("\tOnly second PS/2 interface available\n");
 		PS2_enable_devices(0, 1);
 		return 0;
 	}
 
-	printf("\tOnly first PS/2 interface available\n");
+	printk("\tOnly first PS/2 interface available\n");
 	PS2_enable_devices(1, 0);
 	return 0;
 }
@@ -203,7 +203,7 @@ int PS2_interfaces_test() {
 	uint8_t response1 = port_byte_in(PS2_DATA_PORT);
 
 	if (response1 != 0) {
-		printf("PS/2 port 1 test failed\n");
+		printk("PS/2 port 1 test failed\n");
 	}
 
 	port_byte_out(PS2_COMMAND_PORT, PS2_TEST_SECOND_PORT);
@@ -213,7 +213,7 @@ int PS2_interfaces_test() {
 	uint8_t response2 = port_byte_in(PS2_DATA_PORT);
 
 	if (response2 != 0) {
-		printf("PS/2 port 2 test failed\n");
+		printk("PS/2 port 2 test failed\n");
 	}
 
 	if (response1 == 0 && response2 == 0) {

@@ -1,12 +1,243 @@
+#include "include/kernel/tty.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdarg.h>
 #include <kernel/tty.h>
-#include "include/global_addresses.h"
-#include "include/kernel/tty.h"
+#include <global_addresses.h>
 
-#ifdef CONFIG_TTY_VGA
+#ifdef CONFIG_TTY_VBE
+static const uint32_t default_color = 0xFFFFFFFF;
+#else
+static const uint8_t default_color = 15;
+#endif
+
+
+#ifdef CONFIG_TTY_VBE
+
+#include <global_addresses.h>
+#include <mm/vmm.h>
+
+static uint8_t *font = (uint8_t*)VGA_BIOS_FONT;
+static const vbe_mode_info_block *vbe_mode = (vbe_mode_info_block*)VBE_MODE_INFO;
+static uint32_t *framebuffer;
+
+static size_t terminal_row;
+static size_t terminal_column;
+static uint32_t terminal_color;
+
+static size_t VBE_WIDTH;
+static size_t VBE_HEIGHT;
+
+void clear_screen(void) {
+    int num_pixels = VBE_WIDTH * VBE_HEIGHT;
+
+    for (int i = 0; i < num_pixels; i++) {
+        ((uint32_t*)framebuffer)[i] = 0x00000000;
+    }
+}
+
+void terminal_initialize(void) {
+    framebuffer = (uint32_t*)vbe_mode->framebuffer;
+    VBE_WIDTH = vbe_mode->width;
+    VBE_HEIGHT = vbe_mode->height;
+
+	terminal_row = 0;
+	terminal_column = 0;
+    terminal_color = default_color;
+
+    clear_screen();
+}
+
+void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
+
+    // get offset within the font data for the requested character
+    int font_offset = c * 16;
+
+    // calculate the starting address of the character's pixel data in the font
+    uint8_t* char_data = font + font_offset;
+
+    // calculate the starting address of the character's position in the framebuffer
+    uint32_t* dest = framebuffer + (y * VBE_WIDTH * 16 + x * 8);
+
+    for (int row = 0; row < 16; row++) {
+        uint8_t pixel_data = char_data[row];            // get the pixel data for this row
+        uint32_t* dest_row = dest + row * VBE_WIDTH;    // calculate the starting address of this row in the framebuffer
+
+        // iterate over each pixel in the row
+        for (int col = 0; col < 8; col++) {
+            // check if the current pixel is set in the pixel data
+            if (pixel_data & (1 << (7 - col))) {
+                // set the corresponding pixel in the framebuffer
+                dest_row[col] = color;
+            }
+        }
+    }
+}
+
+void terminal_scroll(void) {
+    int row_size = VBE_WIDTH * sizeof(uint32_t);
+
+    for (size_t y = 0; y < VBE_HEIGHT - 16; ++y) {
+        uint32_t* src = framebuffer + (y + 16) * VBE_WIDTH;
+        uint32_t* dest = framebuffer + y * VBE_WIDTH;
+
+        for (size_t x = 0; x < VBE_WIDTH; ++x) {
+            dest[x] = src[x];
+        }
+    }
+
+    // clear the bottom 16 rows to black
+    uint32_t* bottom_row = framebuffer + (VBE_HEIGHT - 16) * VBE_WIDTH;
+    memset(bottom_row, 0, 16 * row_size);
+}
+
+void terminal_putchar(char c) {
+
+	unsigned char uc = c;
+
+	if (c == '\t') {
+		terminal_column += 1;
+
+		if (terminal_column % 4 != 0) {
+			terminal_column += (4 - terminal_column % 4);
+		}
+
+		if (terminal_column >= (VBE_WIDTH / 8)) {
+			terminal_column = terminal_column - (VBE_WIDTH / 8);
+
+			if (++terminal_row == (VBE_HEIGHT / 16)) {
+				terminal_scroll();
+				terminal_row = (VBE_HEIGHT / 16) - 1;
+			}
+		}
+
+		// set_cursor(terminal_column, terminal_row);
+		return;
+	}
+
+	if (c == '\n') {
+		terminal_column = 0;
+
+		if (++terminal_row == (VBE_HEIGHT / 16)) {
+			terminal_row = (VBE_HEIGHT / 16) - 1;
+			terminal_scroll();
+		}
+
+		// set_cursor(terminal_column, terminal_row);
+
+		return;
+	}
+
+	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+
+
+	if (++terminal_column == (VBE_WIDTH / 8)) {
+		terminal_column = 0;
+
+		if (++terminal_row == (VBE_HEIGHT / 16)) {
+			terminal_scroll();
+			terminal_row = (VBE_HEIGHT / 16) - 1;
+		}
+	}
+
+	// set_cursor(terminal_column, terminal_row);
+}
+
+void terminal_write(const char* data, size_t size) {
+    for (size_t i = 0; i < size; i++) {
+        terminal_putchar(data[i]);
+    }
+}
+
+void terminal_writestring(const char* data) {
+    terminal_write(data, strlen(data));
+}
+
+void terminal_setcolor(uint8_t color) {
+    switch (color) {
+        case 0:
+            terminal_color = VBE_COLOR_BLACK;
+            break;
+        case 1:
+            terminal_color = VBE_COLOR_BLUE;
+            break;
+        case 2:
+            terminal_color = VBE_COLOR_GREEN;
+            break;
+        case 3:
+            terminal_color = VBE_COLOR_CYAN;
+            break;
+        case 4:
+            terminal_color = VBE_COLOR_RED;
+            break;
+        case 5:
+            terminal_color = VBE_COLOR_MAGENTA;
+            break;
+        case 6:
+            terminal_color = VBE_COLOR_BROWN;
+            break;
+        case 7:
+            terminal_color = VBE_COLOR_LIGHT_GREY;
+            break;
+        case 8:
+            terminal_color = VBE_COLOR_DARK_GREY;
+            break;
+        case 9:
+            terminal_color = VBE_COLOR_LIGHT_BLUE;
+            break;
+        case 10:
+            terminal_color = VBE_COLOR_LIGHT_GREEN;
+            break;
+        case 11:
+            terminal_color = VBE_COLOR_LIGHT_CYAN;
+            break;
+        case 12:
+            terminal_color = VBE_COLOR_LIGHT_RED;
+            break;
+        case 13:
+            terminal_color = VBE_COLOR_LIGHT_MAGENTA;
+            break;
+        case 14:
+            terminal_color = VBE_COLOR_LIGHT_BROWN;
+            break;
+        case 15:
+            terminal_color = VBE_COLOR_WHITE;
+            break;
+        default:
+            terminal_color = VBE_COLOR_WHITE;
+    }
+}
+
+uint8_t map_framebuffer(void) {
+    uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
+    uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+
+    if (framebuffer_size_pages % PAGE_SIZE > 0) {
+        framebuffer_size_pages++;
+    }
+
+    framebuffer_size_pages *= 2;
+    int ret;
+
+    for (uint32_t i = 0, fb_start = vbe_mode->framebuffer; i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
+        ret = map_page((void*)fb_start, (void*)fb_start);
+        if (ret) {
+            return ret;
+        }
+    }
+
+    return 0;
+}
+
+void terminal_backspace_cursor(char c) {
+    terminal_column--;
+    terminal_putentryat(c, VBE_COLOR_BLACK, terminal_column, terminal_row);
+}
+
+#else /* CONFIG_TTY_VBE */
+
 #include <kernel/io.h>
 #include "vga.h"
 
@@ -206,231 +437,317 @@ void terminal_backspace_cursor(char c) {
     terminal_writestring(" ");
 	set_cursor(--terminal_column, terminal_row);
 }
+
 #endif /* CONFIG_TTY_VGA */
 
 
 
-#ifdef CONFIG_TTY_VBE
-
-#include <global_addresses.h>
-#include <mm/vmm.h>
-
-static uint8_t *font = (uint8_t*)VGA_BIOS_FONT;
-static const vbe_mode_info_block *vbe_mode = (vbe_mode_info_block*)VBE_MODE_INFO;
-static uint32_t *framebuffer;
-
-static size_t terminal_row;
-static size_t terminal_column;
-static uint32_t terminal_color;
-
-static size_t VBE_WIDTH;
-static size_t VBE_HEIGHT;
-
-void clear_screen(void) {
-    int num_pixels = VBE_WIDTH * VBE_HEIGHT;
-
-    for (int i = 0; i < num_pixels; i++) {
-        ((uint32_t*)framebuffer)[i] = 0x00000000;
-    }
+/**
+ * @brief Write a string of given length to stdout.
+ *
+ * This function writes length characters from the string pointed to by
+ * data to stdout
+ *
+ * @param data    The string to be written.
+ * @param length  The number of characters to be written.
+ *
+ * @return True if the string was written successfully, false otherwise.
+ */
+static bool __print(const char* data, size_t length, uint8_t color) {
+    terminal_setcolor(color);
+    terminal_write(data, length);
+    terminal_setcolor(default_color);  // se color back to default
+	return true;
 }
 
-void terminal_initialize(void) {
-    framebuffer = (uint32_t*)vbe_mode->framebuffer;
-    VBE_WIDTH = vbe_mode->width;
-    VBE_HEIGHT = vbe_mode->height;
+/**
+ * @brief Write a formatted string to stdout.
+ *
+ * This function writes a formatted string to stdout.
+ *
+ * @param format  The format string.
+ * @param ...     The arguments to be formatted.
+ *
+ * @return The number of characters written, or a negative value if an error
+ * 	   occurred.
+ */
+int printkc(int color, const char* restrict format, ...) {
+	va_list parameters;
+	va_start(parameters, format);
 
-	terminal_row = 0;
-	terminal_column = 0;
-    terminal_color = 0xFFFFFFFF;    // default is white
+	int written = 0;
 
-    clear_screen();
-}
+	while (*format != '\0') {
+		if (format[0] != '%') {
+			// go through the string until a '%'
+			size_t index = 0;
+			while (format[index] && format[index] != '%') {
+				index++;
+			}
 
-void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
+			// print the string until the '%'
+			if (!__print(format, index, color)) {
+				return -1;
+			}
 
-    // get offset within the font data for the requested character
-    int font_offset = c * 16;
-
-    // calculate the starting address of the character's pixel data in the font
-    uint8_t* char_data = font + font_offset;
-
-    // calculate the starting address of the character's position in the framebuffer
-    uint32_t* dest = framebuffer + (y * VBE_WIDTH * 16 + x * 8);
-
-    for (int row = 0; row < 16; row++) {
-        uint8_t pixel_data = char_data[row];            // get the pixel data for this row
-        uint32_t* dest_row = dest + row * VBE_WIDTH;    // calculate the starting address of this row in the framebuffer
-
-        // iterate over each pixel in the row
-        for (int col = 0; col < 8; col++) {
-            // check if the current pixel is set in the pixel data
-            if (pixel_data & (1 << (7 - col))) {
-                // set the corresponding pixel in the framebuffer
-                dest_row[col] = color;
-            }
-        }
-    }
-}
-
-void terminal_scroll(void) {
-    int row_size = VBE_WIDTH * sizeof(uint32_t);
-
-    for (size_t y = 0; y < VBE_HEIGHT - 16; ++y) {
-        uint32_t* src = framebuffer + (y + 16) * VBE_WIDTH;
-        uint32_t* dest = framebuffer + y * VBE_WIDTH;
-
-        for (size_t x = 0; x < VBE_WIDTH; ++x) {
-            dest[x] = src[x];
-        }
-    }
-
-    // clear the bottom 16 rows to black
-    uint32_t* bottom_row = framebuffer + (VBE_HEIGHT - 16) * VBE_WIDTH;
-    memset(bottom_row, 0, 16 * row_size);
-}
-
-void terminal_putchar(char c) {
-
-	unsigned char uc = c;
-
-	if (c == '\t') {
-		terminal_column += 1;
-
-		if (terminal_column % 4 != 0) {
-			terminal_column += (4 - terminal_column % 4);
+			format += index;
+			written += index;
+			continue;
 		}
 
-		if (terminal_column >= (VBE_WIDTH / 8)) {
-			terminal_column = terminal_column - (VBE_WIDTH / 8);
+		// skip the '%' character
+		format++;
 
-			if (++terminal_row == (VBE_HEIGHT / 16)) {
-				terminal_scroll();
-				terminal_row = (VBE_HEIGHT / 16) - 1;
+		if (*format == 's') {
+			format++;
+			const char* str = va_arg(parameters, const char*);
+			size_t len = strlen(str);
+
+			if (!__print(str, len, color)) {
+				return -1;
+			}
+
+			written += len;
+		}
+		else if (*format == 'c') {
+			format++;
+			char c = (char) va_arg(parameters, int);
+
+			if (!__print(&c, sizeof(c), color)) {
+				return -1;
+			}
+
+			written++;
+		}
+		else if (*format == 'd') {
+			format++;
+			int i = va_arg(parameters, int);
+			char str[12];
+			itoa(i, str, 10);
+
+			size_t len = strlen(str);
+			if (!__print(str, len, color)) {
+				return -1;
+			}
+
+			written += len;
+		}
+		else if (*format == 'x') {
+			format++;
+			unsigned int i = va_arg(parameters, unsigned int);
+			char str[20] = {0};
+			itoa(i, str, 16);
+
+			size_t len = strlen(str);
+			if (!__print(str, len, color)) {
+				return -1;
+			}
+
+			written += len;
+		}
+		else if (*format == 'l') {
+			format++;
+
+			if (*format == 'd') {
+				format++;
+				long int i = va_arg(parameters, long int);
+				char str[20];
+				itoa(i, str, 10);
+
+				size_t len = strlen(str);
+				if (!__print(str, len, color)) {
+					return -1;
+				}
+
+				written += len;
+			}
+			else if (*format == 'x') {
+				format++;
+				long unsigned int i = va_arg(parameters, long unsigned int);
+				char str[20] = {0};
+				itoa(i, str, 16);
+
+				size_t len = strlen(str);
+				if (!__print(str, len, color)) {
+					return -1;
+				}
+
+				written += len;
+			}
+			else if (*format == 'l') {
+				format++;
+
+				if (*format == 'd') {
+					format++;
+					long long int i = va_arg(parameters, long long int);
+					char str[20];
+					itoa(i, str, 10);
+
+					size_t len = strlen(str);
+					if (!__print(str, len, color)) {
+						return -1;
+					}
+
+					written += len;
+				}
+				else if (*format == 'x') {
+					format++;
+					long long unsigned int i = va_arg(parameters, long long unsigned int);
+					char str[20] = {0};
+					itoa(i, str, 16);
+
+					size_t len = strlen(str);
+					if (!__print(str, len, color)) {
+						return -1;
+					}
+
+					written += len;
+				}
 			}
 		}
-
-		// set_cursor(terminal_column, terminal_row);
-		return;
-	}
-
-	if (c == '\n') {
-		terminal_column = 0;
-
-		if (++terminal_row == (VBE_HEIGHT / 16)) {
-			terminal_row = (VBE_HEIGHT / 16) - 1;
-			terminal_scroll();
-		}
-
-		// set_cursor(terminal_column, terminal_row);
-
-		return;
-	}
-
-	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
-
-
-	if (++terminal_column == (VBE_WIDTH / 8)) {
-		terminal_column = 0;
-
-		if (++terminal_row == (VBE_HEIGHT / 16)) {
-			terminal_scroll();
-			terminal_row = (VBE_HEIGHT / 16) - 1;
+		else {
+			// unsupported format
+			return -1;
 		}
 	}
 
-	// set_cursor(terminal_column, terminal_row);
+	va_end(parameters);
+	return written;
 }
 
-void terminal_write(const char* data, size_t size) {
-    for (size_t i = 0; i < size; i++) {
-        terminal_putchar(data[i]);
-    }
+/**
+ * @brief Write a formatted string to stdout.
+ *
+ * This function writes a formatted string to stdout.
+ *
+ * @param format  The format string.
+ * @param ...     The arguments to be formatted.
+ *
+ * @return The number of characters written, or a negative value if an error
+ * 	   occurred.
+ */
+int printk(const char* restrict format, ...) {
+	va_list parameters;
+	va_start(parameters, format);
+
+	int written = 0;
+
+	while (*format != '\0') {
+		if (format[0] != '%') {
+			// go through the string until a '%'
+			size_t index = 0;
+			while (format[index] && format[index] != '%') {
+				index++;
+			}
+
+			// print the string until the '%'
+            terminal_write(format, index);
+
+			format += index;
+			written += index;
+			continue;
+		}
+
+		// skip the '%' character
+		format++;
+
+		if (*format == 's') {
+			format++;
+			const char* str = va_arg(parameters, const char*);
+			size_t len = strlen(str);
+
+            terminal_write(str, len);
+
+			written += len;
+		}
+		else if (*format == 'c') {
+			format++;
+			char c = (char) va_arg(parameters, int);
+
+            terminal_write(&c, sizeof(c));
+
+			written++;
+		}
+		else if (*format == 'd') {
+			format++;
+			int i = va_arg(parameters, int);
+			char str[12];
+			itoa(i, str, 10);
+
+			size_t len = strlen(str);
+            terminal_write(str, len);
+
+			written += len;
+		}
+		else if (*format == 'x') {
+			format++;
+			unsigned int i = va_arg(parameters, unsigned int);
+			char str[20] = {0};
+			itoa(i, str, 16);
+
+			size_t len = strlen(str);
+            terminal_write(str, len);
+
+			written += len;
+		}
+		else if (*format == 'l') {
+			format++;
+
+			if (*format == 'd') {
+				format++;
+				long int i = va_arg(parameters, long int);
+				char str[20];
+				itoa(i, str, 10);
+
+				size_t len = strlen(str);
+                terminal_write(str, len);
+
+				written += len;
+			}
+			else if (*format == 'x') {
+				format++;
+				long unsigned int i = va_arg(parameters, long unsigned int);
+				char str[20] = {0};
+				itoa(i, str, 16);
+
+				size_t len = strlen(str);
+                terminal_write(str, len);
+
+				written += len;
+			}
+			else if (*format == 'l') {
+				format++;
+
+				if (*format == 'd') {
+					format++;
+					long long int i = va_arg(parameters, long long int);
+					char str[20];
+					itoa(i, str, 10);
+
+					size_t len = strlen(str);
+                    terminal_write(str, len);
+
+					written += len;
+				}
+				else if (*format == 'x') {
+					format++;
+					long long unsigned int i = va_arg(parameters, long long unsigned int);
+					char str[20] = {0};
+					itoa(i, str, 16);
+
+					size_t len = strlen(str);
+                    terminal_write(str, len);
+
+					written += len;
+				}
+			}
+		}
+		else {
+			// unsupported format
+			return -1;
+		}
+	}
+
+	va_end(parameters);
+	return written;
 }
-
-void terminal_writestring(const char* data) {
-    terminal_write(data, strlen(data));
-}
-
-void terminal_setcolor(uint8_t color) {
-    switch (color) {
-        case 0:
-            terminal_color = VBE_COLOR_BLACK;
-            break;
-        case 1:
-            terminal_color = VBE_COLOR_BLUE;
-            break;
-        case 2:
-            terminal_color = VBE_COLOR_GREEN;
-            break;
-        case 3:
-            terminal_color = VBE_COLOR_CYAN;
-            break;
-        case 4:
-            terminal_color = VBE_COLOR_RED;
-            break;
-        case 5:
-            terminal_color = VBE_COLOR_MAGENTA;
-            break;
-        case 6:
-            terminal_color = VBE_COLOR_BROWN;
-            break;
-        case 7:
-            terminal_color = VBE_COLOR_LIGHT_GREY;
-            break;
-        case 8:
-            terminal_color = VBE_COLOR_DARK_GREY;
-            break;
-        case 9:
-            terminal_color = VBE_COLOR_LIGHT_BLUE;
-            break;
-        case 10:
-            terminal_color = VBE_COLOR_LIGHT_GREEN;
-            break;
-        case 11:
-            terminal_color = VBE_COLOR_LIGHT_CYAN;
-            break;
-        case 12:
-            terminal_color = VBE_COLOR_LIGHT_RED;
-            break;
-        case 13:
-            terminal_color = VBE_COLOR_LIGHT_MAGENTA;
-            break;
-        case 14:
-            terminal_color = VBE_COLOR_LIGHT_BROWN;
-            break;
-        case 15:
-            terminal_color = VBE_COLOR_WHITE;
-            break;
-        default:
-            terminal_color = VBE_COLOR_WHITE;
-    }
-}
-
-uint8_t map_framebuffer(void) {
-    uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
-    uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
-
-    if (framebuffer_size_pages % PAGE_SIZE > 0) {
-        framebuffer_size_pages++;
-    }
-
-    framebuffer_size_pages *= 2;
-    int ret;
-
-    for (uint32_t i = 0, fb_start = vbe_mode->framebuffer; i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
-        ret = map_page((void*)fb_start, (void*)fb_start);
-        if (ret) {
-            return ret;
-        }
-    }
-
-    return 0;
-}
-
-void terminal_backspace_cursor(char c) {
-    terminal_column--;
-    terminal_putentryat(c, VBE_COLOR_BLACK, terminal_column, terminal_row);
-}
-
-#endif /* CONFIG_TTY_VBE */
-

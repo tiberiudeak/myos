@@ -2,6 +2,7 @@
 #include <global_addresses.h>
 #include <disk/disk.h>
 #include <mm/kmalloc.h>
+#include <kernel/tty.h>
 
 #include <stddef.h>
 #include <stdio.h>
@@ -13,18 +14,18 @@ inode_block_t parent_directory;
 char current_path[MAX_PATH_LENGTH];
 
 void print_superblock_info(void) {
-    printf("memory layout information (from the superblock):\n");
+    printk("memory layout information (from the superblock):\n");
 
-    printf("\ttotal inodes: %d\n", superblock->total_inodes);
-    printf("\tfirst block with inodes: %d\n", superblock->first_inode_block);
-    printf("\tnumber of bocks with inodes: %d\n", superblock->inode_blocks);
-    printf("\tinodes bitmap blocks: %d\n", superblock->inode_bitmap_blocks);
-    printf("\tfirst inode bitmap block: %d\n", superblock->first_inode_bitmap_block);
+    printk("\ttotal inodes: %d\n", superblock->total_inodes);
+    printk("\tfirst block with inodes: %d\n", superblock->first_inode_block);
+    printk("\tnumber of bocks with inodes: %d\n", superblock->inode_blocks);
+    printk("\tinodes bitmap blocks: %d\n", superblock->inode_bitmap_blocks);
+    printk("\tfirst inode bitmap block: %d\n", superblock->first_inode_bitmap_block);
 
-    printf("\tfirst data block: %d\n", superblock->first_data_block);
-    printf("\tnumber of blocks with data: %d\n", superblock->data_blocks);
-    printf("\tdata bitmap blocks: %d\n", superblock->data_bitmap_blocks);
-    printf("\tfirst data bitmap block: %d\n", superblock->first_data_bitmap_block);
+    printk("\tfirst data block: %d\n", superblock->first_data_block);
+    printk("\tnumber of blocks with data: %d\n", superblock->data_blocks);
+    printk("\tdata bitmap blocks: %d\n", superblock->data_bitmap_blocks);
+    printk("\tfirst data bitmap block: %d\n", superblock->first_data_bitmap_block);
 }
 
 /**
@@ -52,7 +53,7 @@ uint8_t load_file(inode_block_t *inode, uint32_t address) {
         ret = read_sectors(starting_sector, number_of_sectors, address + offset);
 
         if (ret) {
-            printf("error loading block from disk\n");
+            printk("error loading block from disk\n");
             return 1;
         }
 
@@ -79,7 +80,7 @@ inode_block_t get_inode_from_id(uint32_t id) {
     void *addr = kmalloc(FS_BLOCK_SIZE);
 
     if (addr == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         return result;
     }
 
@@ -92,7 +93,7 @@ inode_block_t get_inode_from_id(uint32_t id) {
         int ret = read_sectors(starting_sector, number_of_sector, (uint32_t)addr);
 
         if (ret) {
-            printf("error loading block from disk\n");
+            printk("error loading block from disk\n");
             break;
         }
 
@@ -129,7 +130,7 @@ uint8_t fs_print_dir(void) {
     void *addr = kmalloc(needed_bytes);
 
     if (addr == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         return 1;
     }
 
@@ -157,16 +158,16 @@ uint8_t fs_print_dir(void) {
         inode_block_t file_inode = get_inode_from_id(id);
 
         if (file_inode.id == 0) {
-            printf("file with id %d not found\n", id);
+            printk("file with id %d not found\n", id);
             break;
         }
 
         if (dir_entry->id != 0) {
-            printf("%s ", file_inode.file_type == 1 ? "d" : "f");
-            printf(" %d/%d/%d ", file_inode.datetime.day, file_inode.datetime.month,
+            printk("%s ", file_inode.file_type == 1 ? "d" : "f");
+            printk(" %d/%d/%d ", file_inode.datetime.day, file_inode.datetime.month,
                     file_inode.datetime.year);
-            printf(" %d", file_inode.size_bytes);
-            printf("\t%s\n", dir_entry->name);
+            printk(" %d", file_inode.size_bytes);
+            printk("\t%s\n", dir_entry->name);
         }
     }
 
@@ -191,7 +192,7 @@ void ls_root_dir(void) {
         ret = read_sectors(starting_sector, number_of_sectors, (uint32_t)addr);
 
         if (ret) {
-            printf("error loading root block from disk: %d\n", ret);
+            printk("error loading root block from disk: %d\n", ret);
             return;
         }
 
@@ -203,7 +204,7 @@ void ls_root_dir(void) {
             directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
 
             if (dir_entry->id != 0) {
-                printf("%s\n", dir_entry->name);
+                printk("%s\n", dir_entry->name);
             }
         }
 
@@ -243,7 +244,7 @@ uint8_t fs_init(void) {
         ret = read_sectors(starting_sector, number_of_sectors, (uint32_t)addr);
 
         if (ret) {
-            printf("error loading block from disk\n");
+            printk("error loading block from disk\n");
             return 1;
         }
 
@@ -299,7 +300,7 @@ inode_block_t get_inode_from_path(char *path) {
             void *addr = kmalloc(needed_bytes);
 
             if (addr == NULL) {
-                printf("out of memory\n");
+                printk("out of memory\n");
                 return (inode_block_t){0};
             }
 
@@ -317,7 +318,7 @@ inode_block_t get_inode_from_path(char *path) {
                 directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
 
                 if (strcmp((char*)dir_entry->name, "..") == 0) {
-                    printf("parent inode has id: %d\n", dir_entry->id);
+                    printk("parent inode has id: %d\n", dir_entry->id);
                     parent_directory_copy = get_inode_from_id(dir_entry->id);
                 }
             }
@@ -345,7 +346,7 @@ inode_block_t get_inode_from_path(char *path) {
         void *addr = kmalloc(needed_bytes);
 
         if (addr == NULL) {
-            printf("out of memory\n");
+            printk("out of memory\n");
             return (inode_block_t){0};
         }
 
@@ -429,11 +430,11 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
         goto err;
 
     inode_block_t *tmp_inode = (inode_block_t*) tmp_sector + (inode->id % 8);
-    printf("test test: %d\n", tmp_inode->size_bytes);
+    printk("test test: %d\n", tmp_inode->size_bytes);
     *tmp_inode = *inode;
 
     tmp_inode = (inode_block_t*)tmp_sector + (inode->id % 8);
-    printf("test test: %d\n", tmp_inode->size_bytes);
+    printk("test test: %d\n", tmp_inode->size_bytes);
 
     ret = write_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
 
@@ -446,7 +447,7 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
     //    goto err;
 
     //tmp_inode = (inode_block_t*) tmp_sector;
-    //printf("test test after write: %d\n", tmp_inode->id);
+    //printk("test test after write: %d\n", tmp_inode->id);
 
     kfree(tmp_sector);
     return 0;
@@ -477,7 +478,7 @@ void* init_open_files_table(void) {
     open_files_table_t *tmp = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
 
     if (tmp == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         return NULL;
     }
 
@@ -492,7 +493,7 @@ void* init_open_inodes_table(void) {
     inode_block_t *tmp = (inode_block_t*) kmalloc(sizeof(inode_block_t) * MAX_OPEN_FILES);
 
     if (tmp == NULL) {
-        printf("out of memory\n");
+        printk("out of memory\n");
         return NULL;
     }
 
