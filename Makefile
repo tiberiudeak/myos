@@ -1,5 +1,5 @@
-export SYSTEM_HEADER_PROJECTS=boot libc kernel
-export PROJECTS=boot libc kernel
+export SYSTEM_HEADER_PROJECTS=boot libc kernel programs
+export PROJECTS=boot libc kernel programs
 
 export HOST:=i686-elf
 export DEFAULT_HOST:=i686-elf
@@ -46,6 +46,7 @@ CC:=$(CC) -isystem=$(INCLUDEDIR)
 BOOT_SRC_DIR:=boot
 KERNEL_SRC_DIR:=kernel
 LIBC_SRC_DIR:=libc
+PROG_SRC_DIR:=programs
 
 # final paths to the binaries
 BOOT_BIN:=$(BOOT_SRC_DIR)/bootloader.bin
@@ -65,6 +66,9 @@ INCLUDED_FILES:=files.txt
 all: $(TARGET)
 
 $(TARGET): $(BINARIES)
+	# compile programs in the programs folder
+	@$(MAKE) -C $(PROG_SRC_DIR)
+
 	gcc create_disk_image.c -o create_disk_image -lm
 	./create_disk_image $(TARGET) $(INCLUDED_FILES)
 
