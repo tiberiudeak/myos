@@ -5,7 +5,7 @@ ARCHDIR:=arch/$(HOSTARCH)
 # define flags if not already defined
 CFLAGS:=-O2 -g
 CPPFLAGS:=
-# link with my libc and default 0x0 entry address
+# link with my libc
 LDFLAGS:=-L../sysroot/usr/lib/
 ASFLAGS:=
 LIBS:=

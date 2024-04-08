@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <fs.h>
 #include <string.h>
+#include <elf.h>
 
 extern char kernel_end[];
 
@@ -100,6 +101,7 @@ void kmain() {
         printk("error wirn\n");
     }
 
+    execute_elf("pr1");
 
 	printk("Welcome to MyOS!\n");
 	shell_init();

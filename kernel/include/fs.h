@@ -75,7 +75,7 @@ typedef struct {
 
 // sizeof open files table: 16B
 typedef struct {
-    uint8_t *address;               // virtual address - where file is loaded
+    uint32_t *address;               // virtual address - where file is loaded
     uint32_t offset;                // offset from base address
     inode_block_t *inode;           // file's inode
     uint16_t flags;
