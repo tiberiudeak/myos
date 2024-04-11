@@ -29,6 +29,12 @@ typedef enum {
     EM_386              = 0x3
 } ELF_MACHINES;
 
+typedef enum {
+    PT_NULL             = 0x0,
+    PT_LOAD             = 0x1,
+    PT_DYNAMIC          = 0x2
+} PHDR_TYPES;
+
 #define EI_NIDENT   (16)
 
 // ELF header
