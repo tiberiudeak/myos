@@ -67,6 +67,13 @@ typedef struct {
   Elf32_Word	p_align;		/* Segment alignment */
 } Elf32_Phdr;
 
+typedef struct {
+    void *physical_address;     // the physical address used for the segments
+    void *virtual_address;      // the corresponding virtual address
+    uint32_t num_blocks;        // number of contiguous blocks used
+    struct elf_phys_mem_info *next;
+} elf_phys_mem_info;
+
 //void *load_elf(uint32_t *);
 int32_t execute_elf(char *name);
 

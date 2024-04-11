@@ -10,6 +10,62 @@
 #include <string.h>
 #include <fcntl.h>
 
+elf_phys_mem_info *elf_phys_mem_info_header = NULL;
+
+/**
+ * @brief Add new node with the given info to list
+ */
+void add_phys_info(void *addr, void *virt_addr, uint32_t num_blocks) {
+    elf_phys_mem_info *tmp = kmalloc(sizeof(elf_phys_mem_info));
+
+    if (tmp == NULL) {
+        printk("out of memory\n");
+        return;
+    }
+
+    tmp->num_blocks = num_blocks;
+    tmp->physical_address = addr;
+    tmp->virtual_address = virt_addr;
+    tmp->next = NULL;
+
+    if (elf_phys_mem_info_header == NULL) {
+        elf_phys_mem_info_header = tmp;
+        return;
+    }
+
+    elf_phys_mem_info *tmp2 = elf_phys_mem_info_header;
+
+    while (tmp2->next != NULL)
+        tmp2 = (elf_phys_mem_info*)tmp2->next;
+
+    tmp2->next = (struct elf_phys_mem_info*)tmp;
+}
+
+void deallocate_elf_memory(void) {
+    elf_phys_mem_info *tmp = elf_phys_mem_info_header;
+
+    while (tmp != NULL) {
+        // free physical memory
+        free_blocks(tmp->physical_address, tmp->num_blocks);
+        tmp = (elf_phys_mem_info*) tmp->next;
+
+        // unmap pages
+        unmap_page(tmp->virtual_address);
+    }
+
+    // free list
+    elf_phys_mem_info *tmp2;
+    tmp = elf_phys_mem_info_header;
+
+    while (tmp != NULL) {
+        tmp2 = tmp;
+        tmp = (elf_phys_mem_info*) tmp->next;
+        kfree(tmp2);
+    }
+
+    elf_phys_mem_info_header = NULL;
+}
+
 /**
  * @brief Check if file at given address is an ELF file
  *
@@ -71,49 +127,30 @@ void *load_elf(uint32_t *elf_address) {
     // to put the data and code segments
     Elf32_Ehdr *elf_header = (Elf32_Ehdr*) elf_address;
 
-    print_elf_header(elf_header);
+    // print_elf_header(elf_header);
 
     // read elf header
     Elf32_Phdr *pr_header = NULL;
-    uint32_t min_virt_addr = 0xFFFFFFFF, max_virt_addr = 0;
-    uint32_t align = PAGE_SIZE;
-    uint32_t tmp_start_vaddr, tmp_end_vaddr;
 
-    printk("Program headers info:\n");
+    // printk("Program headers info:\n");
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
         pr_header = (Elf32_Phdr*) ((void*)elf_address + elf_header->e_phoff) + i;
 
         if (pr_header->p_type != PT_LOAD)
             continue;
 
-        printk("\tSegment number: %d\n", i + 1);
-        printk("\tType: %s\n", pr_header->p_type == PT_LOAD ? "Loadable program segment" :
-                pr_header->p_type == PT_DYNAMIC ? "Dynamic linking information" : "Unknown");
-        printk("\tOffset: %d\n", pr_header->p_offset);
+        // printk("\tSegment number: %d\n", i + 1);
+        // printk("\tType: %s\n", pr_header->p_type == PT_LOAD ? "Loadable program segment" :
+        //         pr_header->p_type == PT_DYNAMIC ? "Dynamic linking information" : "Unknown");
+        // printk("\tOffset: %d\n", pr_header->p_offset);
 
-        printk("\tSegment virtual address: %x\n", pr_header->p_vaddr);
-        printk("\tSegment physical address: %x\n", pr_header->p_paddr);
-        printk("\tSegment size in file: %d (bytes)\n", pr_header->p_filesz);
-        printk("\tSegment size in memory: %d (bytes)\n", pr_header->p_memsz);
-        printk("\tFlags: %x\n", pr_header->p_flags);
-        printk("\tSegment alignment: %x\n", pr_header->p_align);
-        printk("\n");
-
-        //if (align < pr_header->p_align)
-        //    align = pr_header->p_align;
-
-        //// update min and max virtual addresses
-        //tmp_start_vaddr = pr_header->p_vaddr;
-        //tmp_end_vaddr = pr_header->p_vaddr + pr_header->p_memsz;
-
-        //tmp_start_vaddr &= ~(align-1);
-        //tmp_end_vaddr &= ~(align-1);
-
-        //if (min_virt_addr > tmp_start_vaddr)
-        //    min_virt_addr = tmp_start_vaddr;
-
-        //if (max_virt_addr < tmp_end_vaddr)
-        //    max_virt_addr = tmp_end_vaddr;
+        // printk("\tSegment virtual address: %x\n", pr_header->p_vaddr);
+        // printk("\tSegment physical address: %x\n", pr_header->p_paddr);
+        // printk("\tSegment size in file: %d (bytes)\n", pr_header->p_filesz);
+        // printk("\tSegment size in memory: %d (bytes)\n", pr_header->p_memsz);
+        // printk("\tFlags: %x\n", pr_header->p_flags);
+        // printk("\tSegment alignment: %x\n", pr_header->p_align);
+        // printk("\n");
 
         // each segment will have minimum a block of memory
         uint8_t needed_blocks = 0;
@@ -125,7 +162,7 @@ void *load_elf(uint32_t *elf_address) {
             needed_blocks = pr_header->p_memsz / BLOCK_SIZE + 1;
         }
 
-        printk("segment %d needed %d blocks\n", i, needed_blocks);
+        // printk("segment %d needed %d blocks\n", i, needed_blocks);
 
         // map obtained blocks to corresponding virtual addresses
         for (uint32_t i = 0, virt = pr_header->p_vaddr; i < needed_blocks; i++, virt += PAGE_SIZE) {
@@ -141,9 +178,9 @@ void *load_elf(uint32_t *elf_address) {
             pt_entry *page = get_page(virt);
 
             SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+
+            add_phys_info(addr, (void*)virt, needed_blocks);
         }
-
-
 
         // copy data from the ELF file image to the "executable location"
         uint32_t *src, *dst;
@@ -155,35 +192,9 @@ void *load_elf(uint32_t *elf_address) {
         memcpy(dst, src, length);
     }
 
-    //uint32_t total_size_needed = max_virt_addr - min_virt_addr;
-    //printk("File needs %d bytes\n", total_size_needed);
-
-    // printk("min_virt_address: %x\n", min_virt_addr);
-    // printk("max_virt_address: %x\n", max_virt_addr);
-    
-    // allocate memory directly from the physical memory allocator and then
-    // map each segment with the corresponding virtual address
-
-    //for (size_t i = 0; i < elf_header->e_phnum; i++) {
-    //    pr_header = (Elf32_Phdr*) ((void*)elf_address + elf_header->e_phoff) + i;
-
-    //    if (pr_header->p_type != PT_LOAD)
-    //        continue;
-
-    //    uint32_t length = pr_header->p_memsz;
-    //    uint32_t *src = (void*)elf_address + pr_header->p_offset;
-    //    uint32_t *dst = (void*)program_frame + ((uint32_t)pr_header->p_vaddr - (uint32_t)elf_address);
-
-    //    printk("diff: %x\n", pr_header->p_vaddr - (uint32_t)elf_address);
-    //    printk("length: %x, src: %x, dst: %x\n", length, src, dst);
-
-    //    memcpy(dst, src, length);
-    //}
-
     // return entry point to that location
-    
-    printk("info about the executable:\n");
-    printk("entry point: %x\n", elf_header->e_entry);
+    // printk("info about the executable:\n");
+    // printk("entry point: %x\n", elf_header->e_entry);
 
     return (void*)elf_header->e_entry;
 }
@@ -215,18 +226,19 @@ int32_t execute_elf(char *name) {
     if (ret)
         return 1;
 
-    // start execution from entry point
-
     int32_t (*program)(int argc, char *argv[]);
     program = (int32_t (*)(int, char**)) entry_point;
 
+    // start program execution
     int32_t return_code = program(1, NULL);
 
-    printk("return code: %d\n", return_code);
+    // deallocate memory
+    deallocate_elf_memory();
 
     return return_code;
 
 err:
+    deallocate_elf_memory();
     close(fd);
     return 1;
 }

@@ -93,14 +93,8 @@ void kmain() {
         halt_processor();
     }
  
-    int aaa = 1;
-    printf("test %d from printf function\nbla? %d", aaa, aaa);
-    ret = fflush();
-
-    if (ret == -1) {
-        printk("error wirn\n");
-    }
-
+    execute_elf("pr1");
+    execute_elf("pr1");
     execute_elf("pr1");
 
 	printk("Welcome to MyOS!\n");
