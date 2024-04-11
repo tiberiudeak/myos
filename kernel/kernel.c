@@ -93,10 +93,6 @@ void kmain() {
         halt_processor();
     }
  
-    execute_elf("pr1");
-    execute_elf("pr1");
-    execute_elf("pr1");
-
 	printk("Welcome to MyOS!\n");
 	shell_init();
 }

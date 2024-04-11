@@ -4,6 +4,7 @@
 #include <arch/i386/pit.h>
 #include <arch/i386/rtc.h>
 #include <mm/pmm.h>
+#include <elf.h>
 #include <fs.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,6 +33,18 @@ void shell_exec_command(char *command) {
 	}
 	else if (strcmp(command, "ls") == 0) {
 		fs_print_dir();
+	}
+	else if (strncmp(command, "./", 2) == 0) {
+		int ret = execute_elf(command);
+
+        if (ret != 0) {
+            printkc(4, "execution finished with error code: %d\n", ret);
+        }
+        else {
+            printkc(2, "execution finished successfully\n");
+        }
+	}
+	else if (strcmp(command, "") == 0) {
 	}
 	else {
 		printk("%s: unknown command\n", command);

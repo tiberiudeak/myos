@@ -207,15 +207,19 @@ int32_t execute_elf(char *name) {
     // open syscall to get the fd for the elf file
     int fd = open(name, O_RDONLY);
 
-    if (fd < 0)
+    if (fd < 0) {
+        printk("%s no such file or directory!\n", name);
         return 1;
+    }
 
     open_files_table_t *oft_entry = open_files_table + fd;
 
     ret = check_elf(oft_entry->address);
 
-    if (ret)
+    if (ret) {
+        printk("file is not an executable ELF file!\n");
         goto err;
+    }
 
     // get entry point of elf
     void *entry_point = load_elf(oft_entry->address);
