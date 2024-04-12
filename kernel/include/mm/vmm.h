@@ -27,7 +27,7 @@
  *
  * P: Present. If the bit is set, the page is actually in physical memory
  * R/W: 1 = page is read-write; 0 = page is read-only
- * U/S: 1 = page may be accessed by all; 1 = only the supervisor can access it
+ * U/S: 1 = page may be accessed by all; 0 = only the supervisor can access it
  * PWT: 1 = write-through caching; 0 = write-back
  * PCD: 1 = the page will not be cached; 0 = the page will be cached
  * A: Accessed: used to discover whether a PDE or PTE was read during the virtual
@@ -93,6 +93,7 @@ typedef struct {
 
 uint8_t initialize_virtual_memory(void);
 uint8_t map_page(void*, void*);
+uint8_t map_user_page(void*, void*);
 void unmap_page(void*);
 pt_entry *get_page(address);
 

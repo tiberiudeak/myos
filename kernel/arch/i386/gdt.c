@@ -59,7 +59,7 @@ void init_gdt() {
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 
 	// Task State Segment (TSS)
-	write_tss(5, 0x10, 0x0);
+	write_tss(5, 0x10, 0x90000);
 
 	gdt_flush((uint32_t)&gdt_ptr);
 	tss_flush();

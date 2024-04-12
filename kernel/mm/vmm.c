@@ -126,6 +126,57 @@ void flush_tlb_entry(address virtual_address) {
 }
 
 /**
+ * @brief Map virtual address to physical address for user space
+ *
+ * This function maps the given virtual address to the given physical address
+ * by setting the frame in the corresponding page table. See comments below
+ * for more info. It sets the USER bit to 1!
+ *
+ * @param physical_address 	The physical address
+ * @param virtual_address 	The virtual address
+ *
+ * @return 0 if successful, 1 otherwise
+ */
+uint8_t map_user_page(void *physical_address, void *virtual_address) {
+	// get current page directory
+	page_directory *pd = current_page_directory;
+
+	// get corresponding PDE for the given virtual address
+	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX((uint32_t)virtual_address)];
+
+	// if the page directory entry is not present, create it
+	if (!(*pde & PAGE_PDE_PRESENT)) {
+		// allocate block for the new page table
+		void *block = allocate_blocks(1);
+
+		if (block == NULL) {
+			return 1;
+		}
+
+		// clear page table
+		memset(block, 0, sizeof(page_table));
+
+		// set frame and present and read-write bits
+		SET_FRAME(pde, (uint32_t)block);
+		SET_ATTRIBUTE(pde, PAGE_PDE_PRESENT);
+		SET_ATTRIBUTE(pde, PAGE_PDE_WRITABLE);
+		SET_ATTRIBUTE(pde, PAGE_PDE_USER);
+	}
+
+	// get address of the page table
+	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+
+	// get corresponding PTE for the given virtual address
+	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX((uint32_t)virtual_address)];
+
+	// set frame and present bit
+	SET_FRAME(pte, (uint32_t)physical_address);
+	SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+
+	return 0;
+}
+
+/**
  * @brief Map virtual address to physical address
  *
  * This function maps the given virtual address to the given physical address

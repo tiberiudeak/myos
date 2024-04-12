@@ -1,4 +1,5 @@
 #include <kernel/tty.h>
+#include <process/process.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
@@ -173,11 +174,12 @@ void *load_elf(uint32_t *elf_address) {
                 return NULL;
             }
 
-            map_page(addr, (void*) virt);
+            map_user_page(addr, (void*) virt);
 
             pt_entry *page = get_page(virt);
 
             SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+            SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
 
             add_phys_info(addr, (void*)virt, needed_blocks);
         }
@@ -233,8 +235,11 @@ int32_t execute_elf(char *name) {
     int32_t (*program)(int argc, char *argv[]);
     program = (int32_t (*)(int, char**)) entry_point;
 
+    printk("entry Point: %x\n", entry_point);
     // start program execution
-    int32_t return_code = program(1, NULL);
+    //int32_t return_code = program(1, NULL);
+    int32_t return_code = 0;
+    enter_usermode((uint32_t)entry_point, 0x9000000);
 
     // deallocate memory
     deallocate_elf_memory();
