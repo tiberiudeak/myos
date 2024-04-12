@@ -3,7 +3,7 @@ HOST?=$(DEFAULT_HOST)
 ARCHDIR:=arch/$(HOSTARCH)
 
 # define flags if not already defined
-CFLAGS:=-O2 -g
+CFLAGS:=-O0 -g
 CPPFLAGS:=
 # link with my libc
 LDFLAGS:=-L../sysroot/usr/lib/

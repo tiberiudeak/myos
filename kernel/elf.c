@@ -122,7 +122,7 @@ void print_elf_header(Elf32_Ehdr *header) {
     printk("\tSection header string table index: %d\n", header->e_shstrndx);
 }
 
-void *load_elf(uint32_t *elf_address) {
+void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_end) {
     
     // read from loaded file and create another location in the main memory
     // to put the data and code segments
@@ -192,6 +192,31 @@ void *load_elf(uint32_t *elf_address) {
         dst = (void*) pr_header->p_vaddr;
 
         memcpy(dst, src, length);
+
+        if (i == elf_header->e_phnum - 1) {
+            // last segment, set user stack after it, size: 4K
+            *ustack_start = ALIGN((uint32_t)pr_header->p_vaddr + needed_blocks * BLOCK_SIZE, PAGE_SIZE);
+            *ustack_end = *ustack_start + 4096;
+
+            // map stack
+            void *addr = allocate_blocks(1);
+
+            if (addr == NULL) {
+                printk("out of memory!\n");
+                return NULL;
+            }
+
+            map_user_page(addr, (void*)(*ustack_start));
+
+            pt_entry *page = get_page(*ustack_start);
+
+            SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+            SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+
+            add_phys_info(addr, (void*)(*ustack_start), 1);
+
+            printk("uspace start: %x, end: %x, phys: %x\n", *ustack_start, *ustack_end, (uint32_t)addr);
+        }
     }
 
     // return entry point to that location
@@ -207,7 +232,15 @@ int32_t execute_elf(char *name) {
     int ret;
 
     // open syscall to get the fd for the elf file
-    int fd = open(name, O_RDONLY);
+    //int fd = open(name, O_RDONLY);
+    int fd = -1;
+
+    __asm__ __volatile__ ("mov %0, %%ebx\n"
+                        "mov %1, %%ecx\n": : "r"(name), "r"(O_RDWR));
+
+    syscall_open();
+
+    __asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
 
     if (fd < 0) {
         printk("%s no such file or directory!\n", name);
@@ -223,11 +256,19 @@ int32_t execute_elf(char *name) {
         goto err;
     }
 
+    uint32_t ustack_start = 0, ustack_end = 0;
     // get entry point of elf
-    void *entry_point = load_elf(oft_entry->address);
+    void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
 
+    printk("ustack start: %x\n", ustack_start);
     // close file descriptor
-    ret = close(fd);
+    // ret = close(fd);
+
+    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+
+    syscall_close();
+
+    __asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
 
     if (ret)
         return 1;
@@ -239,7 +280,7 @@ int32_t execute_elf(char *name) {
     // start program execution
     //int32_t return_code = program(1, NULL);
     int32_t return_code = 0;
-    enter_usermode((uint32_t)entry_point, 0x9000000);
+    enter_usermode((uint32_t)entry_point, ustack_end);
 
     // deallocate memory
     deallocate_elf_memory();
@@ -248,7 +289,10 @@ int32_t execute_elf(char *name) {
 
 err:
     deallocate_elf_memory();
-    close(fd);
+    // close(fd);
+    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+
+    syscall_close();
     return 1;
 }
 

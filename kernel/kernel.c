@@ -50,8 +50,8 @@ void kmain() {
 	PIT_init();			    // initialize programmable interrupt timer
 
 	// // test syscalls
-	__asm__ __volatile__ ("movl $0, %eax; int $0x80");
-	__asm__ __volatile__ ("movl $1, %eax; int $0x80");
+	//__asm__ __volatile__ ("movl $0, %eax; int $0x80");
+	//__asm__ __volatile__ ("movl $1, %eax; int $0x80");
 
 	initialize_memory();	// initialize physical memory manager
 	printk("\n");
@@ -86,7 +86,7 @@ void kmain() {
 
 	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
 	// // is the same as 0xC0000000
-    ret = test_open_close_syscalls();
+    // ret = test_open_close_syscalls();
 
     if (ret) {
         printkc(4, "open and close syscalls test failed!\n");

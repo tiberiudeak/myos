@@ -3,6 +3,8 @@
 char *strcpy(char *dest, const char *src) {
 	char *temp = dest;
 
+    char *test = "ana are mere";
+
 	while (*src != '\0') {
 		*temp = *src;
 		temp++;

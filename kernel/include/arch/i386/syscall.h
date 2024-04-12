@@ -9,7 +9,7 @@
 #include <fcntl.h>
 #include <kernel/tty.h>
 
-#define MAX_SYSCALLS	7
+#define MAX_SYSCALLS	8
 
 /**
  * Test syscall
@@ -302,23 +302,10 @@ err:
     __asm__ __volatile__ ("mov $-1, %eax");
 }
 
-//void syscall_kmalloc(void) {
-//    uint32_t size_bytes;
-//
-//    // get size in bytes from EBX
-//    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(size_bytes));
-//
-//}
+void syscall_exit(void) {
+    printk("exit syscall\n");
 
-//void syscall_kfree(void) {
-//    printk("kernel free called");
-//    uint32_t addr = 0;
-//
-//    //get address from EBX
-//    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(addr));
-//
-//    printk("%x\n", addr);
-//}
+}
 
 void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
@@ -327,7 +314,8 @@ void *syscalls[MAX_SYSCALLS] = {
     syscall_open,
     syscall_close,
     syscall_read,
-    syscall_write
+    syscall_write,
+    syscall_exit
 };
 
 /**
@@ -343,37 +331,59 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cmp $7, %eax\n"	// check if syscall exists
-											// number has to match MAX_SYSCALLS!
-	"jge syscall_invalid\n"					// if not, invalid syscall
-	"push %eax\n"
-	"push %gs\n"
-	"push %fs\n"
-	"push %es\n"
-	"push %ds\n"
-	"push %edi\n"
-	"push %esi\n"
-	"push %edx\n"
-	"push %ecx\n"
-	"push %ebx\n"
-	"push %esp\n"
-	"movl $4, %edi\n"				// move value 4 in edx
-	"mul %edi\n"					// eax = eax * edx
-	"add $syscalls, %eax\n"			// add offset in eax to the beginning of the
-	"call *(%eax)\n"				// syscalls array to get the right syscall
-	"add $4, %esp\n"
-	"pop %ebx\n"
-	"pop %ecx\n"
-	"pop %edx\n"
-	"pop %esi\n"
-	"pop %edi\n"
-	"pop %ds\n"
-	"pop %es\n"
-	"pop %fs\n"
-	"pop %gs\n"
-	"add $4, %esp\n"
-	"syscall_invalid:\n"
-	"iret");
+	__asm__ __volatile__ (
+        "cmp $8, %eax\n"	// check if syscall exists
+	    										// number has to match MAX_SYSCALLS!
+	    "jge syscall_invalid\n"					// if not, invalid syscall
+
+        // save user mode state
+	    "push %eax\n"
+	    "push %gs\n"
+	    "push %fs\n"
+	    "push %es\n"
+	    "push %ds\n"
+	    "push %edi\n"
+	    "push %esi\n"
+	    "push %edx\n"
+	    "push %ecx\n"
+	    "push %ebx\n"
+	    "push %esp\n"
+
+
+        // get kernel mode state
+        //"mov %eax, %ebx\n"
+
+        //"mov $0x10, %eax\n"
+        //"mov %eax, %ds\n"
+        //"mov %eax, %es\n"
+        //"mov %eax, %fs\n"
+        //"mov %eax, %gs\n"
+
+        // "mov $0xB, %eax\n"
+        // "mov %eax, %cs\n"
+        // "mov $0x90000, %esp\n"
+        
+
+        //"mov $1, %eax\n"
+
+	    "movl $4, %edi\n"				// move value 4 in edx
+	    "mul %edi\n"					// eax = eax * edx
+	    "add $syscalls, %eax\n"			// add offset in eax to the beginning of the
+	    "call *(%eax)\n"				// syscalls array to get the right syscall
+	    "add $4, %esp\n"
+
+	    "pop %ebx\n"
+	    "pop %ecx\n"
+	    "pop %edx\n"
+	    "pop %esi\n"
+	    "pop %edi\n"
+	    "pop %ds\n"
+	    "pop %es\n"
+	    "pop %fs\n"
+	    "pop %gs\n"
+	    "add $4, %esp\n"
+	    "syscall_invalid:\n"
+	    "iret");
 }
 
 #endif /* !KERNEL_SYSCALL_H */
