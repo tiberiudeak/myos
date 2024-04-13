@@ -433,6 +433,7 @@ void terminal_writestring(const char* data) {
  * This function moves the cursor back one space.
  */
 void terminal_backspace_cursor(char c) {
+    c++;    // used to eliminate comilation warning
     --terminal_column;
     terminal_writestring(" ");
 	set_cursor(--terminal_column, terminal_row);

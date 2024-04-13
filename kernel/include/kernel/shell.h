@@ -7,5 +7,6 @@
 
 void shell_scancode(uint8_t);
 void shell_init(void);
+void shell_cleanup(void);
 
 #endif /* !KERNEL_SHELL_H */

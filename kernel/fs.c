@@ -412,6 +412,10 @@ inode_block_t get_inode_from_path(char *path) {
 inode_block_t create_file(char *path) {
 
     // add directory entry in the current directory
+    if (strcmp(path, "tmp") == 0) {
+
+    }
+
     return (inode_block_t){0};
 }
 

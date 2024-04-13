@@ -1,3 +1,11 @@
+#include <arch/i386/gdt.h>
+#include <arch/i386/idt.h>
+#include <arch/i386/irq.h>
+#include <arch/i386/isr.h>
+#include <arch/i386/pic.h>
+#include <kernel/io.h>
+#include <process/process.h>
+#include <process/scheduler.h>
 #include <string.h>
 #ifndef KERNEL_SYSCALL_H
 #define KERNEL_SYSCALL_H 1
@@ -8,6 +16,7 @@
 #include <fs.h>
 #include <fcntl.h>
 #include <kernel/tty.h>
+#include <elf.h>
 
 #define MAX_SYSCALLS	8
 
@@ -303,8 +312,21 @@ err:
 }
 
 void syscall_exit(void) {
-    printk("exit syscall\n");
+    int return_code = -1;
 
+    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
+
+    // cleanup elf data
+    elf_after_program_execution(return_code);
+
+    // cleanup task data
+    extern task_struct *current_running_task; // data from the scheduler
+    destroy_task(current_running_task);
+
+    // return to scheduler
+    simple_task_scheduler();
+
+	// while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 void *syscalls[MAX_SYSCALLS] = {

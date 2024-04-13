@@ -175,8 +175,8 @@ void mark_e820_regions() {
 void pmm_self_test() {
 	printk("Performing tests for the physical memory manager...\n");
 
-	uint32_t initial_free_blocks = max_blocks - used_blocks;
-	uint32_t initial_used_blocks = used_blocks;
+	// uint32_t initial_free_blocks = max_blocks - used_blocks;
+	// uint32_t initial_used_blocks = used_blocks;
 
 	uint32_t test_used_blocks = used_blocks;
 	uint32_t test_free_blocks = max_blocks - used_blocks;

@@ -6,6 +6,7 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/ps2.h>
 #include <arch/i386/pit.h>
+#include <process/scheduler.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
@@ -88,12 +89,22 @@ void kmain() {
 	// // is the same as 0xC0000000
     // ret = test_open_close_syscalls();
 
-    if (ret) {
-        printkc(4, "open and close syscalls test failed!\n");
-        halt_processor();
-    }
+    // if (ret) {
+    //     printkc(4, "open and close syscalls test failed!\n");
+    //     halt_processor();
+    // }
  
 	printk("Welcome to MyOS!\n");
 	shell_init();
+
+    ret = scheduler_init();
+
+    if (ret) {
+        printkc(4, "failed to initialize the scheduler\n");
+        halt_processor();
+    }
+
+    // start "scheduling"
+    simple_task_scheduler();
 }
 

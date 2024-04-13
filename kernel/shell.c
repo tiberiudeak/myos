@@ -3,7 +3,10 @@
 #include <kernel/tty.h>
 #include <arch/i386/pit.h>
 #include <arch/i386/rtc.h>
+#include <process/scheduler.h>
+#include <process/process.h>
 #include <mm/pmm.h>
+#include <mm/kmalloc.h>
 #include <elf.h>
 #include <fs.h>
 #include <string.h>
@@ -11,6 +14,10 @@
 
 static char key_buffer[MAX_COMMAND_LENGTH];
 static int index;
+
+void test_task(int argc, char *argv[]) {
+    printk("test task %d %s\n", argc, argv[0]);
+}
 
 void shell_exec_command(char *command) {
 
@@ -35,13 +42,18 @@ void shell_exec_command(char *command) {
 		fs_print_dir();
 	}
 	else if (strncmp(command, "./", 2) == 0) {
-		int ret = execute_elf(command);
+        char *argv = kmalloc(sizeof(char) * 10);
+        strncpy(argv, command, 10);
 
-        if (ret != 0) {
-            printkc(4, "execution finished with error code: %d\n", ret);
+        task_struct *new_task = create_task(execute_elf, 1, &argv);
+
+        kfree(argv);
+
+        if (new_task == NULL) {
+            printk("task is NULL\n");
         }
         else {
-            printkc(2, "execution finished successfully\n");
+            enqueue_task(new_task);
         }
 	}
 	else if (strcmp(command, "") == 0) {
@@ -88,3 +100,11 @@ void shell_scancode(uint8_t scancode) {
 void shell_init() {
 	printk("%s > ", get_current_path());
 }
+
+void shell_cleanup(void) {
+    index = 0;
+    memset(key_buffer, 0, MAX_COMMAND_LENGTH);
+    
+    shell_init();
+}
+

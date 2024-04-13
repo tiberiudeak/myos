@@ -1,4 +1,5 @@
 #include <kernel/tty.h>
+#include <kernel/shell.h>
 #include <process/process.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
@@ -167,7 +168,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
         // map obtained blocks to corresponding virtual addresses
         for (uint32_t i = 0, virt = pr_header->p_vaddr; i < needed_blocks; i++, virt += PAGE_SIZE) {
-            void *addr = allocate_blocks(needed_blocks);
+            void *addr = allocate_blocks(1);
 
             if (addr == NULL) {
                 printk("out of memory!\n");
@@ -193,10 +194,12 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
         memcpy(dst, src, length);
 
-        if (i == elf_header->e_phnum - 1) {
+
+        // set up the stack
+        if ((int)i == elf_header->e_phnum - 1) {
             // last segment, set user stack after it, size: 4K
             *ustack_start = ALIGN((uint32_t)pr_header->p_vaddr + needed_blocks * BLOCK_SIZE, PAGE_SIZE);
-            *ustack_end = *ustack_start + 4096;
+            *ustack_end = *ustack_start + PAGE_SIZE;
 
             // map stack
             void *addr = allocate_blocks(1);
@@ -226,7 +229,25 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
     return (void*)elf_header->e_entry;
 }
 
-int32_t execute_elf(char *name) {
+void elf_after_program_execution(int return_code) {
+    deallocate_elf_memory();
+
+    if (return_code != 0) {
+        printkc(4, "execution finished with error code: %d\n", return_code);
+    }
+    else {
+        printkc(2, "execution finished successfully\n");
+    }
+
+    shell_cleanup();
+}
+
+int32_t execute_elf(int argc, char **argv) {
+    if (argc < 1) {
+        printk("argc has to be at least 1!\n");
+        return 1;
+    }
+
     // data from the kernel
     extern open_files_table_t *open_files_table;
     int ret;
@@ -236,14 +257,14 @@ int32_t execute_elf(char *name) {
     int fd = -1;
 
     __asm__ __volatile__ ("mov %0, %%ebx\n"
-                        "mov %1, %%ecx\n": : "r"(name), "r"(O_RDWR));
+                        "mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
 
     syscall_open();
 
     __asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
 
     if (fd < 0) {
-        printk("%s no such file or directory!\n", name);
+        printk("%s no such file or directory!\n", argv[0]);
         return 1;
     }
 
@@ -260,10 +281,7 @@ int32_t execute_elf(char *name) {
     // get entry point of elf
     void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
 
-    printk("ustack start: %x\n", ustack_start);
     // close file descriptor
-    // ret = close(fd);
-
     __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
     syscall_close();
@@ -273,10 +291,9 @@ int32_t execute_elf(char *name) {
     if (ret)
         return 1;
 
-    int32_t (*program)(int argc, char *argv[]);
-    program = (int32_t (*)(int, char**)) entry_point;
+    // int32_t (*program)(int argc, char *argv[]);
+    // program = (int32_t (*)(int, char**)) entry_point;
 
-    printk("entry Point: %x\n", entry_point);
     // start program execution
     //int32_t return_code = program(1, NULL);
     int32_t return_code = 0;

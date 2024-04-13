@@ -75,7 +75,8 @@ typedef struct {
 } elf_phys_mem_info;
 
 //void *load_elf(uint32_t *);
-int32_t execute_elf(char *name);
+int32_t execute_elf(int, char**);
+void elf_after_program_execution(int);
 
 #endif /* !_ELF_H */
 
