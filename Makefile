@@ -67,7 +67,7 @@ all: $(TARGET)
 
 $(TARGET): $(BINARIES)
 	# compile programs in the programs folder
-	@$(MAKE) -C $(PROG_SRC_DIR)
+	@$(MAKE) -C $(PROG_SRC_DIR) install
 
 	gcc create_disk_image.c -o create_disk_image -lm
 	./create_disk_image $(TARGET) $(INCLUDED_FILES)

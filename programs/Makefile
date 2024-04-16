@@ -16,6 +16,8 @@ CPPFLAGS:=$(CPPFLAGS)
 LDFLAGS:=$(LDFLAGS)
 LIBS:=$(LIBS) -nostdlib -lk
 
+BIN_DIR:=../bin
+
 EXEC_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_DEPS:=$(shell find . -type f -name '*.d')
 
@@ -26,16 +28,20 @@ $(EXEC_OBJS)
 
 BINARIES:=$(foreach obj,$(OBJS),$(basename $(obj)))
 
-.PHONY: all clean
+.PHONY: all clean install
 .SUFFIXES: .o .c
 
 all: $(BINARIES)
 
-$(BINARIES): $(OBJS)
+$(BINARIES): %: %.o
 	$(LD) $(LDFLAGS) $< -o $@ $(LIBS)
 
 %.o: %.c
 	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
+
+install: $(BINARIES)
+	mkdir -p $(BIN_DIR)
+	cp $(BINARIES) $(BIN_DIR)
 
 clean:
 	rm -f $(BINARIES) $(OBJS) *.d */*.d */*/*.d
