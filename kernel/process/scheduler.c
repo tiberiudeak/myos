@@ -107,7 +107,7 @@ void simple_task_scheduler(void) {
     while (1) {
         if (task_queue->front == NULL) {
             // sleep a bit 
-            wait_millis(1000);
+            wait_millis(100);
 
             continue;
         }

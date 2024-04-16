@@ -9,4 +9,5 @@ bin/kernel.bin
 bin/test.txt
 bin/pr1.o
 bin/pr1
+bin/pr2
 

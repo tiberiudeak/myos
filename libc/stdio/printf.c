@@ -8,8 +8,8 @@
 #include <kernel/tty.h>
 
 // printf buffer
-char printf_buffer[PRINTF_BUFFER_SIZE];
-static uint8_t printf_index = 0;
+char printf_buffer[PRINTF_BUFFER_SIZE] = {0};
+uint8_t printf_index = 0;
 
 
 /**
@@ -21,13 +21,15 @@ static uint8_t printf_index = 0;
  * @return EOF if error occured, 0 otherwise
  */
 int fflush(void) {
+    printf_buffer[printf_index++] = '\0';
     size_t bytes_written = write(stdout, printf_buffer, printf_index);
 
-    if (bytes_written != printf_index)
-        return EOF;
 
     memset(printf_buffer, 0, printf_index);
     printf_index = 0;
+
+    if (bytes_written != printf_index)
+        return EOF;
 
     return 0;
 }
@@ -63,28 +65,26 @@ int printf(const char* restrict format, ...) {
 	va_start(parameters, format);
 
 	int written = 0;
+    printf_index = 0;
 
 	while (*format != '\0') {
 		if (format[0] != '%') {
 			// go through the string until a '%'
-			size_t index = 0, offset = 0;
-			while (format[index] && format[index] != '%') {
-                // do a fflush if '\n' is in string
-                if (format[index] == '\n') {
-                    add_str_to_buffer(format, index+1);
-                    fflush();
-
-                    written += index;
-                    offset = index + 1;
-                }
-
+			size_t index = 0;
+			while (format[index] != '\0' && format[index] != '%') {
 				index++;
 			}
 
-            add_str_to_buffer(format + offset, index - offset);
+            add_str_to_buffer(format, index);
+
+            if (format[index] == '\0') {
+                written += index;
+                break;
+            }
 
 			format += index;
-			written += index - offset;
+			written += index;
+
 			continue;
 		}
 
@@ -187,6 +187,8 @@ int printf(const char* restrict format, ...) {
 			return -1;
 		}
 	}
+
+    fflush();
 
 	va_end(parameters);
 	return written;
