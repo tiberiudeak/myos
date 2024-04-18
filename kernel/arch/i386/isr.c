@@ -1,7 +1,10 @@
 #include <arch/i386/isr.h>
 #include <arch/i386/idt.h>
 #include <arch/i386/syscall.h>
+#include <elf.h>
 #include <kernel/tty.h>
+#include <process/process.h>
+#include <process/scheduler.h>
 
 /**
  * @brief Add the Interrupt Service Routines (ISRs) to the IDT.
@@ -125,6 +128,15 @@ void page_fault_handler(interrupt_regs *r) {
 	__asm__ __volatile__ ("movl %%cr2, %0" : "=r"(address));
 
 	printk("Bad Address: %x\n", address);
+
+    // if processor was in ring 3, then terminate task and return to scheduler
+    if (r->err_code & 0x4) {
+        printk("Segmentation fault\n");
+        elf_after_program_execution(1);
+        extern task_struct *current_running_task;
+        destroy_task(current_running_task);
+        simple_task_scheduler();
+    }
 
 	__asm__ __volatile__ ("cli; hlt");
 }

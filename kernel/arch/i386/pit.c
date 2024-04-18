@@ -50,7 +50,7 @@ void PIT_init() {
 void wait_millis(uint16_t millis) {
 	ticks = 0;
 
-	while (ticks != millis) __asm__ __volatile__ ("sti; hlt; cli");
+	while (ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 /**

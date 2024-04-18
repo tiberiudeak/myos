@@ -42,6 +42,7 @@ void shell_exec_command(char *command) {
 		fs_print_dir();
 	}
 	else if (strncmp(command, "./", 2) == 0) {
+        // TODO: parse command into argvs
         char *argv = kmalloc(sizeof(char) * 10);
         strncpy(argv, command, 10);
 
@@ -55,6 +56,10 @@ void shell_exec_command(char *command) {
         else {
             enqueue_task(new_task);
         }
+
+        index = 0;
+        memset(key_buffer, 0, MAX_COMMAND_LENGTH);
+        return;
 	}
 	else if (strcmp(command, "") == 0) {
 	}
