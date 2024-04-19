@@ -134,6 +134,11 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
     // read elf header
     Elf32_Phdr *pr_header = NULL;
 
+    // create new address space for the task
+    page_directory *new_page_dir = create_address_space();
+
+    set_page_directory(new_page_dir);
+
     // printk("Program headers info:\n");
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
         pr_header = (Elf32_Phdr*) ((void*)elf_address + elf_header->e_phoff) + i;
@@ -193,7 +198,6 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
         dst = (void*) pr_header->p_vaddr;
 
         memcpy(dst, src, length);
-
 
         // set up the stack
         if ((int)i == elf_header->e_phnum - 1) {

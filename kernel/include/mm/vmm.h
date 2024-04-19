@@ -96,5 +96,8 @@ uint8_t map_page(void*, void*);
 uint8_t map_user_page(void*, void*);
 void unmap_page(void*);
 pt_entry *get_page(address);
+page_directory *create_address_space(void);
+uint8_t set_page_directory(page_directory *);
+void restore_kernel_address_space(void);
 
 #endif /* !MM_VMM_H */

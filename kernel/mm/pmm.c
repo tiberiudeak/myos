@@ -1,6 +1,6 @@
 /* Physical memory manager */
 #include <mm/pmm.h>
-#include <kernel/spinlock.h>
+//#include <kernel/spinlock.h>
 #include <kernel/tty.h>
 #include <stddef.h>
 #include <math.h>
@@ -11,7 +11,7 @@ static uint32_t bitmap_size;
 static uint32_t max_blocks;
 static uint32_t used_blocks;
 
-atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
+//atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
 
 /**
  * @brief Print the memory map created by INT 0x15 E820
@@ -405,9 +405,9 @@ void *allocate_blocks(uint32_t num_blocks) {
 		return NULL;
 	}
 
-	spinlock_acquire(&pmm_lock);
+	//spinlock_acquire(&pmm_lock);
 	uint32_t first_fit_block = __find_first_fit(num_blocks);
-	spinlock_release(&pmm_lock);
+	//spinlock_release(&pmm_lock);
 
 	if (first_fit_block == 0) {
 		return NULL;

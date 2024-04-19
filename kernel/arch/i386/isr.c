@@ -3,6 +3,7 @@
 #include <arch/i386/syscall.h>
 #include <elf.h>
 #include <kernel/tty.h>
+#include <mm/vmm.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 
@@ -132,9 +133,18 @@ void page_fault_handler(interrupt_regs *r) {
     // if processor was in ring 3, then terminate task and return to scheduler
     if (r->err_code & 0x4) {
         printk("Segmentation fault\n");
+
+        // cleanup elf data
         elf_after_program_execution(1);
+
+        // cleanup task data
         extern task_struct *current_running_task;
         destroy_task(current_running_task);
+
+        // restore kernel virtual address space
+        restore_kernel_address_space();
+
+        // return to shceduler
         simple_task_scheduler();
     }
 

@@ -1,14 +1,16 @@
+#ifndef KERNEL_SYSCALL_H
+#define KERNEL_SYSCALL_H 1
+
 #include <arch/i386/gdt.h>
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/isr.h>
+#include <mm/vmm.h>
 #include <arch/i386/pic.h>
 #include <kernel/io.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <string.h>
-#ifndef KERNEL_SYSCALL_H
-#define KERNEL_SYSCALL_H 1
 
 #include <stdio.h>
 #include <arch/i386/pit.h>
@@ -315,6 +317,9 @@ void syscall_exit(void) {
     int return_code = -1;
 
     __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
+
+    // restore kernel virtual address space
+    restore_kernel_address_space();
 
     // cleanup elf data
     elf_after_program_execution(return_code);

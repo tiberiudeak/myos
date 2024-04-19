@@ -8,6 +8,7 @@
 #include "include/kernel/tty.h"
 
 page_directory *current_page_directory = 0;
+page_directory *kernel_page_directory = 0;
 
 /**
  * @brief Get entry from page table for the given virtual address
@@ -292,9 +293,9 @@ uint8_t initialize_virtual_memory(void) {
 	memset(pd, 0, sizeof(page_directory));
 
 	// mark each entry in the PD as read-write
-	for (uint32_t i; i < 1024; i++) {
-		SET_ATTRIBUTE(&pd->entries[i], PAGE_PDE_WRITABLE);
-	}
+	// for (uint32_t i = 0; i < 1024; i++) {
+	// 	SET_ATTRIBUTE(&pd->entries[i], PAGE_PDE_WRITABLE);
+	// }
 
 	// allocate physical block for the page table that will be used
 	// for the identity mapping of the first 4MB
@@ -318,7 +319,7 @@ uint8_t initialize_virtual_memory(void) {
 	// clear all entries in the page table
 	memset(pt3gb, 0, sizeof(page_table));
 
-	// map 1MB of memory starting at 0x00000000 to the 1MB of physical memory starting
+	// map 4MB of memory starting at 0x00000000 to the 4MB of physical memory starting
 	// at 0x00000000 (identity mapping)
 	for (uint32_t i = 0, block = 0x0, virt = 0x0; i < 1024; i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
 		// initialize page table entry to 0
@@ -332,7 +333,7 @@ uint8_t initialize_virtual_memory(void) {
 		pt->entries[PAGE_TABLE_INDEX(virt)] = pte;
 	}
 
-	// map 1MB of memory starting at 0xC0000000 to the 1MB of physical memory starting
+	// map 4MB of memory starting at 0xC0000000 to the 4MB of physical memory starting
 	// at 0x00008000 (where the kernel resides) (higher half kernel)
 	for (uint32_t i = 0, block = KERNEL_ADDRESS, virt = 0xC0000000; i < 1024; i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
 		//  initialize page table entry to 0
@@ -374,10 +375,69 @@ uint8_t initialize_virtual_memory(void) {
 
 	// set the page directory
 	set_page_directory(pd);
+    kernel_page_directory = current_page_directory;
 
 	// enable paging
 	__asm__ __volatile__ ("movl %cr0, %eax; orl $0x80000001, %eax; movl %eax, %cr0");
 
 	return 0;
+}
+
+/**
+ * @brief Create a new page directory with the kernel mappings for the first
+ *      4MB and 4MB above the 0xC0000000
+ * 
+ * This function returns a page directory containing the kernel mappings for the
+ * first 4MB of memory and the 4MB above 0xC0000000 (kernel). All other page
+ * directory entries are set to 0.
+ *
+ * @return New page directory
+ */
+page_directory *create_address_space(void) {
+    page_directory *dir = allocate_blocks(1);
+
+    if (dir == NULL) {
+        return NULL;
+    }
+
+	// clear all entries in the page directory
+	memset(dir, 0, sizeof(page_directory));
+
+    // map kernel into the virtual address space:
+    // copy entries in the current page directory - what we need are only the
+    // kernel pages (first 1MB and pages from 0xC0000000)
+    memcpy(dir, current_page_directory, sizeof(pd_entry) * PAGES_PER_TABLE);
+
+    // clear entries between the first 1MB and the higher half kernel
+    memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(0xC0000000) - 1);
+
+    return dir;
+}
+
+/**
+ * @brief Set initial kernel virtual address space as current address space
+ *
+ * This function restores the initial kenel virtual address space as the current
+ * address space, while also deallocating the used memory for the previous virtual
+ * address space (except the kernel mappings).
+ */
+void restore_kernel_address_space(void) {
+    // deallocate potential memory for the current_page_directory:
+    // go through the current page directory and deallocate all page
+    // tables except the ones for kernel: exclude the first 4MB (that is
+    // why the index starts at 1) and the memory above 0xC0000000
+    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
+        if ((uint32_t)current_page_directory->entries[i] != 0) {
+            //printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
+            pd_entry phys_address_of_page_table = current_page_directory->entries[i];
+
+            free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
+        }
+    }
+
+    free_blocks((void*)current_page_directory, 1);
+
+    // set kernel page directory to current page directory
+    set_page_directory(kernel_page_directory);
 }
 
