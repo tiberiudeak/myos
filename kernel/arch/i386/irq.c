@@ -1,7 +1,7 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
-#include <stdio.h>
+#include <kernel/tty.h>
 
 void *irq_routines[16] = { 0 };
 

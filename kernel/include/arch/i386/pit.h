@@ -1,3 +1,4 @@
+#include <arch/i386/isr.h>
 #ifndef ARCH_I386_PIT_H
 #define ARCH_I386_PIT_H 1
 
@@ -41,8 +42,10 @@ typedef enum {
 } PIT_CW;
 
 void PIT_init(void);
-void PIT_IRQ0_handler();
+void PIT_IRQ0_handler(interrupt_regs *);
 void wait_millis(uint16_t);
 uint64_t get_uptime(void);
+
+extern void irq0();
 
 #endif

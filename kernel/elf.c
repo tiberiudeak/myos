@@ -13,6 +13,7 @@
 #include <fcntl.h>
 
 elf_phys_mem_info *elf_phys_mem_info_header = NULL;
+extern task_struct *current_running_task;
 
 /**
  * @brief Add new node with the given info to list
@@ -133,11 +134,6 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
     // read elf header
     Elf32_Phdr *pr_header = NULL;
-
-    // create new address space for the task
-    page_directory *new_page_dir = create_address_space();
-
-    set_page_directory(new_page_dir);
 
     // printk("Program headers info:\n");
     for (size_t i = 0; i < elf_header->e_phnum; i++) {
@@ -297,11 +293,17 @@ int32_t execute_elf(int argc, char **argv) {
 
     // int32_t (*program)(int argc, char *argv[]);
     // program = (int32_t (*)(int, char**)) entry_point;
+    printk("elf entry_point %x\n", entry_point);
 
     // start program execution
     //int32_t return_code = program(1, NULL);
     int32_t return_code = 0;
     enter_usermode((uint32_t)entry_point, ustack_end);
+    //else {
+    //    printk("resume context!!!!!!....\n");
+    //    enter_usermode_resume_context();
+    //    while(1);
+    //}
 
     // deallocate memory
     deallocate_elf_memory();

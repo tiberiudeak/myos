@@ -1,3 +1,4 @@
+#include <arch/i386/isr.h>
 #ifndef KERNEL_KEY_H
 #define KERNEL_KEY_H 1
 
@@ -66,7 +67,7 @@ typedef struct {
 	uint8_t caps;
 } __attribute__((packed)) key_info_t;
 
-void keyboard_handler();
+void keyboard_handler(interrupt_regs *);
 void keyboard_init(void);
 
 #endif /* !KERNEL_KEY_H */

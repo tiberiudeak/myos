@@ -130,6 +130,11 @@ void page_fault_handler(interrupt_regs *r) {
 
 	printk("Bad Address: %x\n", address);
 
+    printk("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi, r->esi);
+    printk("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx, r->edx);
+    printk("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax, r->int_no, r->err_code);
+    printk("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip, r->cs, r->eflags, r->useresp, r->ss);
+
     // if processor was in ring 3, then terminate task and return to scheduler
     if (r->err_code & 0x4) {
         printk("Segmentation fault\n");
@@ -145,7 +150,8 @@ void page_fault_handler(interrupt_regs *r) {
         restore_kernel_address_space();
 
         // return to shceduler
-        simple_task_scheduler();
+        //simple_task_scheduler();
+        schedule();
     }
 
 	__asm__ __volatile__ ("cli; hlt");

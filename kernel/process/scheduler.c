@@ -4,10 +4,14 @@
 #include <kernel/tty.h>
 #include <kernel/shell.h>
 #include <mm/kmalloc.h>
+#include <mm/vmm.h>
 #include <stddef.h>
 
 task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
+uint8_t scheduler_initialized = 0;
+
+const uint32_t running_time_quantum_ms = 2;
 
 /**
  * @brief Initialize the scheduler task queue
@@ -40,6 +44,8 @@ uint8_t init_task_queue(void) {
 
     task_queue->front = NULL;
     task_queue->rear = NULL;
+
+    scheduler_initialized = 1;
 
     return 0;
 }
@@ -120,6 +126,12 @@ void simple_task_scheduler(void) {
         void (*program)(int argc, char *argv[]);
         program = (void (*)(int, char**)) task->exec_address;
 
+        // change virtual address space
+        if (task->vas != NULL) {
+            printk("setting new vas\n");
+            set_page_directory(task->vas);
+        }
+
         // execute task
         program(task->argc, task->argv);
 
@@ -129,4 +141,110 @@ void simple_task_scheduler(void) {
         shell_cleanup();
     }
 }
+
+uint32_t queue_size(void) {
+    uint32_t count = 0;
+
+    task_node_t *current = task_queue->front;
+    while (current != NULL) {
+        count++;
+        current = current->next;
+    }
+
+    return count;
+}
+
+void init_task_func(int argc, char **argv) {
+    printk("init process started!\n");
+    while (1) __asm__ __volatile__ ("sti; hlt; cli");
+}
+
+uint8_t init_task_queue_rr(void) {
+    task_queue = kmalloc(sizeof(task_queue_t));
+
+    if (task_queue == NULL) {
+        printk("out of memory\n");
+        return 1;
+    }
+
+    task_queue->front = NULL;
+    task_queue->rear = NULL;
+
+    // create init task and add it to the queue
+    void (*init)(int, char**) = init_task_func;
+    task_struct *init_task = create_task(init, 0, NULL, 0);
+
+    if (init_task == NULL) {
+        printk("init task is NULL!\n");
+        return 1;
+    }
+
+    enqueue_task(init_task);
+    
+    scheduler_initialized = 1;
+
+    return 0;
+}
+
+uint8_t scheduler_init_rr(void) {
+    return init_task_queue_rr();
+}
+
+void schedule(void) {
+        if (task_queue->front == NULL) {
+            while (1) __asm__ __volatile__ ("sti; hlt; cli");
+        }
+
+        task_struct *task = dequeue_task();
+        current_running_task = task;
+
+        printk("executing task: %d\n", task->task_id);
+
+        void (*program)(int argc, char *argv[]);
+        program = (void (*)(int, char**)) task->exec_address;
+
+        // change virtual address space
+        if (task->vas != NULL) {
+            printk("setting new vas\n");
+            set_page_directory(task->vas);
+        }
+
+        if (task->context != NULL) {
+            if (task->vas == NULL) {
+                printk("I am a kernel process!\n");
+
+                void (*t)(int, char**) = (void*)task->context->eip;
+                t(task->argc, task->argv);
+            }
+            else {
+                printk("I am a user process!\n");
+
+                int test = task->context->eip;
+                // resume task
+                enter_usermode_resume_context();
+            }
+        }
+
+        // execute task
+        program(task->argc, task->argv);
+
+        // following code is executed only if the program could not be executed for
+        // some reason (file not present, not an ELF file, etc...)
+        destroy_task(task);
+        shell_cleanup();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

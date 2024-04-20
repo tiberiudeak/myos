@@ -318,20 +318,19 @@ void syscall_exit(void) {
 
     __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
 
-    // restore kernel virtual address space
-    restore_kernel_address_space();
-
     // cleanup elf data
     elf_after_program_execution(return_code);
+
+    // restore kernel virtual address space
+    restore_kernel_address_space();
 
     // cleanup task data
     extern task_struct *current_running_task; // data from the scheduler
     destroy_task(current_running_task);
 
     // return to scheduler
-    simple_task_scheduler();
-
-	// while (1) __asm__ __volatile__ ("sti; hlt; cli");
+    //simple_task_scheduler();
+    schedule();
 }
 
 void *syscalls[MAX_SYSCALLS] = {

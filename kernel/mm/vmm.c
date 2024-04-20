@@ -118,7 +118,7 @@ uint8_t set_page_directory(page_directory *pd) {
 /**
  * @brief Flush TLB entry for the given virtual address (only in supervisor mode)
  *
- * This function invalidates the TPL entry for the given virtual address.
+ * This function invalidates the TLB entry for the given virtual address.
  *
  * @param virtual_address The virtual address
  */
@@ -428,7 +428,7 @@ void restore_kernel_address_space(void) {
     // why the index starts at 1) and the memory above 0xC0000000
     for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
         if ((uint32_t)current_page_directory->entries[i] != 0) {
-            //printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
+            printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
             pd_entry phys_address_of_page_table = current_page_directory->entries[i];
 
             free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
@@ -439,5 +439,26 @@ void restore_kernel_address_space(void) {
 
     // set kernel page directory to current page directory
     set_page_directory(kernel_page_directory);
+}
+
+address get_physical_addr(address virt_addr) {
+	// get current page directory
+	page_directory *pd = current_page_directory;
+
+    printk("%d - %x\n", PAGE_DIRECTORY_INDEX(virt_addr),pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)]);
+	// get corresponding PDE for the given virtutal address
+	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)];
+
+	// get the page table
+	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+
+    printk("%x - %x\n", PAGE_TABLE_INDEX(virt_addr), pt->entries[PAGE_TABLE_INDEX(virt_addr)]);
+
+	pt_entry test = pt->entries[PAGE_TABLE_INDEX(virt_addr)];
+
+    test &= 0xFFFFF000;
+    test += (virt_addr & 0x00000FFF);
+
+    return test;
 }
 

@@ -1,10 +1,12 @@
 #include <kernel/keyboard.h>
 #include <kernel/io.h>
 #include <kernel/shell.h>
+#include <kernel/tty.h>
 #include <arch/i386/ps2.h>
+#include <arch/i386/isr.h>
 #include <arch/i386/irq.h>
 
-void keyboard_handler() {
+void keyboard_handler(interrupt_regs *r) {
 
 	/* TODO: check what scancode to use */
 
@@ -44,5 +46,6 @@ void keyboard_handler() {
  * function.
  */
 void keyboard_init() {
-	irq_install_handler(1, keyboard_handler);
+    void (*key_handler)(interrupt_regs *r) = keyboard_handler;
+	irq_install_handler(1, key_handler);
 }

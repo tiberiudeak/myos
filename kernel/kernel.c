@@ -97,7 +97,7 @@ void kmain() {
 	printk("Welcome to MyOS!\n");
 	shell_init();
 
-    ret = scheduler_init();
+    ret = scheduler_init_rr();
 
     if (ret) {
         printkc(4, "failed to initialize the scheduler\n");
@@ -105,6 +105,7 @@ void kmain() {
     }
 
     // start "scheduling"
-    simple_task_scheduler();
+    //simple_task_scheduler();
+    schedule();
 }
 

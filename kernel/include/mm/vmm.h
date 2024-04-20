@@ -99,5 +99,6 @@ pt_entry *get_page(address);
 page_directory *create_address_space(void);
 uint8_t set_page_directory(page_directory *);
 void restore_kernel_address_space(void);
+address get_physical_addr(address);
 
 #endif /* !MM_VMM_H */

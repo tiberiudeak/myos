@@ -37,6 +37,7 @@ export LIBDIR:=$(PREFIX)/lib
 
 QEMU:=qemu-system-i386
 QEMUFLAGS:= -drive format=raw,file=myos.bin,if=ide,index=0,media=disk -rtc base=localtime,clock=host,driftfix=none
+QEMUFLAGS_DEBUG:= -drive format=raw,file=myos.bin,if=ide,index=0,media=disk -rtc base=localtime,clock=host,driftfix=none -S -s
 
 # isystem=<directory> means that the compiler will look
 # for system headers in <directory>
@@ -92,6 +93,9 @@ $(HEADER_FILE):
 
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
+
+debug:
+	$(QEMU) $(QEMUFLAGS_DEBUG)
 
 clean:
 	@for PROJECT in $(PROJECTS); do \
