@@ -104,16 +104,16 @@ void enter_usermode_resume_context(void) {
     __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
                                                 // program execution
 
-                          "mov %0, %%eax\n"
-                          "mov %1, %%ebx\n"
-                          "mov %2, %%ecx\n"
-                          "mov %3, %%edx\n"
-
                           "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
                           "mov %%eax, %%ds\n"
                           "mov %%eax, %%es\n"
                           "mov %%eax, %%fs\n"
                           "mov %%eax, %%gs\n"
+
+                          "mov %0, %%eax\n"
+                          "mov %1, %%ebx\n"
+                          "mov %2, %%ecx\n"
+                          "mov %3, %%edx\n"
 
                           "push $0x23\n"        // 0x23 is the user mode data segment selector
                           "push %4\n"        // push the user stack address
@@ -122,7 +122,12 @@ void enter_usermode_resume_context(void) {
                           "push %5\n"           // push the instruction pointer
 
                           "iret\n"              // perform iret
-                          : : "r"(current_running_task->context->eax), "r"(current_running_task->context->ebx), "r"(current_running_task->context->ecx), "r"(current_running_task->context->edx), "r"(current_running_task->context->esp), "r"(current_running_task->context->eip));
+                          : : "r"(current_running_task->context->eax),
+                              "r"(current_running_task->context->ebx),
+                              "r"(current_running_task->context->ecx),
+                              "r"(current_running_task->context->edx),
+                              "r"(current_running_task->context->esp),
+                              "r"(current_running_task->context->eip));
 }
 //void enter_usermode_resume_context(void) {
 //    
@@ -144,3 +149,4 @@ void enter_usermode_resume_context(void) {
 //                          "iret\n"              // perform iret
 //                          : : "b"(current_running_task->context->esp), "r"(current_running_task->context->eip));
 //}
+

@@ -162,7 +162,9 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 		SET_ATTRIBUTE(pde, PAGE_PDE_PRESENT);
 		SET_ATTRIBUTE(pde, PAGE_PDE_WRITABLE);
 		SET_ATTRIBUTE(pde, PAGE_PDE_USER);
-	}
+	} else {
+        //printk("page already present in pd!\n");
+    }
 
 	// get address of the page table
 	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
@@ -406,7 +408,7 @@ page_directory *create_address_space(void) {
     // map kernel into the virtual address space:
     // copy entries in the current page directory - what we need are only the
     // kernel pages (first 1MB and pages from 0xC0000000)
-    memcpy(dir, current_page_directory, sizeof(pd_entry) * PAGES_PER_TABLE);
+    memcpy(dir, kernel_page_directory, sizeof(pd_entry) * PAGES_PER_TABLE);
 
     // clear entries between the first 1MB and the higher half kernel
     memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(0xC0000000) - 1);
@@ -428,14 +430,14 @@ void restore_kernel_address_space(void) {
     // why the index starts at 1) and the memory above 0xC0000000
     for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
         if ((uint32_t)current_page_directory->entries[i] != 0) {
-            printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
+            //printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
             pd_entry phys_address_of_page_table = current_page_directory->entries[i];
 
-            free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
+            //free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
         }
     }
 
-    free_blocks((void*)current_page_directory, 1);
+    //free_blocks((void*)current_page_directory, 1);
 
     // set kernel page directory to current page directory
     set_page_directory(kernel_page_directory);
@@ -460,5 +462,12 @@ address get_physical_addr(address virt_addr) {
     test += (virt_addr & 0x00000FFF);
 
     return test;
+}
+
+void print_current_pd(void) {
+    page_directory *pd = current_page_directory;
+
+    pd_entry test = pd->entries[32];
+    printk("current pd: 32: %x\n", test);
 }
 

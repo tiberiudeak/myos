@@ -49,7 +49,7 @@ void deallocate_elf_memory(void) {
 
     while (tmp != NULL) {
         // free physical memory
-        free_blocks(tmp->physical_address, tmp->num_blocks);
+        //free_blocks(tmp->physical_address, tmp->num_blocks);
         tmp = (elf_phys_mem_info*) tmp->next;
 
         // unmap pages
@@ -265,7 +265,7 @@ int32_t execute_elf(int argc, char **argv) {
 
     if (fd < 0) {
         printk("%s no such file or directory!\n", argv[0]);
-        return 1;
+        goto err2;
     }
 
     open_files_table_t *oft_entry = open_files_table + fd;
@@ -278,6 +278,7 @@ int32_t execute_elf(int argc, char **argv) {
     }
 
     uint32_t ustack_start = 0, ustack_end = 0;
+
     // get entry point of elf
     void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
 
@@ -291,19 +292,9 @@ int32_t execute_elf(int argc, char **argv) {
     if (ret)
         return 1;
 
-    // int32_t (*program)(int argc, char *argv[]);
-    // program = (int32_t (*)(int, char**)) entry_point;
-    printk("elf entry_point %x\n", entry_point);
-
     // start program execution
-    //int32_t return_code = program(1, NULL);
     int32_t return_code = 0;
     enter_usermode((uint32_t)entry_point, ustack_end);
-    //else {
-    //    printk("resume context!!!!!!....\n");
-    //    enter_usermode_resume_context();
-    //    while(1);
-    //}
 
     // deallocate memory
     deallocate_elf_memory();
@@ -312,10 +303,13 @@ int32_t execute_elf(int argc, char **argv) {
 
 err:
     deallocate_elf_memory();
-    // close(fd);
+
+err2:
     __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
     syscall_close();
+
+    restore_kernel_address_space();
     return 1;
 }
 

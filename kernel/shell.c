@@ -46,6 +46,7 @@ void shell_exec_command(char *command) {
         char *argv = kmalloc(sizeof(char) * 10);
         strncpy(argv, command, 10);
 
+        // create new task
         task_struct *new_task = create_task(execute_elf, 1, &argv, 1);
 
         kfree(argv);

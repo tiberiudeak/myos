@@ -195,37 +195,41 @@ void schedule(void) {
             while (1) __asm__ __volatile__ ("sti; hlt; cli");
         }
 
+        // take task from the queue and update current running task
         task_struct *task = dequeue_task();
         current_running_task = task;
 
-        printk("executing task: %d\n", task->task_id);
+        printk("new executing task: %d\n", task->task_id);
 
         void (*program)(int argc, char *argv[]);
         program = (void (*)(int, char**)) task->exec_address;
 
-        // change virtual address space
+        // change virtual address space for user processes
         if (task->vas != NULL) {
-            printk("setting new vas\n");
             set_page_directory(task->vas);
         }
 
+        // if task has already run on the processor and is still in the queue means
+        // that it has a context that should be resumed
         if (task->context != NULL) {
             if (task->vas == NULL) {
+                // no virtual address space -> kernel process
                 printk("I am a kernel process!\n");
 
+                // resume kernel task
                 void (*t)(int, char**) = (void*)task->context->eip;
                 t(task->argc, task->argv);
             }
             else {
+                // virtual address space present -> user process
                 printk("I am a user process!\n");
 
-                int test = task->context->eip;
-                // resume task
+                // resume user task
                 enter_usermode_resume_context();
             }
         }
 
-        // execute task
+        // execute task for the first time (with no context)
         program(task->argc, task->argv);
 
         // following code is executed only if the program could not be executed for
@@ -233,18 +237,4 @@ void schedule(void) {
         destroy_task(task);
         shell_cleanup();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

@@ -26,10 +26,15 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
 	ticks++;
 	uptime++;
 
-    if (ticks % 5000 == 0 && scheduler_initialized && queue_size() != 0) {
+    // only for the new scheduler
+    // if there is at least one task in the queue, this means that a new task was
+    // added in the queue (the init task is currently executing, so the queue is empty)
+    if (ticks % 2000 == 0 && scheduler_initialized && queue_size() != 0) {
+
+        // save task context
         if (current_running_task->context == NULL) {
             proc_context_t *current_context = kmalloc(sizeof(proc_context_t));
-            printk("current running pid: %d\n", current_running_task->task_id);
+            printk("previous running pid: %d\n", current_running_task->task_id);
 
             current_context->flags = r->eflags;
             current_context->cs = r->cs;
@@ -50,6 +55,9 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
             current_running_task->context = current_context;
         }
         else {
+            // update context
+            printk("previous running pid: %d\n", current_running_task->task_id);
+
             current_running_task->context->flags = r->eflags;
             current_running_task->context->cs = r->cs;
             current_running_task->context->eip = r->eip;
@@ -67,41 +75,14 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
             current_running_task->context->gs = r->ds;
         }
 
-        printk("context is for task %d\n", current_running_task->task_id);
-
         if (r->int_no >= 8) {
             port_byte_out(0xA0, 0x20);
         }
         port_byte_out(0x20, 0x20);
 
         enqueue_task(current_running_task);
-        printk("queue size: %d\n", queue_size());
         schedule();
     }
-
-
-    // only for new scheduler!!!
-    // if there is at least one task in the queue, this means that a new task was
-    // added in the queue (the init task is currently executing, so the queue is empty)
-    //if (scheduler_initialized && queue_size() != 0) {
-    //    // save state of the current task, put it in the queue and call the scheduler
-
-    //    current_running_task->context = &current_context;
-
-    //    // save state for the current process
-    //    printk("eip: %x \n", current_running_task->context->eip);
-
-    //    // put task back to queue
-    //    enqueue_task(current_running_task);
-    //    if (r->int_no >= 8) {
-    //        port_byte_out(0xA0, 0x20);
-    //    }
-    //    port_byte_out(0x20, 0x20);
-
-    //    // call scheduler
-    //    schedule();
-    //    printk("aici never\n");
-    //}
 }
 
 /**
