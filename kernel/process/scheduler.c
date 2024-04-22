@@ -11,7 +11,7 @@ task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-const uint32_t running_time_quantum_ms = 10;
+const uint32_t running_time_quantum_ms = 20;
 
 /**
  * @brief Initialize the scheduler task queue

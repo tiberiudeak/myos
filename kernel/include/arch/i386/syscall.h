@@ -314,6 +314,7 @@ err:
 }
 
 void syscall_exit(void) {
+    __asm__ __volatile__ ("cli");
     int return_code = -1;
 
     __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
@@ -330,6 +331,7 @@ void syscall_exit(void) {
 
     // return to scheduler
     //simple_task_scheduler();
+    __asm__ __volatile__ ("sti");
     schedule();
 }
 

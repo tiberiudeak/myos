@@ -3,6 +3,7 @@
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
 #include <process/process.h>
+#include <process/scheduler.h>
 #include <string.h>
 
 tss_entry_t kernel_context;
@@ -131,37 +132,51 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
 //                              "r"(current_running_task->context->eip));
 //}
 
-__attribute__ ((naked)) void enter_usermode_resume_context(void) {
+void enter_usermode_resume_context(void) {
     
-    //TODO: restore ALL registers!
+    printk("esp: %x\n", current_running_task->context->esp);
+    if (current_running_task->context->eip == 0 ||
+            current_running_task->context->esp == 0 ||
+            current_running_task->context->ebp == 0) {
+        printk("strange context, returning...\n");
+
+        // schedule();
+        // return; -> same problem as in the case of ./file_does_not_exits situation
+    }
+
     __asm__ __volatile__ ("sti\n"
+                          "mov $0x23, %eax\n"
+                          "mov %eax, %ds\n"
+                          "mov %eax, %es\n"
+                          "mov %eax, %fs\n"
+                          "mov %eax, %gs\n");
 
-                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
-                          "mov %%eax, %%ds\n"
-                          "mov %%eax, %%es\n"
-                          "mov %%eax, %%fs\n"
-                          "mov %%eax, %%gs\n"
+    // restore general registers
+    __asm__ __volatile__ ("mov %%eax, %%ebx" : : "a"(current_running_task->context->eax));
+    __asm__ __volatile__ ("mov %%eax, %%ecx" : : "a"(current_running_task->context->ecx));
+    __asm__ __volatile__ ("mov %%eax, %%edx" : : "a"(current_running_task->context->edx));
+    __asm__ __volatile__ ("mov %%eax, %%edi" : : "a"(current_running_task->context->edi));
+    __asm__ __volatile__ ("mov %%eax, %%esi" : : "a"(current_running_task->context->esi));
+    __asm__ __volatile__ ("mov %%eax, %%ebp" : : "a"(current_running_task->context->ebp));
 
-                          // restore general registers
-                          "mov %0, %%eax\n"
-                          "mov %1, %%ebx\n"
-                          "mov %2, %%ecx\n"
-                          "mov %3, %%edx\n"
+    // restore eax
+    __asm__ __volatile__ ("push %ebx");
+    __asm__ __volatile__ ("mov %%ebx, %%eax\n"
+                          "pop %%ebx" : : "b"(current_running_task->context->ebx));
 
-                          "push $0x23\n"        // 0x23 is the user mode data segment selector
-                          "push %4\n"           // push the user stack address
-                          "pushf\n"             // push eflags register
-                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
-                          "push %5\n"           // push the instruction pointer
+    // restore flags
+    __asm__ __volatile__ ("push %%eax\n"
+                          "popf\n" : : "a"(current_running_task->context->flags));
 
-                          "iret\n"              // perform iret
-                          : : "r"(current_running_task->context->eax),
-                              "r"(current_running_task->context->ebx),
-                              "r"(current_running_task->context->ecx),
-                              "r"(current_running_task->context->edx),
-                              "r"(current_running_task->context->esp),
-                              "r"(current_running_task->context->eip));
+    __asm__ __volatile__ ("push $0x23\n"
+                          "push %%eax\n"
+                          "pushf\n"
+                          "push $0x1b\n" :: "a"(current_running_task->context->esp));
+    __asm__ __volatile__ ("push %%eax" :: "a"(current_running_task->context->eip));
+
+    __asm__ __volatile__ ("iret");
 }
+
 //void enter_usermode_resume_context(void) {
 //    
 //    __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
