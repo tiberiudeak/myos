@@ -101,5 +101,7 @@ uint8_t set_page_directory(page_directory *);
 void restore_kernel_address_space(void);
 address get_physical_addr(address);
 void print_current_pd();
+uint8_t set_kernel_page_directory(void);
+void free_proc_phys_mem(void);
 
 #endif /* !MM_VMM_H */

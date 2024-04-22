@@ -11,7 +11,7 @@ task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-const uint32_t running_time_quantum_ms = 2;
+const uint32_t running_time_quantum_ms = 10;
 
 /**
  * @brief Initialize the scheduler task queue
@@ -142,6 +142,13 @@ void simple_task_scheduler(void) {
     }
 }
 
+/**
+ * @brief Get size of the task queue
+ *
+ * This function returns the size of the task queue.
+ *
+ * @return The queue size
+ */
 uint32_t queue_size(void) {
     uint32_t count = 0;
 
@@ -154,11 +161,27 @@ uint32_t queue_size(void) {
     return count;
 }
 
+/**
+ * @ Init task
+ *
+ * This function represents the first task created and executed.
+ *
+ * @param argc Number of arguments
+ * @param argv Arguments
+ */
 void init_task_func(int argc, char **argv) {
     printk("init process started!\n");
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
+/**
+ * @brief Initialize the round-robin scheduler's task queue
+ *
+ * This function performs the actual initialization of the task
+ * queue by creating and adding to the queue the init task.
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
 uint8_t init_task_queue_rr(void) {
     task_queue = kmalloc(sizeof(task_queue_t));
 
@@ -186,6 +209,15 @@ uint8_t init_task_queue_rr(void) {
     return 0;
 }
 
+/**
+ * @brief Initialize the round-robin scheduler
+ *
+ * This function calls the init_task_queue_rr() function
+ * to initialize the task queue. Only used as a wrapper
+ * for the other function.
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
 uint8_t scheduler_init_rr(void) {
     return init_task_queue_rr();
 }
@@ -230,11 +262,15 @@ void schedule(void) {
         }
 
         // execute task for the first time (with no context)
+        // (executing the execute_elf() function)
         program(task->argc, task->argv);
 
         // following code is executed only if the program could not be executed for
         // some reason (file not present, not an ELF file, etc...)
         destroy_task(task);
         shell_cleanup();
+
+        // task couldn't be executed, so schedule another one
+        schedule();
 }
 

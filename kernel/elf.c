@@ -46,15 +46,16 @@ void add_phys_info(void *addr, void *virt_addr, uint32_t num_blocks) {
 
 void deallocate_elf_memory(void) {
     elf_phys_mem_info *tmp = elf_phys_mem_info_header;
+    free_proc_phys_mem();
 
-    while (tmp != NULL) {
-        // free physical memory
-        //free_blocks(tmp->physical_address, tmp->num_blocks);
-        tmp = (elf_phys_mem_info*) tmp->next;
+    //while (tmp != NULL) {
+    //    // free physical memory
+    //    free_blocks(tmp->physical_address, tmp->num_blocks);
+    //    tmp = (elf_phys_mem_info*) tmp->next;
 
-        // unmap pages
-        unmap_page(tmp->virtual_address);
-    }
+    //    // unmap pages
+    //    unmap_page(tmp->virtual_address);
+    //}
 
     // free list
     elf_phys_mem_info *tmp2;

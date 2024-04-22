@@ -93,9 +93,6 @@ void kmain() {
     //     printkc(4, "open and close syscalls test failed!\n");
     //     halt_processor();
     // }
- 
-	printk("Welcome to MyOS!\n");
-	shell_init();
 
     ret = scheduler_init_rr();
 
@@ -103,6 +100,9 @@ void kmain() {
         printkc(4, "failed to initialize the scheduler\n");
         halt_processor();
     }
+
+	printk("Welcome to MyOS!\n");
+	shell_init();
 
     // start "scheduling"
     //simple_task_scheduler();

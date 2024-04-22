@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include "global_addresses.h"
 #include "include/kernel/tty.h"
+#include "include/mm/vmm.h"
 
 page_directory *current_page_directory = 0;
 page_directory *kernel_page_directory = 0;
@@ -401,6 +402,7 @@ page_directory *create_address_space(void) {
     if (dir == NULL) {
         return NULL;
     }
+    printk("new addr sp %x\n", dir);
 
 	// clear all entries in the page directory
 	memset(dir, 0, sizeof(page_directory));
@@ -413,7 +415,7 @@ page_directory *create_address_space(void) {
     // clear entries between the first 1MB and the higher half kernel
     memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(0xC0000000) - 1);
 
-    return dir;
+   return dir;
 }
 
 /**
@@ -424,25 +426,69 @@ page_directory *create_address_space(void) {
  * address space (except the kernel mappings).
  */
 void restore_kernel_address_space(void) {
+    int ret;
+
     // deallocate potential memory for the current_page_directory:
     // go through the current page directory and deallocate all page
     // tables except the ones for kernel: exclude the first 4MB (that is
     // why the index starts at 1) and the memory above 0xC0000000
     for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
         if ((uint32_t)current_page_directory->entries[i] != 0) {
-            //printk("free mem for index %d %x\n", i, current_page_directory->entries[i]);
             pd_entry phys_address_of_page_table = current_page_directory->entries[i];
 
-            //free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
+            free_blocks((void*)PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
         }
     }
 
-    //free_blocks((void*)current_page_directory, 1);
+    // free memory with the page directory
+    // PROBLEM when executing file that doesn't exist -> page fault
+    free_blocks((void*)current_page_directory, 1);
 
     // set kernel page directory to current page directory
-    set_page_directory(kernel_page_directory);
+    ret = set_page_directory(kernel_page_directory);
+
+    if (ret) {
+        printkc(4, "failed to change page directory!\n");
+        __asm__ __volatile__ ("cli; hlt");
+    }
 }
 
+/**
+ * @brief Free physical memory used by the current process
+ *
+ * This function goes through the current page directory and searches for entries
+ * that are not empty (and are not made by the kernel). If one such page directory
+ * entry is found, then the function goes through the corresponding page table entries
+ * and frees those pages.
+ */
+void free_proc_phys_mem(void) {
+    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
+        if ((uint32_t)current_page_directory->entries[i] != 0) {
+            pd_entry pde = current_page_directory->entries[i];
+
+            // get page table corresponding to the pde
+            page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(&pde);
+
+            for (uint32_t j = 0; j < 80; j++) {
+                if (pt->entries[j] != 0) {
+                    // printk("freeing phys mem: %x\n", PAGE_GET_PHY_ADDRESS(&pt->entries[j]));
+                    free_page(&pt->entries[j]);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @brief Return the physical address corresponding to the given virtual address
+ *
+ * This funcion returns the physical address for the given virtual address based on
+ * the current page directory.
+ *
+ * @param virt_addr The virtual address
+ *
+ * @return The physical address
+ */
 address get_physical_addr(address virt_addr) {
 	// get current page directory
 	page_directory *pd = current_page_directory;
@@ -469,5 +515,9 @@ void print_current_pd(void) {
 
     pd_entry test = pd->entries[32];
     printk("current pd: 32: %x\n", test);
+}
+
+uint8_t set_kernel_page_directory(void) {
+    return set_page_directory(kernel_page_directory);
 }
 

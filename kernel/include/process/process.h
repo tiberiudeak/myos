@@ -40,7 +40,6 @@ typedef struct {
     proc_context_t *context;
 } task_struct;
 
-
 void enter_usermode(uint32_t, uint32_t);
 task_struct *create_task(void *, int, char**, int);
 void destroy_task(task_struct *);

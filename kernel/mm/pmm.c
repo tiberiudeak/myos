@@ -234,7 +234,6 @@ void pmm_self_test() {
 		printkc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else if (*a != 0x01010101) {
-		printk("%x\n", *a);
 		printkc(4, "\t\t\t\t\tFAILED\n");
 	}
 	else {
@@ -436,7 +435,7 @@ void free_blocks(void *address, uint32_t num_blocks) {
 	uint32_t block_index = (uint32_t)address / BLOCK_SIZE;
 
 	// override entire block with 1
-	//memset(address, 1, BLOCK_SIZE * num_blocks);
+	memset(address, 1, BLOCK_SIZE * num_blocks);
 
 	for (; num_blocks > 0; num_blocks--) {
 		__unset_block(block_index);

@@ -46,16 +46,16 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
 
             strcpy(task->argv[i], argv[i]);
         }
-    }
 
-    if (userspace) {
-        task->vas = create_address_space();
-    }
-    else {
-        task->vas = NULL;
-    }
+        if (userspace) {
+            task->vas = create_address_space();
+        }
+        else {
+            task->vas = NULL;
+        }
 
-    task->context = NULL;
+        task->context = NULL;
+    }
 
     return task;
 }
@@ -63,6 +63,7 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
 // free memory
 void destroy_task(task_struct *task) {
     kfree(task->context);
+
     for (int i = 0; i < task->argc; i++) {
         kfree(task->argv[i]);
     }
@@ -75,9 +76,9 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
     
     // save current context somehow to restore it when exit is called?
     // maybe update the TSS
-    __asm__ __volatile__ ("mov %%esp, %%edx" : "=d"(kernel_context.esp));
-    __asm__ __volatile__ ("mov %%ebp, %%edx" : "=d"(kernel_context.ebp));
-    __asm__ __volatile__ ("pushf\n" "pop %%edx" : "=d"(kernel_context.eflags));
+    //__asm__ __volatile__ ("mov %%esp, %%edx" : "=d"(kernel_context.esp));
+    //__asm__ __volatile__ ("mov %%ebp, %%edx" : "=d"(kernel_context.ebp));
+    //__asm__ __volatile__ ("pushf\n" "pop %%edx" : "=d"(kernel_context.eflags));
 
     __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
                                                 // program execution
@@ -99,10 +100,41 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
 }
 
 
-void enter_usermode_resume_context(void) {
+//__attribute__ ((naked)) void enter_usermode_resume_context(void) {
+//    
+//    __asm__ __volatile__ ("sti\n"
+//
+//                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
+//                          "mov %%eax, %%ds\n"
+//                          "mov %%eax, %%es\n"
+//                          "mov %%eax, %%fs\n"
+//                          "mov %%eax, %%gs\n"
+//
+//                          // restore general registers
+//                          "mov %0, %%eax\n"
+//                          "mov %1, %%ebx\n"
+//                          "mov %2, %%ecx\n"
+//                          "mov %3, %%edx\n"
+//
+//                          "push $0x23\n"        // 0x23 is the user mode data segment selector
+//                          "push %4\n"           // push the user stack address
+//                          "pushf\n"             // push eflags register
+//                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
+//                          "push %5\n"           // push the instruction pointer
+//
+//                          "iret\n"              // perform iret
+//                          : : "r"(current_running_task->context->eax),
+//                              "r"(current_running_task->context->ebx),
+//                              "r"(current_running_task->context->ecx),
+//                              "r"(current_running_task->context->edx),
+//                              "r"(current_running_task->context->esp),
+//                              "r"(current_running_task->context->eip));
+//}
+
+__attribute__ ((naked)) void enter_usermode_resume_context(void) {
     
-    __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
-                                                // program execution
+    //TODO: restore ALL registers!
+    __asm__ __volatile__ ("sti\n"
 
                           "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
                           "mov %%eax, %%ds\n"
@@ -110,13 +142,14 @@ void enter_usermode_resume_context(void) {
                           "mov %%eax, %%fs\n"
                           "mov %%eax, %%gs\n"
 
+                          // restore general registers
                           "mov %0, %%eax\n"
                           "mov %1, %%ebx\n"
                           "mov %2, %%ecx\n"
                           "mov %3, %%edx\n"
 
                           "push $0x23\n"        // 0x23 is the user mode data segment selector
-                          "push %4\n"        // push the user stack address
+                          "push %4\n"           // push the user stack address
                           "pushf\n"             // push eflags register
                           "push $0x1b\n"        // 0x1b is the user mode code segment selector
                           "push %5\n"           // push the instruction pointer

@@ -29,7 +29,7 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
     // only for the new scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
-    if (ticks % 2000 == 0 && scheduler_initialized && queue_size() != 0) {
+    if (ticks % running_time_quantum_ms == 0 && scheduler_initialized && queue_size() != 0) {
 
         // save task context
         if (current_running_task->context == NULL) {
