@@ -2,6 +2,7 @@
 #define _SCH_H 1
 
 #include <process/process.h>
+#include <arch/i386/isr.h>
 #include <stdint.h>
 
 // node in the task queue
@@ -24,6 +25,9 @@ void simple_task_scheduler(void);
 uint8_t scheduler_init_rr(void);
 uint32_t queue_size(void);
 void schedule(void);
+void start_init_task(void);
+void change_context(interrupt_regs *);
+void resume_context(interrupt_regs *);
 
 #endif /* !_SCH_H */
 

@@ -55,7 +55,12 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
             task->vas = NULL;
         }
 
-        task->context = NULL;
+        task->context = kmalloc(sizeof(proc_context_t));
+
+        if (task->context == NULL) {
+            // TODO: free previous allocated memory
+            return NULL;
+        }
     }
 
     return task;
@@ -81,8 +86,7 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
     //__asm__ __volatile__ ("mov %%ebp, %%edx" : "=d"(kernel_context.ebp));
     //__asm__ __volatile__ ("pushf\n" "pop %%edx" : "=d"(kernel_context.eflags));
 
-    __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
-                                                // program execution
+    __asm__ __volatile__ ("cli\n"               // critical section, cannot be interrupted
                           "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
                           "mov %%eax, %%ds\n"
                           "mov %%eax, %%es\n"
@@ -92,45 +96,15 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
                           "push $0x23\n"        // 0x23 is the user mode data segment selector
                           "push %%ebx\n"        // push the user stack address
                           "pushf\n"             // push eflags register
+                          "pop %%eax\n"         // pop the flags registers into EAX
+                          "or $0x200, %%eax\n"  // enable the interrupt bit in the flags register
+                          "push %%eax\n"        // put back the flags on the stack
                           "push $0x1b\n"        // 0x1b is the user mode code segment selector
                           "push %1\n"           // push the instruction pointer
 
                           "iret\n"              // perform iret
-                          "user_finish_exec:"
                           : : "b"(stack_address), "r"(entry_point));
 }
-
-
-//__attribute__ ((naked)) void enter_usermode_resume_context(void) {
-//    
-//    __asm__ __volatile__ ("sti\n"
-//
-//                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
-//                          "mov %%eax, %%ds\n"
-//                          "mov %%eax, %%es\n"
-//                          "mov %%eax, %%fs\n"
-//                          "mov %%eax, %%gs\n"
-//
-//                          // restore general registers
-//                          "mov %0, %%eax\n"
-//                          "mov %1, %%ebx\n"
-//                          "mov %2, %%ecx\n"
-//                          "mov %3, %%edx\n"
-//
-//                          "push $0x23\n"        // 0x23 is the user mode data segment selector
-//                          "push %4\n"           // push the user stack address
-//                          "pushf\n"             // push eflags register
-//                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
-//                          "push %5\n"           // push the instruction pointer
-//
-//                          "iret\n"              // perform iret
-//                          : : "r"(current_running_task->context->eax),
-//                              "r"(current_running_task->context->ebx),
-//                              "r"(current_running_task->context->ecx),
-//                              "r"(current_running_task->context->edx),
-//                              "r"(current_running_task->context->esp),
-//                              "r"(current_running_task->context->eip));
-//}
 
 void enter_usermode_resume_context(void) {
     
@@ -144,7 +118,7 @@ void enter_usermode_resume_context(void) {
         // return; -> same problem as in the case of ./file_does_not_exits situation
     }
 
-    __asm__ __volatile__ ("sti\n"
+    __asm__ __volatile__ ("cli\n"
                           "mov $0x23, %eax\n"
                           "mov %eax, %ds\n"
                           "mov %eax, %es\n"
@@ -165,7 +139,8 @@ void enter_usermode_resume_context(void) {
                           "pop %%ebx" : : "b"(current_running_task->context->ebx));
 
     // restore flags
-    __asm__ __volatile__ ("push %%eax\n"
+    __asm__ __volatile__ ("or $0x200, %%eax\n"  // enable the interrupt bit in the flags register
+                          "push %%eax\n"
                           "popf\n" : : "a"(current_running_task->context->flags));
 
     __asm__ __volatile__ ("push $0x23\n"
@@ -176,25 +151,4 @@ void enter_usermode_resume_context(void) {
 
     __asm__ __volatile__ ("iret");
 }
-
-//void enter_usermode_resume_context(void) {
-//    
-//    __asm__ __volatile__ ("sti\n"               // otherwise, interrupt were disabled during
-//                                                // program execution
-//
-//                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
-//                          "mov %%eax, %%ds\n"
-//                          "mov %%eax, %%es\n"
-//                          "mov %%eax, %%fs\n"
-//                          "mov %%eax, %%gs\n"
-//
-//                          "push $0x23\n"        // 0x23 is the user mode data segment selector
-//                          "push %%ebx\n"        // push the user stack address
-//                          "pushf\n"             // push eflags register
-//                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
-//                          "push %1\n"           // push the instruction pointer
-//
-//                          "iret\n"              // perform iret
-//                          : : "b"(current_running_task->context->esp), "r"(current_running_task->context->eip));
-//}
 

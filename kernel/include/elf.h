@@ -77,6 +77,7 @@ typedef struct {
 //void *load_elf(uint32_t *);
 int32_t execute_elf(int, char**);
 void elf_after_program_execution(int);
+uint8_t prepare_elf_execution(int, char**);
 
 #endif /* !_ELF_H */
 

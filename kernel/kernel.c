@@ -85,16 +85,7 @@ void kmain() {
         halt_processor();
     }
 
-	// // TODO: possible test for paging: see if uint8_t* value at KERNEL_ADDRESS
-	// // is the same as 0xC0000000
-    // ret = test_open_close_syscalls();
-
-    // if (ret) {
-    //     printkc(4, "open and close syscalls test failed!\n");
-    //     halt_processor();
-    // }
-
-    ret = scheduler_init_rr();
+    ret = scheduler_init_rr();  // initialize the round robin scheduler
 
     if (ret) {
         printkc(4, "failed to initialize the scheduler\n");
@@ -102,10 +93,9 @@ void kmain() {
     }
 
 	printk("Welcome to MyOS!\n");
-	shell_init();
+	shell_init();               // initialize the shell
 
-    // start "scheduling"
-    //simple_task_scheduler();
-    schedule();
+    // start first process
+    start_init_task();
 }
 

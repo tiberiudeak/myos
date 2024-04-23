@@ -1,3 +1,4 @@
+#include <arch/i386/isr.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <arch/i386/pit.h>
@@ -11,7 +12,7 @@ task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-const uint32_t running_time_quantum_ms = 20;
+const uint32_t running_time_quantum_ms = 100;
 
 /**
  * @brief Initialize the scheduler task queue
@@ -169,7 +170,7 @@ uint32_t queue_size(void) {
  * @param argc Number of arguments
  * @param argv Arguments
  */
-void init_task_func(int argc, char **argv) {
+void init_task_func(int argc, char *argv[]) {
     printk("init process started!\n");
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
@@ -209,6 +210,19 @@ uint8_t init_task_queue_rr(void) {
     return 0;
 }
 
+void start_init_task() {
+    // take init task from the queue
+    task_struct *task = dequeue_task();
+
+    // update current running task
+    current_running_task = task;
+
+    // start execution of init
+    void (*program)(int argc, char *argv[]);
+    program = (void (*)(int, char**)) task->exec_address;
+    program(task->argc, task->argv);
+}
+
 /**
  * @brief Initialize the round-robin scheduler
  *
@@ -222,9 +236,42 @@ uint8_t scheduler_init_rr(void) {
     return init_task_queue_rr();
 }
 
+void change_context(interrupt_regs *r) {
+    printk("%x %x\n", current_running_task->context->eip, current_running_task->context->esp);
+
+    //__asm__ __volatile__ ("mov $0x23, %eax\n"
+    //                      "mov %eax, %ds\n"
+    //                      "mov %eax, %es\n"
+    //                      "mov %eax, %fs\n"
+    //                      "mov %eax, %gs");
+
+    // change DS to user mode data segment selector
+    *(&r->ds) = 0x23;
+    *(&r->ss) = 0x23;
+
+    // change stack address
+    *(&r->useresp) = current_running_task->context->esp;
+
+    // clear flags (except for the interrupt bit)
+    // TODO
+
+    // change CS to user mode code segment selector
+    *(&r->cs) = 0x1B;
+
+    // change instruction pointer
+    *(&r->eip) = current_running_task->context->eip;
+}
+
+void resume_context(interrupt_regs *r) {
+    //printk("eax: %x, %x\n", r->eax, &r->eax);
+    printk("resuming context for task %d...\n", current_running_task->task_id);
+}
+
 void schedule(void) {
-        if (task_queue->front == NULL) {
-            while (1) __asm__ __volatile__ ("sti; hlt; cli");
+
+        // put current running task in the queue
+        if (current_running_task != NULL) {
+            enqueue_task(current_running_task);
         }
 
         // take task from the queue and update current running task
@@ -233,9 +280,6 @@ void schedule(void) {
 
         printk("new executing task: %d\n", task->task_id);
 
-        void (*program)(int argc, char *argv[]);
-        program = (void (*)(int, char**)) task->exec_address;
-
         // change virtual address space for user processes
         if (task->vas != NULL) {
             set_page_directory(task->vas);
@@ -243,34 +287,30 @@ void schedule(void) {
 
         // if task has already run on the processor and is still in the queue means
         // that it has a context that should be resumed
-        if (task->context != NULL) {
-            if (task->vas == NULL) {
-                // no virtual address space -> kernel process
-                printk("I am a kernel process!\n");
+        // if (task->context != NULL) {
+        //     if (task->vas == NULL) {
+        //         // no virtual address space -> kernel process
+        //         printk("I am a kernel process!\n");
 
-                // resume kernel task
-                void (*t)(int, char**) = (void*)task->context->eip;
-                t(task->argc, task->argv);
-            }
-            else {
-                // virtual address space present -> user process
-                printk("I am a user process!\n");
+        //         // resume kernel task
+        //         void (*t)(int, char**) = (void*)task->context->eip;
+        //         t(task->argc, task->argv);
+        //     }
+        //     else {
+        //         // virtual address space present -> user process
+        //         printk("I am a user process!\n");
 
-                // resume user task
-                enter_usermode_resume_context();
-            }
-        }
-
-        // execute task for the first time (with no context)
-        // (executing the execute_elf() function)
-        program(task->argc, task->argv);
+        //         // resume user task
+        //         enter_usermode_resume_context();
+        //     }
+        // }
 
         // following code is executed only if the program could not be executed for
         // some reason (file not present, not an ELF file, etc...)
-        destroy_task(task);
-        shell_cleanup();
+        // destroy_task(task);
+        // shell_cleanup();
 
         // task couldn't be executed, so schedule another one
-        schedule();
+        // schedule();
 }
 

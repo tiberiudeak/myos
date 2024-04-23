@@ -4,8 +4,10 @@
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
+#include <process/process.h>
 #include <process/scheduler.h>
 #include <mm/kmalloc.h>
+#include <elf.h>
 
 uint32_t ticks;
 uint32_t uptime;
@@ -23,41 +25,18 @@ extern task_struct *current_running_task;
  * one millisecond and the uptime.
  */
 void PIT_IRQ0_handler(interrupt_regs *r) {
+    uint8_t ret = 0;
 	ticks++;
 	uptime++;
 
-    // only for the new scheduler
+
+    // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
     if (ticks % running_time_quantum_ms == 0 && scheduler_initialized && queue_size() != 0) {
 
-        // save task context
-        if (current_running_task->context == NULL) {
-            proc_context_t *current_context = kmalloc(sizeof(proc_context_t));
-            printk("previous running pid: %d\n", current_running_task->task_id);
-
-            current_context->flags = r->eflags;
-            current_context->cs = r->cs;
-            current_context->eip = r->eip;
-            current_context->ebp = r->ebp;
-            current_context->esp = r->useresp;
-            current_context->edi = r->edi;
-            current_context->esi = r->esi;
-            current_context->edx = r->edx;
-            current_context->ecx = r->ecx;
-            current_context->ebx = r->ebx;
-            current_context->eax = r->eax;
-            current_context->ds = r->ds;
-            current_context->es = r->ds;
-            current_context->fs = r->ds;
-            current_context->gs = r->ds;
-
-            current_running_task->context = current_context;
-        }
-        else {
-            // update context
-            printk("previous running pid: %d\n", current_running_task->task_id);
-
+        if (current_running_task->state != TASK_TERMINATED) {
+            // save current running task context
             current_running_task->context->flags = r->eflags;
             current_running_task->context->cs = r->cs;
             current_running_task->context->eip = r->eip;
@@ -73,15 +52,36 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
             current_running_task->context->es = r->ds;
             current_running_task->context->fs = r->ds;
             current_running_task->context->gs = r->ds;
+
+            current_running_task->state = TASK_READY;
         }
 
-        if (r->int_no >= 8) {
-            port_byte_out(0xA0, 0x20);
+        if (current_running_task->state == TASK_TERMINATED) {
+            destroy_task(current_running_task);
+            current_running_task = NULL;
         }
-        port_byte_out(0x20, 0x20);
-
-        enqueue_task(current_running_task);
+sch:
+        // call scheduler
         schedule();
+
+        // prepare elf execution if user space process
+        if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
+            ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
+
+            if (ret) {
+                current_running_task = NULL;
+                goto sch;
+            }
+        }
+
+        // update registers on the stack for the new task
+        if (current_running_task->state == TASK_CREATED) {
+            change_context(r);
+            current_running_task->state = TASK_RUNNING;
+        }
+        else {
+            resume_context(r);
+        }
     }
 }
 

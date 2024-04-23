@@ -17,7 +17,7 @@ irq_common_stub:
 								# function in order to access the pushed information
 	call irq_handler
 	add $8, %esp
-	pop %ebx
+	pop %eax
 
 	mov %ax, %ds				# restore old segment
 	mov %ax, %es
@@ -46,6 +46,7 @@ irq_common_stub:
 .globl irq15
 
 irq0:
+    cli
 	push $0						# push error code
 	push $32					# push interrupt number
 	jmp irq_common_stub			# call the irq common stub function

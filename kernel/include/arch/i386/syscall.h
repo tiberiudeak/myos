@@ -327,12 +327,15 @@ void syscall_exit(void) {
 
     // cleanup task data
     extern task_struct *current_running_task; // data from the scheduler
-    destroy_task(current_running_task);
+    //destroy_task(current_running_task);
+
+    current_running_task->state = TASK_TERMINATED;
+
+    // wait for the timer interrupt to call the scheduler
+    while(1) __asm__ __volatile__ ("sti; hlt; cli");
 
     // return to scheduler
     //simple_task_scheduler();
-    __asm__ __volatile__ ("sti");
-    schedule();
 }
 
 void *syscalls[MAX_SYSCALLS] = {
