@@ -1,4 +1,3 @@
-#include "include/process/process.h"
 #include <arch/i386/isr.h>
 #include <arch/i386/pit.h>
 #include <arch/i386/irq.h>
@@ -19,24 +18,26 @@ extern uint8_t scheduler_initialized;
 extern task_struct *current_running_task;
 
 /**
- * @brief Increment ticks
+ * @brief Timer interrupt handler
  *
  * This is the IRQ0 handler that increments the ticks every
  * one millisecond and the uptime.
+ *
+ * This is also the interrupt used by the round-robin scheduler
+ * to switch between tasks.
  */
 void PIT_IRQ0_handler(interrupt_regs *r) {
     uint8_t ret = 0;
 	ticks++;
 	uptime++;
 
-
     // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
     if (ticks % running_time_quantum_ms == 0 && scheduler_initialized && queue_size() != 0) {
 
+        // save current running task's context
         if (current_running_task->state != TASK_TERMINATED) {
-            // save current running task context
             current_running_task->context->flags = r->eflags;
             current_running_task->context->cs = r->cs;
             current_running_task->context->eip = r->eip;
@@ -52,15 +53,19 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
             current_running_task->context->es = r->ds;
             current_running_task->context->fs = r->ds;
             current_running_task->context->gs = r->ds;
+            current_running_task->context->ss = r->ss;
 
+            // change task state from RUNNING to READY
             current_running_task->state = TASK_READY;
         }
 
+        // if task finished execution, free memory
         if (current_running_task->state == TASK_TERMINATED) {
             destroy_task(current_running_task);
             current_running_task = NULL;
         }
-sch:
+
+rr_sch:
         // call scheduler
         schedule();
 
@@ -69,19 +74,22 @@ sch:
             ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
 
             if (ret) {
+                // failed to prepare elf file, terminate task and call scheduler again
                 current_running_task = NULL;
-                goto sch;
+                current_running_task->state = TASK_TERMINATED;
+                goto rr_sch;
             }
         }
 
-        // update registers on the stack for the new task
+        // update registers on the stack (context) for the new task
         if (current_running_task->state == TASK_CREATED) {
             change_context(r);
-            current_running_task->state = TASK_RUNNING;
         }
         else {
             resume_context(r);
         }
+
+        current_running_task->state = TASK_RUNNING;
     }
 }
 

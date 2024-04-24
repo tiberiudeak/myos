@@ -12,7 +12,7 @@ task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-const uint32_t running_time_quantum_ms = 100;
+const uint32_t running_time_quantum_ms = 20;
 
 /**
  * @brief Initialize the scheduler task queue
@@ -236,16 +236,28 @@ uint8_t scheduler_init_rr(void) {
     return init_task_queue_rr();
 }
 
+/**
+ * @brief Change contex for a user space task in the TASK_CREATED
+ *        state (described only by an instruction pointer and stack)
+ *
+ * -- only called for user space tasks without prior context --
+ *
+ * This function changes the context for a user space task
+ * described only by its instruction pointer and stack.
+ *
+ * @param r "Context" of the previous task that needs to
+ *          be updated
+ */
 void change_context(interrupt_regs *r) {
-    printk("%x %x\n", current_running_task->context->eip, current_running_task->context->esp);
+    // TODO: update TSS for ring 0
 
-    //__asm__ __volatile__ ("mov $0x23, %eax\n"
-    //                      "mov %eax, %ds\n"
-    //                      "mov %eax, %es\n"
-    //                      "mov %eax, %fs\n"
-    //                      "mov %eax, %gs");
+    __asm__ __volatile__ ("mov $0x23, %eax\n"
+                          "mov %eax, %ds\n"
+                          "mov %eax, %es\n"
+                          "mov %eax, %fs\n"
+                          "mov %eax, %gs");
 
-    // change DS to user mode data segment selector
+    // change DS and SS to user mode data segment selector
     *(&r->ds) = 0x23;
     *(&r->ss) = 0x23;
 
@@ -262,55 +274,64 @@ void change_context(interrupt_regs *r) {
     *(&r->eip) = current_running_task->context->eip;
 }
 
+/**
+ * @brief Switch context
+ *
+ * This functions switches the context of the previous running
+ * task with the context of another task (that has become the
+ * current running task).
+ *
+ * @param r "Context" of the previous running task that needs to
+ *          be updated
+ */
 void resume_context(interrupt_regs *r) {
-    //printk("eax: %x, %x\n", r->eax, &r->eax);
-    printk("resuming context for task %d...\n", current_running_task->task_id);
+    // restore segments
+    *(&r->ss) = current_running_task->context->ss;
+    *(&r->ds) = current_running_task->context->ds;
+    *(&r->cs) = current_running_task->context->cs;
+
+    // restore general registers
+    *(&r->eax) = current_running_task->context->eax;
+    *(&r->ebx) = current_running_task->context->ebx;
+    *(&r->ecx) = current_running_task->context->ecx;
+    *(&r->edx) = current_running_task->context->edx;
+    *(&r->edi) = current_running_task->context->edi;
+    *(&r->esi) = current_running_task->context->esi;
+
+    // restore flags
+    *(&r->eflags) = current_running_task->context->flags;
+
+    // restore stack
+    *(&r->useresp) = current_running_task->context->esp;
+    *(&r->ebp) = current_running_task->context->ebp;
+
+    // restore instruction pointer
+    *(&r->eip) = current_running_task->context->eip;
 }
 
+/**
+ * @brief Round Robin Scheduler
+ *
+ * This function puts the current running task in the queue (if the
+ * task is not terminated), takes a task from the queue and updates
+ * the current running task with the new task. The function also
+ * changes the virtual address space if the new task runs in user space.
+ */
 void schedule(void) {
 
-        // put current running task in the queue
-        if (current_running_task != NULL) {
-            enqueue_task(current_running_task);
-        }
+    // put current running task in the queue if task
+    // if not terminated
+    if (current_running_task != NULL) {
+        enqueue_task(current_running_task);
+    }
 
-        // take task from the queue and update current running task
-        task_struct *task = dequeue_task();
-        current_running_task = task;
+    // take task from the queue and update current running task
+    task_struct *task = dequeue_task();
+    current_running_task = task;
 
-        printk("new executing task: %d\n", task->task_id);
-
-        // change virtual address space for user processes
-        if (task->vas != NULL) {
-            set_page_directory(task->vas);
-        }
-
-        // if task has already run on the processor and is still in the queue means
-        // that it has a context that should be resumed
-        // if (task->context != NULL) {
-        //     if (task->vas == NULL) {
-        //         // no virtual address space -> kernel process
-        //         printk("I am a kernel process!\n");
-
-        //         // resume kernel task
-        //         void (*t)(int, char**) = (void*)task->context->eip;
-        //         t(task->argc, task->argv);
-        //     }
-        //     else {
-        //         // virtual address space present -> user process
-        //         printk("I am a user process!\n");
-
-        //         // resume user task
-        //         enter_usermode_resume_context();
-        //     }
-        // }
-
-        // following code is executed only if the program could not be executed for
-        // some reason (file not present, not an ELF file, etc...)
-        // destroy_task(task);
-        // shell_cleanup();
-
-        // task couldn't be executed, so schedule another one
-        // schedule();
+    // change virtual address space for user tasks
+    if (task->vas != NULL) {
+        set_page_directory(task->vas);
+    }
 }
 

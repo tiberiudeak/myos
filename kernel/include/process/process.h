@@ -28,6 +28,7 @@ typedef struct {
     uint32_t eip;
     uint32_t cs;
     uint32_t flags;
+    uint32_t ss;
 } proc_context_t;
 
 typedef struct {
