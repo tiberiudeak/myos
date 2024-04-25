@@ -1,12 +1,9 @@
+#include <kernel/tty.h>
 #include <mm/vmm.h>
 #include <mm/pmm.h>
-#include <kernel/tty.h>
-
+#include <global_addresses.h>
 #include <string.h>
 #include <stddef.h>
-#include "global_addresses.h"
-#include "include/kernel/tty.h"
-#include "include/mm/vmm.h"
 
 page_directory *current_page_directory = 0;
 page_directory *kernel_page_directory = 0;
@@ -441,7 +438,7 @@ void restore_kernel_address_space(void) {
     }
 
     // free memory with the page directory
-    // PROBLEM when executing file that doesn't exist -> page fault
+    // PROBLEM: when executing file that doesn't exist -> page fault
     free_blocks((void*)current_page_directory, 1);
 
     // set kernel page directory to current page directory
@@ -510,13 +507,11 @@ address get_physical_addr(address virt_addr) {
     return test;
 }
 
-void print_current_pd(void) {
-    page_directory *pd = current_page_directory;
-
-    pd_entry test = pd->entries[32];
-    printk("current pd: 32: %x\n", test);
-}
-
+/**
+ * @brief Set the page directory to the kernel page directory
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
 uint8_t set_kernel_page_directory(void) {
     return set_page_directory(kernel_page_directory);
 }

@@ -298,9 +298,6 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
     printk("eip: %x\n", current_running_task->context->eip);
     printk("esp: %x\n", current_running_task->context->esp);
 
-    // deallocate memory
-    // deallocate_elf_memory();
-
     return 0;
 
 err:
@@ -312,76 +309,6 @@ err2:
     syscall_close();
 
     // restore_kernel_address_space();
-    return 1;
-}
-
-int32_t execute_elf(int argc, char **argv) {
-    if (argc < 1) {
-        printk("argc has to be at least 1!\n");
-        return 1;
-    }
-
-    // data from the kernel
-    extern open_files_table_t *open_files_table;
-    int ret;
-
-    // open syscall to get the fd for the elf file
-    //int fd = open(name, O_RDONLY);
-    int fd = -1;
-
-    __asm__ __volatile__ ("mov %0, %%ebx\n"
-                        "mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
-
-    syscall_open();
-
-    __asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
-
-    if (fd < 0) {
-        printk("%s no such file or directory!\n", argv[0]);
-        goto err2;
-    }
-
-    open_files_table_t *oft_entry = open_files_table + fd;
-
-    ret = check_elf(oft_entry->address);
-
-    if (ret) {
-        printk("file is not an executable ELF file!\n");
-        goto err;
-    }
-
-    uint32_t ustack_start = 0, ustack_end = 0;
-
-    // get entry point of elf
-    void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
-
-    // close file descriptor
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
-
-    syscall_close();
-
-    __asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
-
-    if (ret)
-        return 1;
-
-    // start program execution
-    // enter_usermode((uint32_t)entry_point, ustack_end);
-
-    // deallocate memory
-    // deallocate_elf_memory();
-
-    return 0;
-
-err:
-    deallocate_elf_memory();
-
-err2:
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
-
-    syscall_close();
-
-    restore_kernel_address_space();
     return 1;
 }
 

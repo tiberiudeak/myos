@@ -22,6 +22,7 @@ uint8_t init_task_queue(void);
 void enqueue_task(task_struct *task);
 task_struct *dequeue_task(void);
 void simple_task_scheduler(void);
+
 uint8_t scheduler_init_rr(void);
 uint32_t queue_size(void);
 void schedule(void);

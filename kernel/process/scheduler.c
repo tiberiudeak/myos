@@ -210,7 +210,14 @@ uint8_t init_task_queue_rr(void) {
     return 0;
 }
 
-void start_init_task() {
+/**
+ * @brief Start init task
+ *
+ * This function takes a task from the task queue (when this function
+ * is called, the only task in the task queue will be init), updates
+ * the current running task and starts its execution.
+ */
+void start_init_task(void) {
     // take init task from the queue
     task_struct *task = dequeue_task();
 

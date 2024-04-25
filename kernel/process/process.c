@@ -1,24 +1,26 @@
+#include <process/process.h>
+#include <process/scheduler.h>
 #include <arch/i386/gdt.h>
 #include <kernel/tty.h>
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
-#include <process/process.h>
-#include <process/scheduler.h>
 #include <string.h>
 
-tss_entry_t kernel_context;
-static uint32_t next_available_task_id = 2;
-extern task_struct *current_running_task;
+static uint32_t next_available_task_id = 1;
 
-void get_instruction_pointer(uint32_t *ip) {
-    __asm__ __volatile__ ("movl $., %%edx": "=d"(*ip));
-}
-
-void get_idt_address(uint32_t *idt_addr) {
-    __asm__ __volatile__ ("sidt %0" : "=m"(*idt_addr));
-}
-
-// create task_struct for the given task
+/**
+ * @brief Create a task
+ *
+ * This function created a new task based on the given parameters.
+ *
+ * @param exec_address The instruction pointer to the beginning of the task (only
+ *                      used for the simple scheduler)
+ * @param argc         The arguments conunt
+ * @param argv         The values for the arguments
+ * @userspace          Set to 1 if task will run in userspace, 0 otherwise
+ *
+ * @return The created task
+ */
 task_struct *create_task(void *exec_address, int argc, char **argv, int userspace) {
     task_struct *task = (task_struct*) kmalloc(sizeof(task_struct));
 
@@ -41,7 +43,14 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
             task->argv[i] = (char*) kmalloc(sizeof(char) * 10); // max 10 characters
 
             if (task->argv[i] == NULL) {
+                // free previous allocated argvs
+                for (int j = 0; j < i; j++) {
+                    kfree(task->argv[j]);
+                }
+
+                kfree(task->argv);
                 kfree(task);
+
                 return NULL;
             }
 
@@ -58,7 +67,16 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
         task->context = kmalloc(sizeof(proc_context_t));
 
         if (task->context == NULL) {
-            // TODO: free previous allocated memory
+            // free previous allocated memory
+            if (argc > 0) {
+                for (int i = 0; i < argc; i++) {
+                    kfree(task->argv[i]);
+                }
+
+                kfree(task->argv);
+                kfree(task);
+            }
+
             return NULL;
         }
     }
@@ -66,89 +84,21 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
     return task;
 }
 
-// free memory
+/**
+ * @brief Free memory for the given task from the kernel heap
+ *
+ * This function frees all memory allocated on the kernel heap used
+ * for the given task.
+ *
+ * @param task The task
+ */
 void destroy_task(task_struct *task) {
-    kfree(task->context);
-
     for (int i = 0; i < task->argc; i++) {
         kfree(task->argv[i]);
     }
+
     kfree(task->argv);
-
+    kfree(task->context);
     kfree(task);
-}
-
-void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
-    
-    // save current context somehow to restore it when exit is called?
-    // maybe update the TSS
-    //__asm__ __volatile__ ("mov %%esp, %%edx" : "=d"(kernel_context.esp));
-    //__asm__ __volatile__ ("mov %%ebp, %%edx" : "=d"(kernel_context.ebp));
-    //__asm__ __volatile__ ("pushf\n" "pop %%edx" : "=d"(kernel_context.eflags));
-
-    __asm__ __volatile__ ("cli\n"               // critical section, cannot be interrupted
-                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
-                          "mov %%eax, %%ds\n"
-                          "mov %%eax, %%es\n"
-                          "mov %%eax, %%fs\n"
-                          "mov %%eax, %%gs\n"
-
-                          "push $0x23\n"        // 0x23 is the user mode data segment selector
-                          "push %%ebx\n"        // push the user stack address
-                          "pushf\n"             // push eflags register
-                          "pop %%eax\n"         // pop the flags registers into EAX
-                          "or $0x200, %%eax\n"  // enable the interrupt bit in the flags register
-                          "push %%eax\n"        // put back the flags on the stack
-                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
-                          "push %1\n"           // push the instruction pointer
-
-                          "iret\n"              // perform iret
-                          : : "b"(stack_address), "r"(entry_point));
-}
-
-void enter_usermode_resume_context(void) {
-    
-    printk("esp: %x\n", current_running_task->context->esp);
-    if (current_running_task->context->eip == 0 ||
-            current_running_task->context->esp == 0 ||
-            current_running_task->context->ebp == 0) {
-        printk("strange context, returning...\n");
-
-        // schedule();
-        // return; -> same problem as in the case of ./file_does_not_exits situation
-    }
-
-    __asm__ __volatile__ ("cli\n"
-                          "mov $0x23, %eax\n"
-                          "mov %eax, %ds\n"
-                          "mov %eax, %es\n"
-                          "mov %eax, %fs\n"
-                          "mov %eax, %gs\n");
-
-    // restore general registers
-    __asm__ __volatile__ ("mov %%eax, %%ebx" : : "a"(current_running_task->context->eax));
-    __asm__ __volatile__ ("mov %%eax, %%ecx" : : "a"(current_running_task->context->ecx));
-    __asm__ __volatile__ ("mov %%eax, %%edx" : : "a"(current_running_task->context->edx));
-    __asm__ __volatile__ ("mov %%eax, %%edi" : : "a"(current_running_task->context->edi));
-    __asm__ __volatile__ ("mov %%eax, %%esi" : : "a"(current_running_task->context->esi));
-    __asm__ __volatile__ ("mov %%eax, %%ebp" : : "a"(current_running_task->context->ebp));
-
-    // restore eax
-    __asm__ __volatile__ ("push %ebx");
-    __asm__ __volatile__ ("mov %%ebx, %%eax\n"
-                          "pop %%ebx" : : "b"(current_running_task->context->ebx));
-
-    // restore flags
-    __asm__ __volatile__ ("or $0x200, %%eax\n"  // enable the interrupt bit in the flags register
-                          "push %%eax\n"
-                          "popf\n" : : "a"(current_running_task->context->flags));
-
-    __asm__ __volatile__ ("push $0x23\n"
-                          "push %%eax\n"
-                          "pushf\n"
-                          "push $0x1b\n" :: "a"(current_running_task->context->esp));
-    __asm__ __volatile__ ("push %%eax" :: "a"(current_running_task->context->eip));
-
-    __asm__ __volatile__ ("iret");
 }
 

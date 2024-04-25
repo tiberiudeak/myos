@@ -12,6 +12,7 @@ typedef enum {
     TASK_TERMINATED
 } task_state_t;
 
+// context of a running process
 typedef struct {
     uint32_t gs;
     uint32_t fs;
@@ -31,6 +32,7 @@ typedef struct {
     uint32_t ss;
 } proc_context_t;
 
+// task
 typedef struct {
     uint32_t task_id;
     task_state_t state;
@@ -41,10 +43,8 @@ typedef struct {
     proc_context_t *context;
 } task_struct;
 
-void enter_usermode(uint32_t, uint32_t);
 task_struct *create_task(void *, int, char**, int);
 void destroy_task(task_struct *);
-void enter_usermode_resume_context(void);
 
-#endif
+#endif /* !_PROCESS_H */
 
