@@ -30,7 +30,7 @@ uint32_t current_virtual_address = 0;
 uint8_t kmalloc_init(size_t size) {
     // determine starting virtual address
     uint32_t kernel_size_bytes = (uint32_t) (kernel_end - KERNEL_ADDRESS);
-    starting_virtual_address = 0xC0000000 + ALIGN(kernel_size_bytes, PAGE_SIZE);
+    starting_virtual_address = KERNEL_VIRT_ADDR + ALIGN(kernel_size_bytes, PAGE_SIZE);
 
     // get necessary number of pages
     uint32_t req_pages = size / PAGE_SIZE;

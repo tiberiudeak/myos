@@ -4,6 +4,7 @@
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
+#include <global_addresses.h>
 #include <fs.h>
 #include <elf.h>
 
@@ -143,6 +144,12 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
         if (pr_header->p_type != PT_LOAD)
             continue;
 
+        // virtual address not allowed for a user task
+        if (pr_header->p_vaddr < LOWER_4MB_VIRT_ADDR ||
+                pr_header->p_vaddr >= KERNEL_VIRT_ADDR) {
+            return NULL;
+        }
+
         // printk("\tSegment number: %d\n", i + 1);
         // printk("\tType: %s\n", pr_header->p_type == PT_LOAD ? "Loadable program segment" :
         //         pr_header->p_type == PT_DYNAMIC ? "Dynamic linking information" : "Unknown");
@@ -181,8 +188,12 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
             pt_entry *page = get_page(virt);
 
-            SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
             SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+
+            // make only those pages that need to be writable writable
+            if (pr_header->p_flags & PF_W) {
+                SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+            }
 
             add_phys_info(addr, (void*)virt, needed_blocks);
         }
@@ -196,14 +207,34 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
         memcpy(dst, src, length);
 
-        // set up the stack
+        // set up the heap and stack
         if ((int)i == elf_header->e_phnum - 1) {
-            // last segment, set user stack after it, size: 4K
-            *ustack_start = ALIGN((uint32_t)pr_header->p_vaddr + needed_blocks * BLOCK_SIZE, PAGE_SIZE);
-            *ustack_end = *ustack_start + PAGE_SIZE;
+
+            // last program header, set heap after it, initial size: 4K
+            uint32_t uheap_start = ALIGN((uint32_t)pr_header->p_vaddr + needed_blocks * BLOCK_SIZE, PAGE_SIZE);
+            uint32_t uheap_end = uheap_start + PAGE_SIZE;
+
+            void *addr = allocate_blocks(1);
+
+            if (addr == NULL) {
+                printk("out of memory\n");
+                return NULL;
+            }
+
+            map_user_page(addr, (void*)uheap_start);
+
+            pt_entry *page = get_page(uheap_start);
+
+            SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+            SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+
+
+            // set user stack
+            *ustack_end = KERNEL_VIRT_ADDR;
+            *ustack_start = KERNEL_VIRT_ADDR - PAGE_SIZE;
 
             // map stack
-            void *addr = allocate_blocks(1);
+            addr = allocate_blocks(1);
 
             if (addr == NULL) {
                 printk("out of memory!\n");
@@ -212,7 +243,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
             map_user_page(addr, (void*)(*ustack_start));
 
-            pt_entry *page = get_page(*ustack_start);
+            page = get_page(*ustack_start);
 
             SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
             SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
@@ -281,6 +312,9 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
 
     // get entry point of elf
     void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
+
+    if (entry_point == NULL)
+        goto err;
 
     // close file descriptor
     __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));

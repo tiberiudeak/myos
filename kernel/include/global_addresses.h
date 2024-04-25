@@ -7,4 +7,7 @@
 #define VGA_BIOS_FONT       0x5000
 #define VBE_MODE_INFO       0x4E00
 
+#define KERNEL_VIRT_ADDR    0xC0000000
+#define LOWER_4MB_VIRT_ADDR 0x400000
+
 #endif

@@ -35,6 +35,13 @@ typedef enum {
     PT_DYNAMIC          = 0x2
 } PHDR_TYPES;
 
+typedef enum {
+    PF_X                = 0x1,
+    PF_W                = 0x2,
+    PF_R                = 0x4,
+    PF_MASKPROC         = 0xf0000000
+} PHDR_FLAGS;
+
 #define EI_NIDENT   (16)
 
 // ELF header

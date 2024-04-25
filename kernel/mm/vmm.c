@@ -1,3 +1,4 @@
+#include "include/global_addresses.h"
 #include <kernel/tty.h>
 #include <mm/vmm.h>
 #include <mm/pmm.h>
@@ -335,7 +336,7 @@ uint8_t initialize_virtual_memory(void) {
 
 	// map 4MB of memory starting at 0xC0000000 to the 4MB of physical memory starting
 	// at 0x00008000 (where the kernel resides) (higher half kernel)
-	for (uint32_t i = 0, block = KERNEL_ADDRESS, virt = 0xC0000000; i < 1024; i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
+	for (uint32_t i = 0, block = KERNEL_ADDRESS, virt = KERNEL_VIRT_ADDR; i < 1024; i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
 		//  initialize page table entry to 0
 		pt_entry pte = 0;
 
@@ -363,7 +364,7 @@ uint8_t initialize_virtual_memory(void) {
 
 	// put the pt3gb page table in the page directory at the corresponding index
 	// and set the present and writable bits
-	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(0xC0000000)];
+	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR)];
 	SET_ATTRIBUTE(pde, PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE);
 	SET_FRAME(pde, (address)pt3gb);
 
@@ -410,7 +411,7 @@ page_directory *create_address_space(void) {
     memcpy(dir, kernel_page_directory, sizeof(pd_entry) * PAGES_PER_TABLE);
 
     // clear entries between the first 1MB and the higher half kernel
-    memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(0xC0000000) - 1);
+    memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR) - 1);
 
    return dir;
 }
@@ -429,7 +430,7 @@ void restore_kernel_address_space(void) {
     // go through the current page directory and deallocate all page
     // tables except the ones for kernel: exclude the first 4MB (that is
     // why the index starts at 1) and the memory above 0xC0000000
-    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
+    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR); i++) {
         if ((uint32_t)current_page_directory->entries[i] != 0) {
             pd_entry phys_address_of_page_table = current_page_directory->entries[i];
 
@@ -459,16 +460,17 @@ void restore_kernel_address_space(void) {
  * and frees those pages.
  */
 void free_proc_phys_mem(void) {
-    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(0xC0000000); i++) {
+    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR); i++) {
         if ((uint32_t)current_page_directory->entries[i] != 0) {
             pd_entry pde = current_page_directory->entries[i];
 
             // get page table corresponding to the pde
             page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(&pde);
+            // printk("freeing %x %d\n", pt, i);
 
-            for (uint32_t j = 0; j < 80; j++) {
+            for (uint32_t j = 0; j < 1024; j++) {
                 if (pt->entries[j] != 0) {
-                    // printk("freeing phys mem: %x\n", PAGE_GET_PHY_ADDRESS(&pt->entries[j]));
+                    // printk("freeing phys mem: %x, %d\n", PAGE_GET_PHY_ADDRESS(&pt->entries[j]), j);
                     free_page(&pt->entries[j]);
                 }
             }
