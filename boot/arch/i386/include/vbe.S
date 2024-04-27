@@ -187,8 +187,8 @@ vbe_get_info:
     .asciz  "end of list"
 
 # My VBE information
-vbe_width:      .word   1920
-vbe_height:     .word   1080
+vbe_width:      .word   CONFIG_TTY_VBE_WIDTH
+vbe_height:     .word   CONFIG_TTY_VBE_HEIGHT
 vbe_bpp:        .byte   32
 vbe_offset:     .word   0
 vbe_segment:    .word   0

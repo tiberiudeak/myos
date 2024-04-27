@@ -348,20 +348,6 @@ uint8_t initialize_virtual_memory(void) {
 		pt3gb->entries[PAGE_TABLE_INDEX(virt)] = pte;
 	}
 
-    // identity map VESA BIOS framebuffer
-    //vbe_mode_info_block mode_info = get_mode_info();
-    //uint32_t framebuffer_size = mode_info.width * mode_info.pitch;
-    //uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
-    //if (framebuffer_size_pages % PAGE_SIZE > 0) {
-    //    framebuffer_size_pages++;
-    //}
-
-    //framebuffer_size_pages *= 2;
-
-    //for (uint32_t i = 0, fb_start = mode_info.framebuffer; i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
-    //    map_page((void*)fb_start, (void*)fb_start);
-    //}
-
 	// put the pt3gb page table in the page directory at the corresponding index
 	// and set the present and writable bits
 	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR)];
@@ -438,9 +424,7 @@ void restore_kernel_address_space(void) {
         }
     }
 
-    // free memory with the page directory
-    // PROBLEM: when executing file that doesn't exist -> page fault
-    free_blocks((void*)current_page_directory, 1);
+    page_directory *tmp = current_page_directory;
 
     // set kernel page directory to current page directory
     ret = set_page_directory(kernel_page_directory);
@@ -449,6 +433,9 @@ void restore_kernel_address_space(void) {
         printkc(4, "failed to change page directory!\n");
         __asm__ __volatile__ ("cli; hlt");
     }
+
+    // free memory with the old page directory
+    free_blocks((void*)tmp, 1);
 }
 
 /**

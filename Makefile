@@ -12,7 +12,7 @@ ifeq ($(findstring i[0-9]86,$(HOST)),)
 	HOSTARCH+=i386
 endif
 
-HEADER_FILE := config.h
+export HEADER_FILE := config.h
 
 export MAKE:=make
 export AR:=$(HOST)-ar
@@ -62,7 +62,7 @@ $(KERNEL_BIN)
 TARGET:=myos.bin
 INCLUDED_FILES:=files.txt
 
-.PHONY: all kernel clean run
+.PHONY: all kernel clean run menuconfig
 
 all: $(TARGET)
 
@@ -88,14 +88,20 @@ $(LIBC_AR):
 
 	@$(MAKE) -C $(LIBC_SRC_DIR) install
 
-$(HEADER_FILE):
+$(HEADER_FILE): .config
 	./generate_config_header.sh
+
+.config: Kconfig
+	kconfig-mconf $^
 
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
 
-debug:
+debug: $(TARGET)
 	$(QEMU) $(QEMUFLAGS_DEBUG)
+
+menuconfig: Kconfig
+	kconfig-mconf $^
 
 clean:
 	@for PROJECT in $(PROJECTS); do \

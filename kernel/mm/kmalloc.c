@@ -296,8 +296,10 @@ void kfree(void *ptr) {
         if ((void*)current + METADATA_BLK_SIZE == ptr) {
             current->status = STATUS_FREE;
 
+#ifdef CONFIG_READ_AFTER_FREE_PROT
             // fill memory with zeros
             memset((void*)current + METADATA_BLK_SIZE, 0, current->size);
+#endif
 
             // coalesce if possible
             if (current->prev != NULL && current->prev->status == STATUS_FREE &&

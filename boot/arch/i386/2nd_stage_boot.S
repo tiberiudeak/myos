@@ -82,6 +82,9 @@ _start2:
     # VESA BIOS Extension
 .IFDEF CONFIG_TTY_VBE
     call vbe_get_info       # call vbe get info function
+
+    cmp $0x1, %ax           # see if call was successful
+    je .vbe_unsupported     # if not, print error message
 .ENDIF
 
 	jmp 0x8600				# jump to third stage bootloader
@@ -91,7 +94,20 @@ _start2:
 .include "./include/cursor_next_line.S"
 .include "./include/disk_load.S"
 .include "./include/detect_memory.S"
+
+.IFDEF CONFIG_TTY_VBE
 .include "./include/vbe.S"
+
+.vbe_unsupported:
+    push $.vbe_unsupported_msg
+    call print_string
+    add $0x2, %sp
+    cli
+    hlt
+
+.vbe_unsupported_msg:
+    .asciz "VESA BIOS Extension unsupported resolution!"
+.ENDIF
 
 msg2:
 	.asciz "Entered 2nd stage boot"

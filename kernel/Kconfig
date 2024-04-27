@@ -1,0 +1,32 @@
+menu "Memory manager"
+
+menu "Physical memory manager"
+
+endmenu
+
+menu "Virtual memory manager"
+
+config VMM_PAGING
+    bool "Paging"
+    help
+        Enable support for paging
+    default y
+    select VMM_PAGING_4K
+
+config VMM_PAGING_4K
+    bool "4KB pages"
+    help
+        Enalbe support for 4KB pages
+    depends on VMM_PAGING
+    default y
+
+config READ_AFTER_FREE_PROT
+    bool "kmalloc read after free protection"
+    help
+        Fill memory with zeros after freed
+    default y
+
+endmenu
+
+endmenu
+

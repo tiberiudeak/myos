@@ -333,9 +333,6 @@ void syscall_exit(void) {
 
     // wait for the timer interrupt to call the scheduler
     while(1) __asm__ __volatile__ ("sti; hlt; cli");
-
-    // return to scheduler
-    //simple_task_scheduler();
 }
 
 void *syscalls[MAX_SYSCALLS] = {

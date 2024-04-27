@@ -404,7 +404,7 @@ err2:
 
     syscall_close();
 
-    // restore_kernel_address_space();
+    restore_kernel_address_space();
     return 1;
 }
 
