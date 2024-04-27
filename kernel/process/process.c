@@ -79,7 +79,10 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
 
             return NULL;
         }
+
     }
+    
+    task->maps = NULL;
 
     return task;
 }
@@ -93,6 +96,15 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
  * @param task The task
  */
 void destroy_task(task_struct *task) {
+    // free memory used for maps
+    mapping_t *tmp = task->maps, *tmp2;
+
+    while (tmp != NULL) {
+        tmp2 = tmp;
+        tmp = (mapping_t *) tmp->next;
+        kfree(tmp2);
+    }
+
     for (int i = 0; i < task->argc; i++) {
         kfree(task->argv[i]);
     }

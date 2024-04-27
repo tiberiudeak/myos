@@ -142,19 +142,16 @@ void page_fault_handler(interrupt_regs *r) {
         // cleanup elf data
         elf_after_program_execution(1);
 
-        // cleanup task data
-        extern task_struct *current_running_task;
-        destroy_task(current_running_task);
-
         // restore kernel virtual address space
         restore_kernel_address_space();
 
-        // return to shceduler
-        //simple_task_scheduler();
-        schedule();
+        extern task_struct *current_running_task;
+        
+        current_running_task->state = TASK_TERMINATED;
+        while(1) __asm__ __volatile__ ("sti; hlt; cli");
     }
 
-	__asm__ __volatile__ ("cli; hlt");
+	//__asm__ __volatile__ ("cli; hlt");
 }
 
 /**

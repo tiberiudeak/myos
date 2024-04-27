@@ -32,6 +32,12 @@ typedef struct {
     uint32_t ss;
 } proc_context_t;
 
+typedef struct {
+    void *address;
+    uint32_t size;
+    struct mapping_t *next;
+} mapping_t;
+
 // task
 typedef struct {
     uint32_t task_id;
@@ -41,6 +47,9 @@ typedef struct {
     char **argv;
     page_directory *vas;
     proc_context_t *context;
+    void *heap_start;
+    void *program_break;
+    mapping_t *maps;
 } task_struct;
 
 task_struct *create_task(void *, int, char**, int);

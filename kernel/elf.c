@@ -1,3 +1,4 @@
+#include <arch/i386/isr.h>
 #include <kernel/tty.h>
 #include <kernel/shell.h>
 #include <process/process.h>
@@ -69,6 +70,33 @@ void deallocate_elf_memory(void) {
     }
 
     elf_phys_mem_info_header = NULL;
+}
+
+uint8_t add_process_mapping(void *addr, uint32_t size) {
+    mapping_t *map = kmalloc(sizeof(mapping_t));
+
+    if (map == NULL) {
+        return 1;
+    }
+
+    map->address = addr;
+    map->size = size;
+    map->next = NULL;
+
+    if (current_running_task->maps == NULL) {
+        current_running_task->maps = map;
+        return 0;
+    }
+
+    mapping_t *tmp = current_running_task->maps;
+
+    while (tmp->next != NULL) {
+        tmp = (mapping_t*) tmp->next;
+    }
+
+    tmp->next = (struct mapping_t *) map;
+
+    return 0;
 }
 
 /**
@@ -173,6 +201,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             needed_blocks = pr_header->p_memsz / BLOCK_SIZE + 1;
         }
 
+        add_process_mapping((void*) pr_header->p_vaddr, needed_blocks * BLOCK_SIZE);
         // printk("segment %d needed %d blocks\n", i, needed_blocks);
 
         // map obtained blocks to corresponding virtual addresses
@@ -228,6 +257,11 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
             SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
 
+            add_process_mapping((void *) uheap_start, BLOCK_SIZE);
+            current_running_task->heap_start = (void*) uheap_start;
+
+            // set program break to the start of the heap
+            current_running_task->program_break = (void *) uheap_start;
 
             // set user stack
             *ustack_end = KERNEL_VIRT_ADDR;
@@ -249,6 +283,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
 
             add_phys_info(addr, (void*)(*ustack_start), 1);
+            add_process_mapping((void *) (*ustack_start), BLOCK_SIZE);
 
             printk("uspace start: %x, end: %x, phys: %x\n", *ustack_start, *ustack_end, (uint32_t)addr);
         }
@@ -325,6 +360,33 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
 
     if (ret)
         return 1;
+
+    // update stack pointer to include the main function parameters argc and argv
+    ustack_end -= 4;
+    current_running_task->program_break += (argc * 4);
+
+    for (int i = 0; i < current_running_task->argc; i++) {
+        *(int*)ustack_end = 0x1234abcd;
+        ustack_end -= 4;
+        // put location on the heap of **char on the stack
+        //uint32_t *p = (uint32_t *) ustack_end;
+        //*p = (uint32_t) current_running_task->heap_start + i;
+
+        //ustack_end -= 4;
+
+        //// store argv value after the pointers to the strings
+        //memcpy(current_running_task->program_break,
+        //        current_running_task->argv[i],
+        //        strlen(current_running_task->argv[i]));
+
+        //*(uint32_t*)(current_running_task->heap_start + i) =
+        //    (uint32_t)current_running_task->program_break;
+
+        //current_running_task->program_break += strlen(current_running_task->argv[i]);
+    }
+
+    *(uint32_t*)(ustack_end) = current_running_task->argc;
+    ustack_end -= 4;
 
     current_running_task->context->eip = (uint32_t)entry_point;
     current_running_task->context->esp = (uint32_t)ustack_end;
