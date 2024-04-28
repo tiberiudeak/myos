@@ -30,3 +30,30 @@ endmenu
 
 endmenu
 
+menu "Scheduler"
+
+choice
+    prompt "Scheduling algorithm"
+    default ROUND_ROBIN
+
+config ROUND_ROBIN
+    bool "Round-Robin"
+    help
+        Help message
+
+config SIMPLE_SCH
+    bool "Simple"
+    help
+        Help message
+
+endchoice
+
+config RR_TIME_QUANTUM
+    int "Round-Robin time quantum"
+    help
+        Help message
+    depends on ROUND_ROBIN
+    default 20
+
+endmenu
+

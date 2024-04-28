@@ -63,7 +63,6 @@ void kmain() {
         halt_processor();
 	}
 
-
 #ifdef CONFIG_TTY_VBE
     ret = map_framebuffer();    // map the framebuffer
     if (ret) {
@@ -85,6 +84,20 @@ void kmain() {
         halt_processor();
     }
 
+	printk("Welcome to MyOS!\n");
+	shell_init();               // initialize the shell
+
+#ifdef CONFIG_SIMPLE_SCH
+    ret = scheduler_init();
+
+    if (ret) {
+        printkc(4, "failed to initialize the scheduler\n");
+        halt_processor();
+    }
+    
+    simple_task_scheduler();
+#else
+    // default Round-Robin
     ret = scheduler_init_rr();  // initialize the round robin scheduler
 
     if (ret) {
@@ -92,10 +105,8 @@ void kmain() {
         halt_processor();
     }
 
-	printk("Welcome to MyOS!\n");
-	shell_init();               // initialize the shell
-
     // start first process
     start_init_task();
+#endif
 }
 

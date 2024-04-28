@@ -12,44 +12,9 @@ task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-const uint32_t running_time_quantum_ms = 20;
-
-/**
- * @brief Initialize the scheduler task queue
- *
- * This function calls the init_task_queue() function
- * to initialize the task queue. Only used as a wrapper
- * for the other function.
- *
- * @return 1 if error occured, 0 otherwise
- */
-uint8_t scheduler_init(void) {
-    return init_task_queue();
-}
-
-/**
- * @brief Initialize the scheduler task queue
- *
- * This function performs the actual initialization of the task
- * queue.
- *
- * @return 1 if error occured, 0 otherwise
- */
-uint8_t init_task_queue(void) {
-    task_queue = kmalloc(sizeof(task_queue_t));
-
-    if (task_queue == NULL) {
-        printk("out of memory\n");
-        return 1;
-    }
-
-    task_queue->front = NULL;
-    task_queue->rear = NULL;
-
-    scheduler_initialized = 1;
-
-    return 0;
-}
+#ifdef CONFIG_RR_TIME_QUANTUM
+const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
+#endif
 
 /**
  * @brief Put task in task queue
@@ -101,6 +66,44 @@ task_struct *dequeue_task(void) {
     return task;
 }
 
+#ifdef CONFIG_SIMPLE_SCH
+/**
+ * @brief Initialize the scheduler task queue
+ *
+ * This function calls the init_task_queue() function
+ * to initialize the task queue. Only used as a wrapper
+ * for the other function.
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
+uint8_t scheduler_init(void) {
+    return init_task_queue();
+}
+
+/**
+ * @brief Initialize the scheduler task queue
+ *
+ * This function performs the actual initialization of the task
+ * queue.
+ *
+ * @return 1 if error occured, 0 otherwise
+ */
+uint8_t init_task_queue(void) {
+    task_queue = kmalloc(sizeof(task_queue_t));
+
+    if (task_queue == NULL) {
+        printk("out of memory\n");
+        return 1;
+    }
+
+    task_queue->front = NULL;
+    task_queue->rear = NULL;
+
+    scheduler_initialized = 1;
+
+    return 0;
+}
+
 /**
  * @brief Check task queue and execute tasks if available
  *
@@ -142,6 +145,7 @@ void simple_task_scheduler(void) {
         shell_cleanup();
     }
 }
+#else
 
 /**
  * @brief Get size of the task queue
@@ -317,7 +321,7 @@ void resume_context(interrupt_regs *r) {
 }
 
 /**
- * @brief Round Robin Scheduler
+ * @brief Round-Robin Scheduler
  *
  * This function puts the current running task in the queue (if the
  * task is not terminated), takes a task from the queue and updates
@@ -341,4 +345,6 @@ void schedule(void) {
         set_page_directory(task->vas);
     }
 }
+
+#endif
 

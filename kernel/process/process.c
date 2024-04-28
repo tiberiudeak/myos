@@ -114,3 +114,33 @@ void destroy_task(task_struct *task) {
     kfree(task);
 }
 
+#ifdef CONFIG_SIMPLE_SCH
+void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
+
+    // save current context somehow to restore it when exit is called?
+    // maybe update the TSS
+    //__asm__ __volatile__ ("mov %%esp, %%edx" : "=d"(kernel_context.esp));
+    //__asm__ __volatile__ ("mov %%ebp, %%edx" : "=d"(kernel_context.ebp));
+    //__asm__ __volatile__ ("pushf\n" "pop %%edx" : "=d"(kernel_context.eflags));
+
+    __asm__ __volatile__ ("cli\n"               // critical section, cannot be interrupted
+                          "mov $0x23, %%eax\n"  // set segments to user mode data segment selector
+                          "mov %%eax, %%ds\n"
+                          "mov %%eax, %%es\n"
+                          "mov %%eax, %%fs\n"
+                          "mov %%eax, %%gs\n"
+
+                          "push $0x23\n"        // 0x23 is the user mode data segment selector
+                          "push %%ebx\n"        // push the user stack address
+                          "pushf\n"             // push eflags register
+                          "pop %%eax\n"         // pop the flags registers into EAX
+                          "or $0x200, %%eax\n"  // enable the interrupt bit in the flags register
+                          "push %%eax\n"        // put back the flags on the stack
+                          "push $0x1b\n"        // 0x1b is the user mode code segment selector
+                          "push %1\n"           // push the instruction pointer
+
+                          "iret\n"              // perform iret
+                          : : "b"(stack_address), "r"(entry_point));
+}
+#endif /* CONFIG_SIMPLE_SCH */
+

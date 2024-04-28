@@ -14,7 +14,7 @@ void cow_print(void) {
 }
 
 void _start(int argc, char *argv[]) {
-    printf("argc: %d\n", argc);
+    // printf("argc: %d\n", argc);
     //printf("argv[0]: %s\n", argv[0]);
     cow_print();
     exit(0);

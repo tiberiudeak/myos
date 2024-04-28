@@ -15,6 +15,9 @@ while read -r line || [[ -n "$line" ]]; do
     if [[ $line == CONFIG_* ]]; then
         config=$(echo "$line" | cut -d '=' -f1)
         value=$(echo "$line" | cut -d '=' -f2)
+        if [[ "$value" == "y" ]]; then
+            value=1
+        fi
         echo "#define $config $value" >> $header_file
     fi
 done < "$config_file"
