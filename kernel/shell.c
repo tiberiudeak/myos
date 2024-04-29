@@ -1,3 +1,4 @@
+#include "include/kernel/shell.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -17,6 +18,40 @@ static int index;
 
 void test_task(int argc, char *argv[]) {
     printk("test task %d %s\n", argc, argv[0]);
+}
+
+int nr_params(char *str) {
+	int count = 0;
+	int i = 0;
+
+	while (str[i] != '\0') {
+		if (str[i] == ' ' && str[i + 1] != ' ' &&
+			str[i + 1] != '\0') {
+			count++;
+		}
+		i++;
+	}
+
+	return count + 1;
+}
+
+void tokenize(const char *str, char **argv) {
+	int i = 0, j = 0, k = 0;
+
+	while (str[i] != '\0') {
+		if (str[i] == ' ') {
+			argv[j][k] = '\0';
+			j++;
+			k = 0;
+		}
+		else {
+			argv[j][k] = str[i];
+			k++;
+		}
+		i++;
+	}
+
+	argv[j][k] = '\0';
 }
 
 void shell_exec_command(char *command) {
@@ -43,14 +78,34 @@ void shell_exec_command(char *command) {
 	}
 	else if (strncmp(command, "./", 2) == 0) {
         // TODO: parse command into argvs
-        char *argv = kmalloc(sizeof(char) * 10);
-        strncpy(argv, command, 10);
+        int number_params = nr_params(command);
+
+        if (number_params > MAX_PARAMS) {
+            printk("too many parameters!\n");
+        }
+
+        char **argv = kmalloc(sizeof(char*) * number_params);
+
+        if (argv == NULL) {
+            return;
+        }
+
+        for (int i = 0; i < number_params; i++) {
+            argv[i] = kmalloc(sizeof(char) * MAX_PARAM_SIZE);
+
+            if (argv[i] == NULL) {
+                // TODO free allocated memory
+                return;
+            }
+        }
+
+        tokenize(command, argv);
 
         // create new task
 #ifdef CONFIG_SIMPLE_SCH
         task_struct *new_task = create_task(execute_elf, 1, &argv, 1);
 #else
-        task_struct *new_task = create_task(NULL, 1, &argv, 1);
+        task_struct *new_task = create_task(NULL, number_params, argv, 1);
 #endif
 
         kfree(argv);
@@ -114,7 +169,7 @@ void shell_init() {
 void shell_cleanup(void) {
     index = 0;
     memset(key_buffer, 0, MAX_COMMAND_LENGTH);
-    
+
     shell_init();
 }
 

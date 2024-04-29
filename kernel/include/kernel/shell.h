@@ -4,6 +4,8 @@
 #include <stdint.h>
 
 #define MAX_COMMAND_LENGTH		256
+#define MAX_PARAMS              100
+#define MAX_PARAM_SIZE          100
 
 void shell_scancode(uint8_t);
 void shell_init(void);

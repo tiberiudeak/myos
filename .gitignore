@@ -17,4 +17,5 @@ bin
 *.gz
 *.bz2
 *.zip
+*.bin
 

@@ -1,4 +1,3 @@
-#include "include/kernel/tty.h"
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -11,6 +10,81 @@
 static const uint32_t default_color = 0xFFFFFFFF;
 #else
 static const uint8_t default_color = 15;
+#endif
+
+#ifdef CONFIG_TTY_VBE
+
+#ifdef CONFIG_SH_BKC_BLUE
+    static const uint32_t background_color = VBE_COLOR_BLUE;
+#elif CONFIG_SH_BKC_GREEN
+    static const uint32_t background_color = VBE_COLOR_GREEN;
+#elif CONFIG_SH_BKC_CYAN
+    static const uint32_t background_color = VBE_COLOR_CYAN;
+#elif CONFIG_SH_BKC_RED
+    static const uint32_t background_color = VBE_COLOR_RED;
+#elif CONFIG_SH_BKC_MAGENTA
+    static const uint32_t background_color = VBE_COLOR_MAGENTA;
+#elif CONFIG_SH_BKC_BROWN
+    static const uint32_t background_color = VBE_COLOR_BROWN;
+#elif CONFIG_SH_BKC_LIGHT_GREY
+    static const uint32_t background_color = VBE_COLOR_LIGHT_GREY;
+#elif CONFIG_SH_BKC_DARK_GREY
+    static const uint32_t background_color = VBE_COLOR_DARK_GREY;
+#elif CONFIG_SH_BKC_LIGHT_BLUE
+    static const uint32_t background_color = VBE_COLOR_LIGHT_BLUE;
+#elif CONFIG_SH_BKC_LIGHT_GREEN
+    static const uint32_t background_color = VBE_COLOR_LIGHT_GREEN;
+#elif CONFIG_SH_BKC_LIGHT_CYAN
+    static const uint32_t background_color = VBE_COLOR_LIGHT_CYAN;
+#elif CONFIG_SH_BKC_LIGHT_RED
+    static const uint32_t background_color = VBE_COLOR_LIGHT_RED;
+#elif CONFIG_SH_BKC_LIGHT_MAGENTA
+    static const uint32_t background_color = VBE_COLOR_LIGHT_MAGENTA;
+#elif CONFIG_SH_BKC_LIGHT_BROWN
+    static const uint32_t background_color = VBE_COLOR_LIGHT_BROWN;
+#elif CONFIG_SH_BKC_WHITE
+    static const uint32_t background_color = VBE_COLOR_WHITE;
+#else
+    static const uint32_t background_color = VBE_COLOR_BLACK;
+#endif
+
+#else
+#include "vga.h"
+
+#ifdef CONFIG_SH_BKC_BLUE
+    static const uint8_t background_color = VGA_COLOR_BLUE;
+#elif CONFIG_SH_BKC_GREEN
+    static const uint8_t background_color = VGA_COLOR_GREEN;
+#elif CONFIG_SH_BKC_CYAN
+    static const uint8_t background_color = VGA_COLOR_CYAN;
+#elif CONFIG_SH_BKC_RED
+    static const uint8_t background_color = VGA_COLOR_RED;
+#elif CONFIG_SH_BKC_MAGENTA
+    static const uint8_t background_color = VGA_COLOR_MAGENTA;
+#elif CONFIG_SH_BKC_BROWN
+    static const uint8_t background_color = VGA_COLOR_BROWN;
+#elif CONFIG_SH_BKC_LIGHT_GREY
+    static const uint8_t background_color = VGA_COLOR_LIGHT_GREY;
+#elif CONFIG_SH_BKC_DARK_GREY
+    static const uint8_t background_color = VGA_COLOR_DARK_GREY;
+#elif CONFIG_SH_BKC_LIGHT_BLUE
+    static const uint8_t background_color = VGA_COLOR_LIGHT_BLUE;
+#elif CONFIG_SH_BKC_LIGHT_GREEN
+    static const uint8_t background_color = VGA_COLOR_LIGHT_GREEN;
+#elif CONFIG_SH_BKC_LIGHT_CYAN
+    static const uint8_t background_color = VGA_COLOR_LIGHT_CYAN;
+#elif CONFIG_SH_BKC_LIGHT_RED
+    static const uint8_t background_color = VGA_COLOR_LIGHT_RED;
+#elif CONFIG_SH_BKC_LIGHT_MAGENTA
+    static const uint8_t background_color = VGA_COLOR_LIGHT_MAGENTA;
+#elif CONFIG_SH_BKC_LIGHT_BROWN
+    static const uint8_t background_color = VGA_COLOR_LIGHT_BROWN;
+#elif CONFIG_SH_BKC_WHITE
+    static const uint8_t background_color = VGA_COLOR_WHITE;
+#else
+    static const uint8_t background_color = VGA_COLOR_BLACK;
+#endif
+
 #endif
 
 
@@ -34,7 +108,7 @@ void clear_screen(void) {
     int num_pixels = VBE_WIDTH * VBE_HEIGHT;
 
     for (int i = 0; i < num_pixels; i++) {
-        ((uint32_t*)framebuffer)[i] = 0x00000000;
+        ((uint32_t*)framebuffer)[i] = background_color;
     }
 }
 
@@ -88,9 +162,14 @@ void terminal_scroll(void) {
         }
     }
 
-    // clear the bottom 16 rows to black
-    uint32_t* bottom_row = framebuffer + (VBE_HEIGHT - 16) * VBE_WIDTH;
-    memset(bottom_row, 0, 16 * row_size);
+    // clear the bottom 16 rows to background color
+	for (size_t y = VBE_HEIGHT - 16; y < VBE_HEIGHT; ++y) {
+		uint32_t* dest = framebuffer + y * VBE_WIDTH;
+
+		for (size_t x = 0; x < VBE_WIDTH; ++x) {
+			dest[x] = background_color;
+		}
+	}
 }
 
 void terminal_putchar(char c) {
@@ -233,13 +312,12 @@ uint8_t map_framebuffer(void) {
 
 void terminal_backspace_cursor(char c) {
     terminal_column--;
-    terminal_putentryat(c, VBE_COLOR_BLACK, terminal_column, terminal_row);
+    terminal_putentryat(c, background_color, terminal_column, terminal_row);
 }
 
 #else /* CONFIG_TTY_VBE */
 
 #include <kernel/io.h>
-#include "vga.h"
 
 #define REG_SCREEN_CTRL 0x3D4
 #define REG_SCREEN_DATA 0x3D5
@@ -279,7 +357,7 @@ void set_cursor(size_t x, size_t y) {
 void terminal_initialize(void) {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(VGA_COLOR_WHITE, VGA_COLOR_BLACK); // 0x0F
+	terminal_color = vga_entry_color(VGA_COLOR_WHITE, background_color); // 0x0F
 	terminal_buffer = VGA_MEMORY;
 
 	set_cursor(terminal_column, terminal_row);
@@ -300,7 +378,7 @@ void terminal_initialize(void) {
  * @param color  The color to set the terminal to (8 bits).
  */
 void terminal_setcolor(uint8_t color) {
-	terminal_color = color;
+	terminal_color = vga_entry_color(color, background_color);
 }
 
 /**
@@ -338,7 +416,8 @@ void terminal_scroll(void) {
     // clear the last line
 	for (x = 0; x < VGA_WIDTH * 2; x++) {
 		ptr = VGA_MEMORY + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
-		*ptr = *(ptr + (VGA_WIDTH));
+		//*ptr = *(ptr + (VGA_WIDTH));
+        *ptr = vga_entry(' ', terminal_color);
 	}
 }
 
@@ -433,7 +512,7 @@ void terminal_writestring(const char* data) {
  * This function moves the cursor back one space.
  */
 void terminal_backspace_cursor(char c) {
-    c++;    // used to eliminate comilation warning
+    c++;    // used to eliminate compilation warning
     --terminal_column;
     terminal_writestring(" ");
 	set_cursor(--terminal_column, terminal_row);

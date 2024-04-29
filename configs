@@ -18,5 +18,15 @@ CONFIG_VMM_PAGING_4M (uses 4MB pages)
 
 # Kernem malloc and free
 CONFIG_READ_AFTER_FREE_PROT (after each free the memory is zeroed)
-CONFIG_KVMM_BESTFIT (uses best-fit algorithm to allocate dynamic memory)
+
+# Scheduler
+CONFIG_ROUND_ROBIN (round-robin scheduling algorithm)
+CONFIG_SIMPLE_SCH (simple scheduling alg. - executing a task until finished)
+CONFIG_RR_TIME_QUANTUM (time quantum for the round-robin scheduler)
+
+# Shell
+CONFIG_HOSTNAME (change hostname)
+CONFIG_BACKGROUND_COLOR (change background color)
+CONFIG_TEXT_COLOR (change text color)
+CONFIG_SH_HISTORY (enable shell command history)
 

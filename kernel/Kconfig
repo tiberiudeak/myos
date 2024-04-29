@@ -57,3 +57,67 @@ config RR_TIME_QUANTUM
 
 endmenu
 
+menu "Shell"
+
+config SH_HOSTNAME
+    string "Choose hostname"
+    help
+        Help message
+    default "myos"
+
+choice SH_BACKGROUND_COLOR
+    prompt "Terminal background color"
+    default SH_BKC_BLACK
+
+config SH_BKC_BLACK
+    bool "Black"
+
+config SH_BKC_BLUE
+    bool "Blue"
+    
+config SH_BKC_GREEN
+    bool "Green"
+
+config SH_BKC_CYAN
+    bool "Cyan"
+
+config SH_BKC_RED
+    bool "Red"
+
+config SH_BKC_MAGENTA
+    bool "Magenta"
+
+config SH_BKC_BROWN
+    bool "Brown"
+
+config SH_BKC_LIGHT_GREY
+    bool "Light Grey"
+
+config SH_BKC_DARK_GREY
+    bool "Dark Grey"
+
+config SH_BKC_LIGHT_BLUE
+    bool "Light Blue"
+
+config SH_BKC_LIGHT_GREEN
+    bool "Light Green"
+
+config SH_BKC_LIGHT_CYAN
+    bool "Light Cyan"
+
+config SH_BKC_LIGHT_RED
+    bool "Light Red"
+
+config SH_BKC_LIGHT_MAGENTA
+    bool "Light Magenta"
+
+config SH_BKC_LIGHT_BROWN
+    bool "Light Brown"
+
+config SH_BKC_WHITE
+    bool "White"
+
+endchoice
+
+endmenu
+
