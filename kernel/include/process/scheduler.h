@@ -31,6 +31,7 @@ void schedule(void);
 void start_init_task(void);
 void change_context(interrupt_regs *);
 void resume_context(interrupt_regs *);
+void change_context_kernel(interrupt_regs *);
 #endif
 
 #endif /* !_SCH_H */

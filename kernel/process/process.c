@@ -80,6 +80,9 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
             return NULL;
         }
 
+        if (!userspace)
+            task->context->eip = (uint32_t)exec_address;
+
     }
     
     task->maps = NULL;

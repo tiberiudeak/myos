@@ -343,6 +343,20 @@ void terminal_backspace_cursor(char c) {
     terminal_putentryat(c, background_color, terminal_column, terminal_row);
 }
 
+void draw_square(int x, int y, int width, int height, uint32_t color) {
+    if (x < 0 || x + width > VBE_WIDTH || y < 0 || y + height > VBE_HEIGHT) {
+        return;
+    }
+
+    for (int i = y; i < y + height; ++i) {
+        for (int j = x; j < x + width; ++j) {
+            int pixelIndex = i * VBE_WIDTH + j;
+
+            framebuffer[pixelIndex] = color;
+        }
+    }
+}
+
 #else /* CONFIG_TTY_VBE */
 
 #include <kernel/io.h>

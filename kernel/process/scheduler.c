@@ -179,6 +179,10 @@ void init_task_func(int argc, char *argv[]) {
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
+void draw_red_square(int argc, char *argv[]) {
+    draw_square(600, 200, 100, 100, VBE_COLOR_RED);
+}
+
 /**
  * @brief Initialize the round-robin scheduler's task queue
  *
@@ -208,7 +212,7 @@ uint8_t init_task_queue_rr(void) {
     }
 
     enqueue_task(init_task);
-    
+
     scheduler_initialized = 1;
 
     return 0;
@@ -282,6 +286,20 @@ void change_context(interrupt_regs *r) {
     *(&r->cs) = 0x1B;
 
     // change instruction pointer
+    *(&r->eip) = current_running_task->context->eip;
+}
+
+// start kernel task - work in progress
+void change_context_kernel(interrupt_regs *r) {
+    *(&r->ds) = 0x10;
+    *(&r->ss) = 0x10;
+
+    uint32_t kstack;
+    __asm__ __volatile__ ("mov %%esp, %0" : "=r"(kstack));
+    printk("esp: %x\n", kstack);
+    *(&r->useresp) = kstack;
+
+    *(&r->cs) = 0x8;
     *(&r->eip) = current_running_task->context->eip;
 }
 
