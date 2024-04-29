@@ -65,7 +65,20 @@ config SH_HOSTNAME
         Help message
     default "myos"
 
-choice SH_BACKGROUND_COLOR
+config SH_HISTORY
+    bool "Shell history"
+    help
+        Help message
+    default n
+
+config SH_HISTORY_MAX_SIZE
+    int "History size"
+    help
+        Help message
+    depends on SH_HISTORY
+    default 20
+
+choice
     prompt "Terminal background color"
     default SH_BKC_BLACK
 
@@ -116,6 +129,60 @@ config SH_BKC_LIGHT_BROWN
 
 config SH_BKC_WHITE
     bool "White"
+
+endchoice
+
+choice
+    prompt "Terminal text color"
+    default SH_FGC_WHITE
+
+config SH_FGC_WHITE
+    bool "White"
+
+config SH_FGC_BLACK
+    bool "Black"
+
+config SH_FGC_BLUE
+    bool "Blue"
+
+config SH_FGC_GREEN
+    bool "Green"
+
+config SH_FGC_CYAN
+    bool "Cyan"
+
+config SH_FGC_RED
+    bool "Red"
+
+config SH_FGC_MAGENTA
+    bool "Magenta"
+
+config SH_FGC_BROWN
+    bool "Brown"
+
+config SH_FGC_LIGHT_GREY
+    bool "Light Grey"
+
+config SH_FGC_DARK_GREY
+    bool "Dark Grey"
+
+config SH_FGC_LIGHT_BLUE
+    bool "Light Blue"
+
+config SH_FGC_LIGHT_GREEN
+    bool "Light Green"
+
+config SH_FGC_LIGHT_CYAN
+    bool "Light Cyan"
+
+config SH_FGC_LIGHT_RED
+    bool "Light Red"
+
+config SH_FGC_LIGHT_MAGENTA
+    bool "Light Magenta"
+
+config SH_FGC_LIGHT_BROWN
+    bool "Light Brown"
 
 endchoice
 

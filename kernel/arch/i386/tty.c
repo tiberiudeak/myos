@@ -6,10 +6,38 @@
 #include <kernel/tty.h>
 #include <global_addresses.h>
 
-#ifdef CONFIG_TTY_VBE
-static const uint32_t default_color = 0xFFFFFFFF;
+#ifdef CONFIG_SH_FGC_BLACK
+    static const uint8_t default_color = 0;
+#elif CONFIG_SH_FGC_BLUE
+    static const uint8_t default_color = 1;
+#elif CONFIG_SH_FGC_GREEN
+    static const uint8_t default_color = 2;
+#elif CONFIG_SH_FGC_CYAN
+    static const uint8_t default_color = 3;
+#elif CONFIG_SH_FGC_RED
+    static const uint8_t default_color = 4;
+#elif CONFIG_SH_FGC_MAGENTA
+    static const uint8_t default_color = 5;
+#elif CONFIG_SH_FGC_BROWN
+    static const uint8_t default_color = 6;
+#elif CONFIG_SH_FGC_LIGHT_GREY
+    static const uint8_t default_color = 7;
+#elif CONFIG_SH_FGC_DARK_GREY
+    static const uint8_t default_color = 8;
+#elif CONFIG_SH_FGC_LIGHT_BLUE
+    static const uint8_t default_color = 9;
+#elif CONFIG_SH_FGC_LIGHT_GREEN
+    static const uint8_t default_color = 10;
+#elif CONFIG_SH_FGC_LIGHT_CYAN
+    static const uint8_t default_color = 11;
+#elif CONFIG_SH_FGC_LIGHT_RED
+    static const uint8_t default_color = 12;
+#elif CONFIG_SH_FGC_LIGHT_MAGENTA
+    static const uint8_t default_color = 13;
+#elif CONFIG_SH_FGC_LIGHT_BROWN
+    static const uint8_t default_color = 14;
 #else
-static const uint8_t default_color = 15;
+    static const uint8_t default_color = 15;
 #endif
 
 #ifdef CONFIG_TTY_VBE
@@ -119,7 +147,7 @@ void terminal_initialize(void) {
 
 	terminal_row = 0;
 	terminal_column = 0;
-    terminal_color = default_color;
+    terminal_setcolor(default_color);
 
     clear_screen();
 }
@@ -357,7 +385,7 @@ void set_cursor(size_t x, size_t y) {
 void terminal_initialize(void) {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(VGA_COLOR_WHITE, background_color); // 0x0F
+	terminal_color = vga_entry_color(default_color, background_color); // 0x0F
 	terminal_buffer = VGA_MEMORY;
 
 	set_cursor(terminal_column, terminal_row);

@@ -1,4 +1,3 @@
-#include "include/kernel/shell.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -10,15 +9,15 @@
 #include <mm/kmalloc.h>
 #include <elf.h>
 #include <fs.h>
+
 #include <string.h>
 #include <stdio.h>
 
+#ifdef CONFIG_SH_HISTORY
+sh_circular_buffer sh_history;
+#endif
 static char key_buffer[MAX_COMMAND_LENGTH];
 static int index;
-
-void test_task(int argc, char *argv[]) {
-    printk("test task %d %s\n", argc, argv[0]);
-}
 
 int nr_params(char *str) {
 	int count = 0;
@@ -54,7 +53,33 @@ void tokenize(const char *str, char **argv) {
 	argv[j][k] = '\0';
 }
 
+#ifdef CONFIG_SH_HISTORY
+
+void history_add_command(const char *command) {
+    strcpy(sh_history.commands[(sh_history.start + sh_history.count) % MAX_HISTORY_SIZE], command);
+
+    if (sh_history.count < MAX_HISTORY_SIZE) {
+        sh_history.count++;
+    } else {
+        sh_history.start = (sh_history.start + 1) % MAX_HISTORY_SIZE;
+    }
+}
+
+void history_display(void) {
+    printk("Command History:\n");
+
+    for (int i = 0; i < sh_history.count; i++) {
+        printk("%d: %s\n", i + 1, sh_history.commands[(sh_history.start + i) % MAX_HISTORY_SIZE]);
+    }
+}
+
+#endif
+
 void shell_exec_command(char *command) {
+
+#ifdef CONFIG_SH_HISTORY
+    history_add_command(command);
+#endif
 
     // TODO: remove spaces at the beginning
 
@@ -121,6 +146,13 @@ void shell_exec_command(char *command) {
         memset(key_buffer, 0, MAX_COMMAND_LENGTH);
         return;
 	}
+	else if (strcmp(command, "") == 0) {
+	}
+#ifdef CONFIG_SH_HISTORY
+	else if (strcmp(command, "history") == 0) {
+        history_display();
+	}
+#endif
 	else if (strcmp(command, "") == 0) {
 	}
 	else {
