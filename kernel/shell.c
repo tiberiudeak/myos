@@ -153,6 +153,12 @@ void shell_exec_command(char *command) {
         history_display();
 	}
 #endif
+
+#ifndef CONFIG_SIMPLE_SCH
+	else if (strncmp(command, "ps", 2) == 0) {
+        display_running_processes();
+	}
+#endif
 	else if (strcmp(command, "") == 0) {
 	}
 	else {

@@ -32,6 +32,7 @@ void start_init_task(void);
 void change_context(interrupt_regs *);
 void resume_context(interrupt_regs *);
 void change_context_kernel(interrupt_regs *);
+void display_running_processes(void);
 #endif
 
 #endif /* !_SCH_H */

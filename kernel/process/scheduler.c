@@ -7,6 +7,7 @@
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
 #include <stddef.h>
+#include <string.h>
 
 task_queue_t *task_queue = NULL;
 task_struct *current_running_task;
@@ -179,10 +180,6 @@ void init_task_func(int argc, char *argv[]) {
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
-void draw_red_square(int argc, char *argv[]) {
-    draw_square(600, 200, 100, 100, VBE_COLOR_RED);
-}
-
 /**
  * @brief Initialize the round-robin scheduler's task queue
  *
@@ -202,9 +199,24 @@ uint8_t init_task_queue_rr(void) {
     task_queue->front = NULL;
     task_queue->rear = NULL;
 
+    char **argv = kmalloc(sizeof(char*) * 1);
+
+    if (argv == NULL) {
+        return 1;
+    }
+
+    argv[0] = kmalloc(sizeof(char) * 10);
+
+    if (argv[0] == NULL) {
+        kfree(argv);
+        return 1;
+    }
+
+    strcpy(argv[0], "init");
+
     // create init task and add it to the queue
     void (*init)(int, char**) = init_task_func;
-    task_struct *init_task = create_task(init, 0, NULL, 0);
+    task_struct *init_task = create_task(init, 1, argv, 0);
 
     if (init_task == NULL) {
         printk("init task is NULL!\n");
@@ -212,6 +224,9 @@ uint8_t init_task_queue_rr(void) {
     }
 
     enqueue_task(init_task);
+
+    kfree(argv[0]);
+    kfree(argv);
 
     scheduler_initialized = 1;
 
@@ -361,6 +376,20 @@ void schedule(void) {
     // change virtual address space for user tasks
     if (task->vas != NULL) {
         set_page_directory(task->vas);
+    }
+}
+
+// display processes in the task queue
+void display_running_processes(void) {
+    //printk("processes:\n");
+    printk("id: %d %s (running)\n", current_running_task->task_id,
+            current_running_task->argv[0]);
+    task_node_t *tmp = task_queue->front;
+
+    while (tmp != NULL) {
+        printk("id: %d %s\n", tmp->task->task_id,
+                tmp->task->argv[0]);
+        tmp = tmp->next;
     }
 }
 
