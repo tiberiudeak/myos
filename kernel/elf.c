@@ -120,7 +120,7 @@ uint32_t check_elf(uint32_t *elf_address) {
             elf_header->e_ident[2] != 'L' || elf_header->e_ident[3] != 'F')
         return 1;
 
-    
+
     // check if it's for 32 bits
     if (elf_header->e_ident[4] != 1)
         return 1;
@@ -155,7 +155,7 @@ void print_elf_header(Elf32_Ehdr *header) {
 }
 
 void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_end) {
-    
+
     // read from loaded file and create another location in the main memory
     // to put the data and code segments
     Elf32_Ehdr *elf_header = (Elf32_Ehdr*) elf_address;
@@ -263,6 +263,9 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             // set program break to the start of the heap
             current_running_task->program_break = (void *) uheap_start;
 
+            printk("heap start: %x\n", uheap_start);
+            printk("heap end: %x\n", uheap_end);
+
             // set user stack
             *ustack_end = KERNEL_VIRT_ADDR;
             *ustack_start = KERNEL_VIRT_ADDR - PAGE_SIZE;
@@ -307,6 +310,62 @@ void elf_after_program_execution(int return_code) {
     }
 
     shell_cleanup();
+}
+
+void set_argc_argv(uint32_t *ustack_end) {
+    // populate the stack with argc and pointers to the arguments
+    // the pointers will point to the heap
+    uint32_t argc = current_running_task->argc;
+    char **argv = current_running_task->argv;
+
+    uint32_t *stack = (uint32_t*) *ustack_end;
+    uint32_t *heap = (uint32_t*) current_running_task->heap_start;
+    uint32_t *pr_break = (uint32_t*) current_running_task->program_break;
+
+    // first populate the stack with the pointers to the arguments
+    // for example, if we have 3 arguments, the stack will look like this:
+    // | argc | argv[0] | argv[1] | argv[2] | ...
+    // argv[0] will point to an address in the heap, that will contain the address of the first argument
+    // for example, if the first argument is "hello" and there are 3 arguments, the heap will look like this:
+    // | addr_arg[3] | addr_arg[2] | addr_arg[1] | "..." | "..." | "hello" |
+
+    uint32_t *start_addr_for_strings = heap + argc;
+
+    stack--;
+
+    // first populate the stack with the pointers to the arguments
+    for (int i = argc - 1; i >= 0; i--) {
+        *stack = (uint32_t)heap;
+        stack--;
+        heap++;
+    }
+
+    heap = (uint32_t*) current_running_task->heap_start;
+
+    // now populate the heap with the arguments
+    for (uint32_t i = 0; i < argc; i++) {
+        char *arg = argv[argc - 1 - i];
+        uint32_t len = strlen(arg) + 1;
+        arg[len - 1] = '\0';
+
+        // copy the argument to the heap
+        memcpy((void*) start_addr_for_strings, arg, len);
+
+        // set the pointer to the argument at the beginning of the heap
+        *heap = (uint32_t)start_addr_for_strings;
+
+        heap++;
+        start_addr_for_strings += len;
+
+        // set the program break to the end of the last argument
+        current_running_task->program_break = (void*)start_addr_for_strings;
+    }
+
+    // update the stack pointer to point to argc
+    *stack = argc;
+    stack--;
+
+    *ustack_end = (uint32_t)stack;
 }
 
 uint8_t prepare_elf_execution(int argc, char **argv) {
@@ -362,31 +421,7 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
         return 1;
 
     // update stack pointer to include the main function parameters argc and argv
-    ustack_end -= 4;
-    current_running_task->program_break += (argc * 4);
-
-    for (int i = 0; i < current_running_task->argc; i++) {
-        *(int*)ustack_end = 0x1234abcd;
-        ustack_end -= 4;
-        // put location on the heap of **char on the stack
-        //uint32_t *p = (uint32_t *) ustack_end;
-        //*p = (uint32_t) current_running_task->heap_start + i;
-
-        //ustack_end -= 4;
-
-        //// store argv value after the pointers to the strings
-        //memcpy(current_running_task->program_break,
-        //        current_running_task->argv[i],
-        //        strlen(current_running_task->argv[i]));
-
-        //*(uint32_t*)(current_running_task->heap_start + i) =
-        //    (uint32_t)current_running_task->program_break;
-
-        //current_running_task->program_break += strlen(current_running_task->argv[i]);
-    }
-
-    *(uint32_t*)(ustack_end) = current_running_task->argc;
-    ustack_end -= 4;
+    set_argc_argv(&ustack_end);
 
     current_running_task->context->eip = (uint32_t)entry_point;
     current_running_task->context->esp = (uint32_t)ustack_end;

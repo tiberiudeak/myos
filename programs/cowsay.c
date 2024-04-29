@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 void cow_print(void) {
     printf("  ---------\n");
@@ -14,8 +15,10 @@ void cow_print(void) {
 }
 
 void _start(int argc, char *argv[]) {
-    // printf("argc: %d\n", argc);
-    //printf("argv[0]: %s\n", argv[0]);
+    printf("argc: %d %x\n", argc, &argc);
+    printf("argv[0]: %s\n", argv[0]);
+    if (argc >= 2)
+        printf("argv[1]: %s\n", &argv[1]);
     cow_print();
     exit(0);
 }
