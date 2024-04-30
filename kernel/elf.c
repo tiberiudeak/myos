@@ -312,39 +312,58 @@ void elf_after_program_execution(int return_code) {
     shell_cleanup();
 }
 
+/**
+ * @brief Put argc and argv on the stack for the process
+ *
+ * This function puts the argc and pointers to the arguments on the
+ * given stask. The arguments will be stored on the heap.
+ *
+ *
+ * example: if we have three arguments, the stack will look like this:
+ *          the arguments: "hello", "bye", "hi"
+ *
+ * ... | argc | argv | argv+1 | argv+2 | ...
+ *     ^                               ^
+ *     |                               |
+ *  lower addr                      higher addr
+ *
+ * argc: number of arguments (the value in put directly on the stack)
+ * argv: pointer to another address at the beginning of the heap
+ * argv+1: pointer to the next address on the heap after argv
+ * argv+2: pointer the the next address on the heap after argv+1
+ *
+ * the heap will lool like this:
+ *
+ * ... | pointer to | pointer to | pointer to | "hello" | "bye" | "hi" | ...
+ *     |  "hello"   |   "bye"    |   "hi"     |         |       |      |
+ *     ^                                                               ^
+ *     |                                                               |
+ *  heap start                                                  program break
+ *
+ *  argv -> pointer to the heap start -> pointer to the string "hello"
+ *  argv+1 -> pointer to the heap start + 1 -> pointer to the string "bye"
+ *  argv+2 -> pointer to the heap start + 2 -> pointer to the string "hi"
+ *
+ * @param ustack_end    The process stack
+ */
 void set_argc_argv(uint32_t *ustack_end) {
-    // populate the stack with argc and pointers to the arguments
-    // the pointers will point to the heap
     uint32_t argc = current_running_task->argc;
     char **argv = current_running_task->argv;
-
     uint32_t *stack = (uint32_t*) *ustack_end;
     uint32_t *heap = (uint32_t*) current_running_task->heap_start;
-    uint32_t *pr_break = (uint32_t*) current_running_task->program_break;
-
-    // first populate the stack with the pointers to the arguments
-    // for example, if we have 3 arguments, the stack will look like this:
-    // | argc | argv[0] | argv[1] | argv[2] | ...
-    // argv[0] will point to an address in the heap, that will contain the address of the first argument
-    // for example, if the first argument is "hello" and there are 3 arguments, the heap will look like this:
-    // | addr_arg[3] | addr_arg[2] | addr_arg[1] | "..." | "..." | "hello" |
-
     uint32_t *start_addr_for_strings = heap + argc;
 
     stack--;
 
     // first populate the stack with the pointers to the arguments
     for (int i = argc - 1; i >= 0; i--) {
-        *stack = (uint32_t)heap;
+        *stack = (uint32_t)(heap + i);
         stack--;
-        heap++;
     }
-
-    heap = (uint32_t*) current_running_task->heap_start;
 
     // now populate the heap with the arguments
     for (uint32_t i = 0; i < argc; i++) {
-        char *arg = argv[argc - 1 - i];
+        char *arg = argv[i];
         uint32_t len = strlen(arg) + 1;
         arg[len - 1] = '\0';
 
@@ -352,10 +371,12 @@ void set_argc_argv(uint32_t *ustack_end) {
         memcpy((void*) start_addr_for_strings, arg, len);
 
         // set the pointer to the argument at the beginning of the heap
-        *heap = (uint32_t)start_addr_for_strings;
+        *heap = (uint32_t) start_addr_for_strings;
 
         heap++;
-        start_addr_for_strings += len;
+        // the start addr for strings should be aligned
+        start_addr_for_strings = (void*)start_addr_for_strings +
+            ((len + (8 - 1)) & ~(8 - 1));
 
         // set the program break to the end of the last argument
         current_running_task->program_break = (void*)start_addr_for_strings;

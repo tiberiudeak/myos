@@ -133,6 +133,10 @@ void shell_exec_command(char *command) {
         task_struct *new_task = create_task(NULL, number_params, argv, 1);
 #endif
 
+        for (int i = 0; i < number_params; i++) {
+            kfree(argv[i]);
+        }
+
         kfree(argv);
 
         if (new_task == NULL) {

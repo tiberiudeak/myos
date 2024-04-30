@@ -453,11 +453,11 @@ void free_proc_phys_mem(void) {
 
             // get page table corresponding to the pde
             page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(&pde);
-            printk("freeing %x %d\n", pt, i);
+            // printk("freeing %x %d\n", pt, i);
 
             for (uint32_t j = 0; j < 1024; j++) {
                 if (pt->entries[j] != 0) {
-                    printk("freeing phys mem: %x, %d\n", PAGE_GET_PHY_ADDRESS(&pt->entries[j]), j);
+                    // printk("freeing phys mem: %x, %d\n", PAGE_GET_PHY_ADDRESS(&pt->entries[j]), j);
                     free_page(&pt->entries[j]);
                 }
             }
