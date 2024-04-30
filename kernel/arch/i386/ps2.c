@@ -13,7 +13,9 @@ int PS2_dual_port;
  * ports are enabled at the end.
  */
 int PS2_init() {
+#ifdef CONFIG_VERBOSE
 	printk("Initializing PS2 Controller\n");
+#endif
 	int ret;
 
 	// disable device
@@ -26,10 +28,14 @@ int PS2_init() {
 	ret = PS2_self_test();
 
 	if (ret) {
+#ifdef CONFIG_VERBOSE
 		printk("\tPS/2 self test passed\n");
+#endif
 	}
 	else {
+#ifdef CONFIG_VERBOSE
 		printk("\tPS/2 self test failed\n");
+#endif
 		return 1;
 	}
 
@@ -37,23 +43,31 @@ int PS2_init() {
 	ret = PS2_interfaces_test();
 
 	if (ret == 0) {
+#ifdef CONFIG_VERBOSE
 		printk("\tNo PS/2 interfaces available\n");
+#endif
 		return 1;
 	}
 
 	if (ret == 3) {
+#ifdef CONFIG_VERBOSE
 		printk("\tPS/2 available interfaces: 2\n");
+#endif
 		PS2_enable_devices(1, 1);
 		return 0;
 	}
 
 	if (ret == 2) {
+#ifdef CONFIG_VERBOSE
 		printk("\tOnly second PS/2 interface available\n");
+#endif
 		PS2_enable_devices(0, 1);
 		return 0;
 	}
 
+#ifdef CONFIG_VERBOSE
 	printk("\tOnly first PS/2 interface available\n");
+#endif
 	PS2_enable_devices(1, 0);
 	return 0;
 }
@@ -202,9 +216,11 @@ int PS2_interfaces_test() {
 
 	uint8_t response1 = port_byte_in(PS2_DATA_PORT);
 
+#ifdef CONFIG_VERBOSE
 	if (response1 != 0) {
 		printk("PS/2 port 1 test failed\n");
 	}
+#endif
 
 	port_byte_out(PS2_COMMAND_PORT, PS2_TEST_SECOND_PORT);
 
@@ -212,9 +228,11 @@ int PS2_interfaces_test() {
 
 	uint8_t response2 = port_byte_in(PS2_DATA_PORT);
 
+#ifdef CONFIG_VERBOSE
 	if (response2 != 0) {
 		printk("PS/2 port 2 test failed\n");
 	}
+#endif
 
 	if (response1 == 0 && response2 == 0) {
 		return 3;

@@ -38,7 +38,9 @@ void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
  * PICs and are used to handle hardware interrupts.
  */
 void init_idt() {
+#ifdef CONFIG_VERBOSE
 	printk("Initializing IDT");
+#endif
 	idt_ptr_reg.limit = (sizeof(idt_gate_t) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t)&idt_entries;
 
@@ -52,5 +54,7 @@ void init_idt() {
 	__asm__ __volatile__("lidt %0" : : "m" (idt_ptr_reg));
 	__asm__ __volatile__("sti");
 
+#ifdef CONFIG_VERBOSE
 	printkc(2, "\t\tdone\n");
+#endif
 }

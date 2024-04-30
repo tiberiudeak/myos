@@ -53,6 +53,24 @@ void tokenize(const char *str, char **argv) {
 	argv[j][k] = '\0';
 }
 
+void show_available_commands(void) {
+    printk("Available commands:\n");
+    printk("\tmemmap\t - display memory map layout created by the E280 BIOS function\n");
+    printk("\tuptime\t - display the uptime in milliseconds\n");
+    printk("\tpmeminfo - display information about the physical memory\n");
+#ifdef CONFIG_RTC
+    printk("\tdatetime - display current date and time\n");
+#endif
+    printk("\tdl\t\t - display information about the disk layout (from the superblock)\n");
+    printk("\tls\t\t - list the contents of the current directory\n");
+    printk("\tps\t\t - print processes in the scheduler's task queue\n");
+#ifdef CONFIG_SH_HISTORY
+    printk("\thistory  - display shell history\n");
+#endif
+    printk("\thelp\t - display available commands\n");
+    printk("\n\ttype ./<name> to execute a file\n");
+}
+
 #ifdef CONFIG_SH_HISTORY
 
 void history_add_command(const char *command) {
@@ -163,6 +181,9 @@ void shell_exec_command(char *command) {
         display_running_processes();
 	}
 #endif
+	else if (strcmp(command, "help") == 0) {
+        show_available_commands();
+	}
 	else if (strcmp(command, "") == 0) {
 	}
 	else {

@@ -70,27 +70,37 @@ int RSDP_validate(RSDP_descriptor_t *rsdp) {
  * TODO: create a function  that displays the hardware information
  */
 void ACPI_init() {
+#ifdef CONFIG_VERBOSE
 	printk("Detecting ACPI");
+#endif
 	RSDP_descriptor_t *rsdp = RSDP_detect();
 
 	if (rsdp == NULL) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\tRSDP not found\n");
+#endif
 		return;
 	}
 
 	if (RSDP_validate(rsdp)) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\tRSDP is invalid\n");
+#endif
 		return;
 	}
 
 	FADT *fadt = (FADT*) find_FACP((void *)rsdp->RsdtAddress);
 
 	if (fadt == NULL) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\tFADT not found!\n");
+#endif
 		return;
 	}
 
+#ifdef CONFIG_VERBOSE
 	printkc(2, "\t\t\tdone\n");
+#endif
 }
 
 /**

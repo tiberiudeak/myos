@@ -17,7 +17,7 @@ typedef struct {
 } __attribute__((packed)) mem_map_entry_t;
 
 void print_mem_map(void);
-void initialize_memory(void);
+uint8_t initialize_memory(void);
 void *allocate_blocks(uint32_t);
 void free_blocks(void*, uint32_t);
 void print_phymem_info(void);

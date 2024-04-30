@@ -176,7 +176,9 @@ uint32_t queue_size(void) {
  * @param argv Arguments
  */
 void init_task_func(int argc, char *argv[]) {
+#ifdef CONFIG_VERBOSE
     printk("init process started!\n");
+#endif
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 

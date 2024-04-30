@@ -172,130 +172,112 @@ void mark_e820_regions() {
  * This function performs some test to see if the physical memory manager
  * works as expected.
  */
-void pmm_self_test() {
+uint8_t pmm_self_test() {
+#ifdef CONFIG_VERBOSE
 	printk("Performing tests for the physical memory manager...\n");
-
-	// uint32_t initial_free_blocks = max_blocks - used_blocks;
-	// uint32_t initial_used_blocks = used_blocks;
+#endif
 
 	uint32_t test_used_blocks = used_blocks;
 	uint32_t test_free_blocks = max_blocks - used_blocks;
 
+#ifdef CONFIG_VERBOSE
 	printk("Allocating one block (4K)");
+#endif
 	// request one block (4K)
 	uint32_t *a = (uint32_t*) allocate_blocks(1);
 
-	if (test_free_blocks == 0 && a != NULL) {
+	if ((test_free_blocks == 0 && a != NULL) ||
+         (test_free_blocks > 0 && a == NULL) ||
+         (a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) ||
+         (a != NULL && used_blocks - test_used_blocks != 1)) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\tFAILED\n");
-	}
-	else if (test_free_blocks > 0 && a == NULL) {
-		printkc(4, "\t\tFAILED\n");
-	}
-	else if (a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) {
-		printkc(4, "\t\tFAILED\n");
-	}
-	else if (a != NULL && used_blocks - test_used_blocks != 1) {
-		printkc(4, "\t\tFAILED\n");
+#endif
+        return 1;
 	}
 	else {
+#ifdef CONFIG_VERBOSE
 		printkc(2, "\t\t\tOK\n");
+#endif
 		test_free_blocks--;
 		test_used_blocks++;
 	}
 
+#ifdef CONFIG_VERBOSE
 	printk("Allocating two more blocks (8K)");
+#endif
 	uint32_t *b = (uint32_t*) allocate_blocks(2);
 
-	if (test_free_blocks < 2 && b != NULL) {
+	if ((test_free_blocks < 2 && b != NULL) ||
+            (test_free_blocks > 2 && b == NULL) ||
+            (b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) ||
+            (b != NULL && used_blocks - test_used_blocks != 2)) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\tFAILED\n");
-	}
-	else if (test_free_blocks > 2 && b == NULL) {
-		printkc(4, "\t\tFAILED\n");
-	}
-	else if (b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) {
-		printkc(4, "\t\tFAILED\n");
-	}
-	else if (b != NULL && used_blocks - test_used_blocks != 2) {
-		printkc(4, "\t\tFAILED\n");
+#endif
+        return 1;
 	}
 	else {
+#ifdef CONFIG_VERBOSE
 		printkc(2, "\t\tOK\n");
+#endif
 		test_free_blocks -= 2;
 		test_used_blocks += 2;
 	}
 
+#ifdef CONFIG_VERBOSE
 	printk("Freeing first block");
+#endif
 	free_blocks(a, 1);
 
-	if ((max_blocks - used_blocks) - test_free_blocks != 1) {
+	if (((max_blocks - used_blocks) - test_free_blocks != 1) ||
+            (test_used_blocks - used_blocks != 1)) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\t\t\tFAILED\n");
-	}
-	else if (test_used_blocks - used_blocks != 1) {
-		printkc(4, "\t\t\t\t\tFAILED\n");
+#endif
+        return 1;
 	}
 	else if (*a != 0x01010101) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\t\t\tFAILED\n");
+#endif
+        return 1;
 	}
 	else {
+#ifdef CONFIG_VERBOSE
 		printkc(2, "\t\t\t\t\tOK\n");
+#endif
 		test_free_blocks += 1;
 		test_used_blocks -= 1;
 	}
 
+#ifdef CONFIG_VERBOSE
 	printk("Freeing the two allocated blocks");
+#endif
 	free_blocks(b, 2);
 
-	if ((max_blocks - used_blocks) - test_free_blocks != 2) {
+	if (((max_blocks - used_blocks) - test_free_blocks != 2) ||
+            (test_used_blocks - used_blocks != 2)) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\tFAILED\n");
-	}
-	else if (test_used_blocks - used_blocks != 2) {
-		printkc(4, "\tFAILED\n");
+#endif
+        return 1;
 	}
 	else if (*b != 0x01010101) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "\tFAILED\n");
+#endif
+        return 1;
 	}
 	else {
+#ifdef CONFIG_VERBOSE
 		printkc(2, "\tOK\n");
+#endif
 		test_free_blocks += 2;
 		test_used_blocks -= 2;
 	}
 
-	// printk("Allocating max number of blocks");
-	// uint32_t size = max_blocks - used_blocks;
-	// a = (uint32_t*) allocate_blocks(size);
-
-	// if (a == NULL) {
-	// 	printkc(4, "\t\tFAILED\n");
-	// }
-	// else if (max_blocks - used_blocks != 0) {
-	// 	printkc(4, "\t\tFAILED\n");
-	// }
-	// else {
-	// 	printkc(2, "\t\tOK\n");
-	// }
-
-	// printk("Allocating one block");
-	// b = (uint32_t*)allocate_blocks(1);
-
-	// if (b != NULL) {
-	// 	printkc(4, "\t\t\t\tFAILED\n");
-	// }
-	// else {
-	// 	printkc(2, "\t\t\t\tOK\n");
-	// }
-
-	// printk("Freeing all memory");
-	// free_blocks(a, size);
-
-	// if (initial_free_blocks != max_blocks - used_blocks) {
-	// 	printkc(4, "\t\t\t\t\tFAILED\n");
-	// }
-	// else if (initial_used_blocks != used_blocks) {
-	// 	printkc(4, "\t\t\t\t\tFAILED\n");
-	// }
-	// else {
-	// 	printkc(2, "\t\t\t\t\tOK\n");
-	// }
+    return 0;
 }
 
 /**
@@ -307,8 +289,10 @@ void pmm_self_test() {
  * the bitmap is placed in memory. At the beginning, all regions are set
  * as reserved, then marked as free and then reserved.
  */
-void initialize_memory() {
+uint8_t initialize_memory(void) {
+#ifdef CONFIG_VERBOSE
 	printk("Initializing physical memory manager\n");
+#endif
 	// get base address and end address and calculate total size of RAM
 	uint64_t base_address;
 	uint64_t end_address;
@@ -322,13 +306,17 @@ void initialize_memory() {
 	end_address = mem_map_entry->base_addr + mem_map_entry->region_length - 1;
 
 	uint32_t total_ram_size = end_address - base_address;
+#ifdef CONFIG_VERBOSE
 	printk("total RAM size: %x\n", total_ram_size);
+#endif
 
 	// calculate bitmap size and place it in memory
 	bitmap_size = total_ram_size / BLOCK_SIZE;
 	bitmap_size = ceil(bitmap_size, 8);
 
+#ifdef CONFIG_VERBOSE
 	printk("bitmap size in bytes: %d\n", bitmap_size);
+#endif
 
 	bitmap = (uint32_t*) BITMAP_ADDRESS;
 	max_blocks = total_ram_size / BLOCK_SIZE;
@@ -343,12 +331,14 @@ void initialize_memory() {
 	// reserve lower part of memory until 0x100000 (kernel, BDA, mem map, etc.)
 	__mark_region_reserved(0, 0x100000);
 
+#ifdef CONFIG_VERBOSE
 	printk("total number of blocks: %d\n", max_blocks);
 	printk("used blocks: %d\n", used_blocks);
 	printk("free blocks: %d\n\n", max_blocks - used_blocks);
+#endif
 
 	// perform some tests to see that everything works as expected
-	pmm_self_test();
+	return pmm_self_test();
 }
 
 /**

@@ -386,7 +386,9 @@ page_directory *create_address_space(void) {
     if (dir == NULL) {
         return NULL;
     }
-    printk("new addr sp %x\n", dir);
+#ifdef CONFIG_VERBOSE
+    printk("new addr space created %x\n", dir);
+#endif
 
 	// clear all entries in the page directory
 	memset(dir, 0, sizeof(page_directory));

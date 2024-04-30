@@ -30,10 +30,12 @@ void halt_processor(void) {
 
 void kmain() {
 	terminal_initialize();      // clear screen
+#ifdef CONFIG_VERBOSE
 	char *a = "kernel";
-	printk("Hello, ");
+	printk("Booting, ");
 	printkc(3, "%s", a);
-	printk(" World!\n\n");
+    printk("...\n\n");
+#endif
 
 	int8_t ret;
 
@@ -43,23 +45,26 @@ void kmain() {
 	ret = PS2_init();	    // initialize PS/2 controller
 
 	if (ret) {
+#ifdef CONFIG_VERBOSE
 		printkc(4, "failed");
+#endif
 		halt_processor();
 	}
 
 	keyboard_init();	    // install keyboard irq handler
 	PIT_init();			    // initialize programmable interrupt timer
 
-	// // test syscalls
-	//__asm__ __volatile__ ("movl $0, %eax; int $0x80");
-	//__asm__ __volatile__ ("movl $1, %eax; int $0x80");
+	ret = initialize_memory();	// initialize physical memory manager
 
-	initialize_memory();	// initialize physical memory manager
-	printk("\n");
+	if (ret) {
+        printk("Error initializing the physical memory manager\n");
+        halt_processor();
+	}
 
 	ret = initialize_virtual_memory();	// initialize virtual memory
 
 	if (ret) {
+        printk("Error initializing the virtual memory manager\n");
         halt_processor();
 	}
 
@@ -84,7 +89,8 @@ void kmain() {
         halt_processor();
     }
 
-	printk("Welcome to MyOS!\n");
+	printk("Welcome to MyOS!\n\n");
+    printk("-- type help for available commands --\n\n");
 	shell_init();               // initialize the shell
 
 #ifdef CONFIG_SIMPLE_SCH

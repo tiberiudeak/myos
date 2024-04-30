@@ -263,8 +263,10 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             // set program break to the start of the heap
             current_running_task->program_break = (void *) uheap_start;
 
+#ifdef CONFIG_VERBOSE
             printk("heap start: %x\n", uheap_start);
             printk("heap end: %x\n", uheap_end);
+#endif
 
             // set user stack
             *ustack_end = KERNEL_VIRT_ADDR;
@@ -288,7 +290,9 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
             add_phys_info(addr, (void*)(*ustack_start), 1);
             add_process_mapping((void *) (*ustack_start), BLOCK_SIZE);
 
+#ifdef CONFIG_VERBOSE
             printk("uspace start: %x, end: %x, phys: %x\n", *ustack_start, *ustack_end, (uint32_t)addr);
+#endif
         }
     }
 
@@ -447,8 +451,10 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
     current_running_task->context->eip = (uint32_t)entry_point;
     current_running_task->context->esp = (uint32_t)ustack_end;
 
+#ifdef CONFIG_VERBOSE
     printk("eip: %x\n", current_running_task->context->eip);
     printk("esp: %x\n", current_running_task->context->esp);
+#endif
 
     return 0;
 

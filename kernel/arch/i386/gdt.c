@@ -24,7 +24,9 @@ tss_entry_t tss_entry;
  * and the TSS is loaded using the tss_flush function.
  */
 void init_gdt() {
+#ifdef CONFIG_VERBOSE
 	printk("Initializing GDT");
+#endif
 	gdt_ptr.limit = (sizeof(gdt_entry_t) * GDT_ENTRIES) - 1;
 	gdt_ptr.base = (uint32_t)&gdt_entries;
 
@@ -64,7 +66,9 @@ void init_gdt() {
 	gdt_flush((uint32_t)&gdt_ptr);
 	tss_flush();
 
+#ifdef CONFIG_VERBOSE
 	printkc(2, "\t\tdone\n");
+#endif
 }
 
 /**
