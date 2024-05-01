@@ -399,7 +399,10 @@ page_directory *create_address_space(void) {
     memcpy(dir, kernel_page_directory, sizeof(pd_entry) * PAGES_PER_TABLE);
 
     // clear entries between the first 1MB and the higher half kernel
-    memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR) - 1);
+    // memset(dir + 1, 0, sizeof(pd_entry) * PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR) - 1);
+    for (uint32_t i = 1; i < PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR); i++) {
+        dir->entries[i] = 0;
+    }
 
    return dir;
 }

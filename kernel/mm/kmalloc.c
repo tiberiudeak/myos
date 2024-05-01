@@ -85,7 +85,7 @@ void kmalloc_print_list(void) {
 
     while (current != NULL) {
         printk("node size: %d, status %d\n", current->size, current->status);
-        current = (kblock_meta*)current->next;
+        current = (kblock_meta *)current->next;
     }
 }
 
@@ -241,6 +241,7 @@ void *kmalloc_expand_memory(uint32_t size) {
  * @return Starting virtual address
  */
 void *kmalloc(size_t size) {
+    
     if (size == 0) return NULL;
 
     int ret;
@@ -252,7 +253,7 @@ void *kmalloc(size_t size) {
     }
 
     // find best fit
-    kblock_meta *best_fit = (kblock_meta*)kmalloc_find_best_fit(size);
+    kblock_meta *best_fit = (kblock_meta*) kmalloc_find_best_fit(size);
 
     if (best_fit != NULL) {
         // split block if there is place for at least 8 bytes + sizeof metadata block
@@ -306,18 +307,33 @@ void kfree(void *ptr) {
                 current->next != NULL && current->next->status == STATUS_FREE) {
                 current->prev->size += current->size + current->next->size + 2 * METADATA_BLK_SIZE;
                 current->prev->next = current->next->next;
+
+                if (current->next->next != NULL) {
+                    current->next->next->prev = current->prev;
+                }
+
                 return;
             }
 
             if (current->prev != NULL && current->prev->status == STATUS_FREE) {
                 current->prev->size += current->size + METADATA_BLK_SIZE;
                 current->prev->next = current->next;
+
+                if (current->next != NULL) {
+                    current->next->prev = current->prev;
+                }
+
                 return;
             }
 
             if (current->next != NULL && current->next->status == STATUS_FREE) {
                 current->size += current->next->size + METADATA_BLK_SIZE;
+
+                if (current->next->next != NULL) {
+                    current->next->next->prev = current;
+                }
                 current->next = current->next->next;
+
                 return;
             }
             
