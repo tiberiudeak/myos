@@ -11,6 +11,7 @@ extern "C" {
 int close(int);
 size_t read(int, void*, size_t);
 size_t write(int, const void*, size_t);
+void *sbrk(intptr_t);
 
 #ifdef __cplusplus
 }

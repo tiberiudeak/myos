@@ -5,22 +5,25 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/isr.h>
-#include <mm/vmm.h>
+#include <arch/i386/pit.h>
 #include <arch/i386/pic.h>
-#include <kernel/io.h>
 #include <process/process.h>
 #include <process/scheduler.h>
-#include <string.h>
-
-#include <stdio.h>
-#include <arch/i386/pit.h>
+#include <mm/vmm.h>
+#include <mm/pmm.h>
 #include <mm/kmalloc.h>
-#include <fs.h>
-#include <fcntl.h>
+#include <kernel/io.h>
 #include <kernel/tty.h>
-#include <elf.h>
+#include <global_addresses.h>
 
-#define MAX_SYSCALLS	8
+#include <fs.h>
+#include <elf.h>
+#include <string.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <fcntl.h>
+
+#define MAX_SYSCALLS	9
 
 /**
  * Test syscall
@@ -314,7 +317,7 @@ err:
 }
 
 void syscall_exit(void) {
-    __asm__ __volatile__ ("cli");
+    //__asm__ __volatile__ ("cli");
     int return_code = -1;
 
     __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
@@ -339,6 +342,75 @@ void syscall_exit(void) {
 #endif
 }
 
+void syscall_sbrk(void) {
+    intptr_t increment = 0;
+
+    __asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
+
+    extern task_struct *current_running_task; // data from the scheduler
+    printk("sbrk current program break addr: %x\n", current_running_task->program_break);
+
+    printk("free heap size: %d\n", current_running_task->heap_start +
+            current_running_task->heap_size_blocks * BLOCK_SIZE -
+            current_running_task->program_break);
+
+
+    if (increment == 0) {
+        // return current program break
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(current_running_task->program_break));
+        return;
+    }
+
+    uint32_t next_pr_break = (uint32_t)(current_running_task->program_break + increment);
+
+    // check if next program break exceeds upper limit
+    if (next_pr_break >= KERNEL_VIRT_ADDR - BLOCK_SIZE * 4) {
+        printk("heapp upper limit reached!\n");
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(1));
+        return;
+    }
+
+    // check if new address is still mapped
+    if (next_pr_break < (uint32_t)(current_running_task->heap_start +
+                            current_running_task->heap_size_blocks * BLOCK_SIZE)) {
+        // address is mapped
+        uint32_t prev_pr_break = (uint32_t) current_running_task->program_break;
+        current_running_task->program_break = (void*) next_pr_break;
+
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+    }
+    else {
+        // extend heap with an extra block
+        printk("new block needed!!\n");
+
+        void *addr_start = current_running_task->heap_start +
+            current_running_task->heap_size_blocks * BLOCK_SIZE;
+
+        void *phys_addr = allocate_blocks(1);
+
+        if (phys_addr == NULL) {
+            printk("out of memory!\n");
+            __asm__ __volatile__ ("mov %0, %%eax" : : "r"(1));
+            return;
+        }
+
+
+        map_user_page(phys_addr, addr_start);
+
+        pt_entry *page = get_page((uint32_t) addr_start);
+
+        SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+        SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+
+        current_running_task->heap_size_blocks += 1;
+
+        uint32_t prev_pr_break = (uint32_t) current_running_task->program_break;
+        current_running_task->program_break = (void*) next_pr_break;
+
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+    }
+}
+
 void *syscalls[MAX_SYSCALLS] = {
 	syscall_test0,
 	syscall_test1,
@@ -347,7 +419,8 @@ void *syscalls[MAX_SYSCALLS] = {
     syscall_close,
     syscall_read,
     syscall_write,
-    syscall_exit
+    syscall_exit,
+    syscall_sbrk
 };
 
 /**
@@ -363,8 +436,8 @@ void *syscalls[MAX_SYSCALLS] = {
  * can be safely included are asm statements that do not have operands.
  */
 __attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ (
-        "cmp $8, %eax\n"	// check if syscall exists
+	__asm__ __volatile__ ("cli\n"
+        "cmp $9, %eax\n"	// check if syscall exists
 	    										// number has to match MAX_SYSCALLS!
 	    "jge syscall_invalid\n"					// if not, invalid syscall
 

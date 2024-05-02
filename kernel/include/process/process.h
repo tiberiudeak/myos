@@ -49,6 +49,7 @@ typedef struct {
     proc_context_t *context;
     void *heap_start;
     void *program_break;
+    uint32_t heap_size_blocks;
     mapping_t *maps;
 } task_struct;
 

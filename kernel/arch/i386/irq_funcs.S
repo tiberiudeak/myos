@@ -1,6 +1,7 @@
 .extern irq_handler
 
 irq_common_stub:
+    cli
 	pusha						# push current state of registers to stack
 	mov %ds, %eax
 	push %eax					# push data segment to stack
@@ -46,7 +47,6 @@ irq_common_stub:
 .globl irq15
 
 irq0:
-    cli
 	push $0						# push error code
 	push $32					# push interrupt number
 	jmp irq_common_stub			# call the irq common stub function

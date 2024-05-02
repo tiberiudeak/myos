@@ -1,3 +1,4 @@
+#include "include/mm/kmalloc.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -18,6 +19,22 @@ sh_circular_buffer sh_history;
 #endif
 static char key_buffer[MAX_COMMAND_LENGTH];
 static int index;
+
+uint32_t test[1000];
+int test_index = 0;
+
+void kmalloc_allocate(void) {
+    test[test_index] = (uint32_t) kmalloc(10);
+    printk("allocated 10 bytes: %x\n", test[test_index]);
+    test_index++;
+}
+
+void kmalloc_free() {
+    for (int i = 0; i < test_index; i++) {
+        printk("free: %x\n", test[i]);
+        kfree((void*)test[i]);
+    }
+}
 
 int nr_params(char *str) {
 	int count = 0;
@@ -63,7 +80,9 @@ void show_available_commands(void) {
 #endif
     printk("\tdl\t\t - display information about the disk layout (from the superblock)\n");
     printk("\tls\t\t - list the contents of the current directory\n");
+#ifndef CONFIG_SIMPLE_SCH
     printk("\tps\t\t - print processes in the scheduler's task queue\n");
+#endif
 #ifdef CONFIG_SH_HISTORY
     printk("\thistory  - display shell history\n");
 #endif
@@ -96,7 +115,8 @@ void history_display(void) {
 void shell_exec_command(char *command) {
 
 #ifdef CONFIG_SH_HISTORY
-    history_add_command(command);
+	if (strcmp(command, "") != 0)
+        history_add_command(command);
 #endif
 
     // TODO: remove spaces at the beginning
@@ -183,6 +203,15 @@ void shell_exec_command(char *command) {
 #endif
 	else if (strcmp(command, "help") == 0) {
         show_available_commands();
+	}
+	else if (strcmp(command, "kheap") == 0) {
+        kmalloc_print_list();
+	}
+	else if (strcmp(command, "kheap1") == 0) {
+        kmalloc_allocate();
+	}
+	else if (strcmp(command, "kheap2") == 0) {
+        kmalloc_free();
 	}
 	else if (strcmp(command, "") == 0) {
 	}

@@ -379,6 +379,9 @@ void schedule(void) {
     if (task->vas != NULL) {
         set_page_directory(task->vas);
     }
+    else {
+        set_kernel_page_directory();
+    }
 }
 
 // display processes in the task queue

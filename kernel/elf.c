@@ -262,6 +262,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
             // set program break to the start of the heap
             current_running_task->program_break = (void *) uheap_start;
+            current_running_task->heap_size_blocks = 1;
 
 #ifdef CONFIG_VERBOSE
             printk("heap start: %x\n", uheap_start);

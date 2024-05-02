@@ -2,6 +2,7 @@
 #include <process/scheduler.h>
 #include <arch/i386/gdt.h>
 #include <kernel/tty.h>
+#include <kernel/shell.h>
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
 #include <string.h>
@@ -23,6 +24,9 @@ static uint32_t next_available_task_id = 1;
  */
 task_struct *create_task(void *exec_address, int argc, char **argv, int userspace) {
     task_struct *task = (task_struct*) kmalloc(sizeof(task_struct));
+#ifdef CONFIG_VERBOSE
+    printk("create task: %s\n", argv[0]);
+#endif
 
     if (task != NULL) {
         task->state = TASK_CREATED;
@@ -40,7 +44,7 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
         }
 
         for (int i = 0; i < argc; i++) {
-            task->argv[i] = (char*) kmalloc(sizeof(char) * 10); // max 10 characters
+            task->argv[i] = (char*) kmalloc(sizeof(char) * MAX_PARAM_SIZE); // max 10 characters
 
             if (task->argv[i] == NULL) {
                 // free previous allocated argvs
@@ -82,7 +86,6 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
 
         if (!userspace)
             task->context->eip = (uint32_t)exec_address;
-
     }
     
     task->maps = NULL;
