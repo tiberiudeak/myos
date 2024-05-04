@@ -11,11 +11,14 @@
 #define ALIGN(size)         (((size) + (ALIGNMENT - 1)) & ~(ALIGNMENT - 1))
 #define METADATA_BLK_SIZE   ALIGN(sizeof(block_meta))
 
-typedef struct {
+#define BLOCK_SIZE          4096
+// initial requested size is one block
+#define INITIAL_REQ_SIZE    (BLOCK_SIZE)
+
+typedef struct block_meta {
     size_t size;
     uint8_t status;
     struct block_meta *next;
-    struct block_meta *prev;
 } block_meta;
 
 #endif /* !MALLOC_H */

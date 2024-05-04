@@ -229,11 +229,13 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
         // copy data from the ELF file image to the "executable location"
         uint32_t *src, *dst;
-        uint32_t length = pr_header->p_memsz;
+        uint32_t length = pr_header->p_filesz;
 
         src = (void*) elf_address + pr_header->p_offset;
         dst = (void*) pr_header->p_vaddr;
 
+        // first set memory to 0
+        memset(dst, 0, pr_header->p_memsz);
         memcpy(dst, src, length);
 
         // set up the heap and stack
@@ -356,7 +358,7 @@ void set_argc_argv(uint32_t *ustack_end) {
     char **argv = current_running_task->argv;
     uint32_t *stack = (uint32_t*) *ustack_end;
     uint32_t *heap = (uint32_t*) current_running_task->heap_start;
-    uint32_t *start_addr_for_strings = heap + argc;
+    uint32_t *start_addr_for_strings = heap + ALIGN(argc, 8);
 
     stack--;
 
@@ -381,7 +383,7 @@ void set_argc_argv(uint32_t *ustack_end) {
         heap++;
         // the start addr for strings should be aligned
         start_addr_for_strings = (void*)start_addr_for_strings +
-            ((len + (8 - 1)) & ~(8 - 1));
+            ALIGN(len, 8);
 
         // set the program break to the end of the last argument
         current_running_task->program_break = (void*)start_addr_for_strings;

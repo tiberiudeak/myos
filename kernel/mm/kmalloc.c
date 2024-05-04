@@ -305,7 +305,8 @@ void kfree(void *ptr) {
             // coalesce if possible
             if (current->prev != NULL && current->prev->status == STATUS_FREE &&
                 current->next != NULL && current->next->status == STATUS_FREE) {
-                current->prev->size += current->size + current->next->size + 2 * METADATA_BLK_SIZE;
+                current->prev->size += current->size + current->next->size + 2 *
+                    METADATA_BLK_SIZE;
                 current->prev->next = current->next->next;
 
                 if (current->next->next != NULL) {

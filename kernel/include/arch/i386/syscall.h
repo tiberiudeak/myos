@@ -348,11 +348,11 @@ void syscall_sbrk(void) {
     __asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
 
     extern task_struct *current_running_task; // data from the scheduler
-    printk("sbrk current program break addr: %x\n", current_running_task->program_break);
+    // printk("sbrk current program break addr: %x\n", current_running_task->program_break);
 
-    printk("free heap size: %d\n", current_running_task->heap_start +
-            current_running_task->heap_size_blocks * BLOCK_SIZE -
-            current_running_task->program_break);
+    // printk("free heap size: %d\n", (uint32_t)(current_running_task->heap_start +
+    //         current_running_task->heap_size_blocks * BLOCK_SIZE) -
+    //         (uint32_t)(current_running_task->program_break));
 
 
     if (increment == 0) {
@@ -366,7 +366,7 @@ void syscall_sbrk(void) {
     // check if next program break exceeds upper limit
     if (next_pr_break >= KERNEL_VIRT_ADDR - BLOCK_SIZE * 4) {
         printk("heapp upper limit reached!\n");
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(1));
+        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
         return;
     }
 
@@ -380,30 +380,47 @@ void syscall_sbrk(void) {
         __asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
     }
     else {
-        // extend heap with an extra block
-        printk("new block needed!!\n");
-
+        // extend heap with extra blocks
         void *addr_start = current_running_task->heap_start +
             current_running_task->heap_size_blocks * BLOCK_SIZE;
 
-        void *phys_addr = allocate_blocks(1);
+        // calculate needed blocks
+        uint8_t needed_blocks = 0;
+        intptr_t increment_copy = increment;
 
-        if (phys_addr == NULL) {
-            printk("out of memory!\n");
-            __asm__ __volatile__ ("mov %0, %%eax" : : "r"(1));
-            return;
+        // determine size that needs to be allocated and mapped
+        increment_copy -= ((uint32_t)(current_running_task->heap_start +
+                current_running_task->heap_size_blocks * BLOCK_SIZE) -
+                (uint32_t) current_running_task->program_break);
+
+        needed_blocks = increment_copy / BLOCK_SIZE;
+        
+        if (increment_copy % BLOCK_SIZE != 0) {
+            needed_blocks++;
         }
 
+        // allocate and map memory
+        for (uint32_t i = 0, virt = addr_start; i < needed_blocks; i++, virt += PAGE_SIZE) {
+            void *phys_addr = allocate_blocks(1);
 
-        map_user_page(phys_addr, addr_start);
+            if (phys_addr == NULL) {
+                printk("out of memory!\n");
+                __asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
+                return;
+            }
 
-        pt_entry *page = get_page((uint32_t) addr_start);
+            map_user_page(phys_addr, virt);
 
-        SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
-        SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+            pt_entry *page = get_page((uint32_t) virt);
 
-        current_running_task->heap_size_blocks += 1;
+            SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
+            SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
+        }
+        
+        // update heap size
+        current_running_task->heap_size_blocks += needed_blocks;
 
+        // update program break and return previous program break
         uint32_t prev_pr_break = (uint32_t) current_running_task->program_break;
         current_running_task->program_break = (void*) next_pr_break;
 
