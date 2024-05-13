@@ -6,9 +6,8 @@ bin/bootloader.bin
 bin/kernel.bin
 
 # You can modify this file starting from here
-bin/test.txt
-bin/pr1.o
 bin/pr1
 bin/cowsay
 bin/pr2
+bin/cal
 

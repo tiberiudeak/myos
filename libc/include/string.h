@@ -24,6 +24,7 @@ char* strstr(const char*, const char*);
 char* strrstr(const char*, const char*);
 char* itoa(int, char*, int);
 void reverse(char*);
+int atoi(char *, int *);
 
 #ifdef __cplusplus
 }

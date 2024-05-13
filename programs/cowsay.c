@@ -29,9 +29,6 @@ void _start(int argc, char *argv[]) {
     // printf("argc: %d\n", argc);
     // printf("argv[0]: %s\n", argv[0]);
     if (argc >= 2)
-        printf("argv[1]: %s\n", argv[1]);
-
-    if (argc >= 2)
         cow_print(argv[1]);
     else {
         cow_print("oh, hello!");
