@@ -5,6 +5,8 @@
 
 block_meta *metadata_blk_header = NULL;
 
+block_meta *last_block = NULL;
+
 /**
  * @brief Initialize memory managed by malloc
  *
@@ -52,6 +54,102 @@ void *malloc_best_fit(size_t size) {
 
     return best_fit;
 }
+
+#ifdef CONFIG_UVMM_FIRSTFIT
+/**
+ * @brief Find first fit block of memory for the requested size
+ *
+ * This function goes through all blocks of memory and returns the first
+ * block that is free and has the size that can fit the requested size.
+ *
+ * @param size The requested size
+ *
+ * @return Block address that fits the requested size
+*/
+void *malloc_first_fit(size_t size) {
+    block_meta *current = metadata_blk_header;
+
+    while (current != NULL) {
+        if (size <= current->size && current->status == STATUS_FREE) {
+            return current;
+        }
+
+        current = current->next;
+    }
+
+    return NULL;
+}
+#endif
+
+#ifdef CONFIG_UVMM_WORSTFIT
+/**
+ * @brief Find worst fit block of memory for the requested size
+ *
+ * This function goes through all blocks of memory and searches the one
+ * that is free and has the largest size that can fit the requested size.
+ *
+ * @param size The requested size
+ *
+ * @return Block address that fits the requested size
+*/
+void *malloc_worst_fit(size_t size) {
+    block_meta *current = metadata_blk_header;
+    block_meta *worst_fit = NULL;
+    size_t max = 0;
+
+    while (current != NULL) {
+        if (size <= current->size && current->status == STATUS_FREE) {
+            if (current->size > max) {
+                max = current->size;
+                worst_fit = current;
+            }
+        }
+
+        current = current->next;
+    }
+
+    return worst_fit;
+}
+#endif
+
+#ifdef CONFIG_UVMM_NEXTFIT
+/**
+ * @brief Find next fit block of memory for the requested size
+ *
+ * This function goes through all blocks of memory and searches the one
+ * that is free and has the smallest size that can fit the requested size.
+ * The starting point of the search is the last block that was allocated.
+ * If no block is found, the function will start searching from the beginning
+ *
+ * @param size The requested size
+ *
+ * @return Block address that fits the requested size
+*/
+void *malloc_next_fit(size_t size) {
+    block_meta *current = last_block;
+
+    while (current != NULL) {
+        if (size <= current->size && current->status == STATUS_FREE) {
+            return current;
+        }
+
+        current = current->next;
+    }
+
+    current = metadata_blk_header;
+
+    while (current != last_block) {
+        if (size <= current->size && current->status == STATUS_FREE) {
+            last_block = current;
+            return current;
+        }
+
+        current = current->next;
+    }
+
+    return NULL;
+}
+#endif
 
 /**
  * @brief Print current memory blocks managed by malloc
@@ -173,18 +271,26 @@ void *malloc(size_t size) {
 
 alloc_malloc:
     // find block for the requested size
-    block_meta *best_fit_block = malloc_best_fit(size);
+#ifdef CONFIG_UVMM_BESTFIT
+    block_meta *block = malloc_best_fit(size);
+#elif CONFIG_UVMM_FIRSTFIT
+    block_meta *block = malloc_first_fit(size);
+#elif CONFIG_UVMM_WORSTFIT
+    block_meta *block = malloc_worst_fit(size);
+#elif CONFIG_UVMM_NEXTFIT
+    block_meta *block = malloc_next_fit(size);
+#endif
 
-    if (best_fit_block != NULL) {
+    if (block != NULL) {
         // split block if possible and return address
         // split block if at least 8 more bytes can be allocated
-        if (best_fit_block->size - size >= METADATA_BLK_SIZE + ALIGN(1)) {
-            return malloc_split_block(best_fit_block, size);
+        if (block->size - size >= METADATA_BLK_SIZE + ALIGN(1)) {
+            return malloc_split_block(block, size);
         }
 
         //block cannot be split
-        best_fit_block->status = STATUS_ALLOC;
-        return (void*) best_fit_block + METADATA_BLK_SIZE;
+        block->status = STATUS_ALLOC;
+        return (void*) block + METADATA_BLK_SIZE;
     }
 
     // no best fit block found, increase program break with sbrk

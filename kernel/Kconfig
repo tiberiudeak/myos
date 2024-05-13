@@ -1,24 +1,32 @@
 menu "Memory manager"
 
-menu "Physical memory manager"
-
-endmenu
-
 menu "Virtual memory manager"
 
-config VMM_PAGING
-    bool "Paging"
-    help
-        Enable support for paging
-    default y
-    select VMM_PAGING_4K
+choice
+    prompt "User memory allocation algorithm"
+    default UVMM_BESTFIT
 
-config VMM_PAGING_4K
-    bool "4KB pages"
+config UVMM_BESTFIT
+    bool "Best fit"
     help
-        Enalbe support for 4KB pages
-    depends on VMM_PAGING
-    default y
+        Help mwssage
+
+config UVMM_FIRSTFIT
+    bool "First fit"
+    help
+        Help Message
+
+config UVMM_NEXTFIT
+    bool "Next fit"
+    help
+        Help message
+
+config UVMM_WORSTFIT
+    bool "Worst fit"
+    help
+        Help message
+
+endchoice
 
 config READ_AFTER_FREE_PROT
     bool "kmalloc read after free protection"
