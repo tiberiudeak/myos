@@ -166,7 +166,7 @@ void shell_exec_command(char *command) {
 
         // create new task
 #ifdef CONFIG_SIMPLE_SCH
-        task_struct *new_task = create_task(execute_elf, 1, &argv, 1);
+        task_struct *new_task = create_task(execute_elf, number_params, argv, 1);
 #else
         task_struct *new_task = create_task(NULL, number_params, argv, 1);
 #endif

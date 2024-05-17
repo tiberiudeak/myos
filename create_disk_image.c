@@ -505,7 +505,7 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 			uint32_t read_bytes = fread(sector, 1, sizeof(sector), files[i].fp);
 			ret = fwrite(&sector, 1, read_bytes, image_pt);
 
-			if (ret == 0) {
+			if (ret == 0 && read_bytes != 0) {
 				printf("Error wrinting file data to disk image\n");
 				return 1;
 			}
@@ -519,7 +519,7 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 
 		ret = fwrite(&zero, sizeof(uint8_t), padding, image_pt);
 
-		if (ret == 0) {
+		if (ret == 0 && padding != 0) {
 			printf("Error wrinting file data to disk image\n");
 			return 1;
 		}

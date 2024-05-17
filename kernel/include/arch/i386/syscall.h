@@ -135,7 +135,6 @@ void syscall_open(void) {
     int ret = load_file(&inode, (uint32_t)addr);
 
     if (ret) {
-        printk("error loading block from disk\n");
         goto err;
     }
 

@@ -524,6 +524,9 @@ int32_t execute_elf(int argc, char **argv) {
     if (ret)
         return 1;
 
+    // update stack pointer to include the main function parameters argc and argv
+    set_argc_argv(&ustack_end);
+
     // start program execution
     enter_usermode((uint32_t)entry_point, ustack_end);
 

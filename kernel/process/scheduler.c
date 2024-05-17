@@ -126,14 +126,11 @@ void simple_task_scheduler(void) {
         task_struct *task = dequeue_task();
         current_running_task = task;
 
-        printk("executing task: %d\n", task->task_id);
-
         void (*program)(int argc, char *argv[]);
         program = (void (*)(int, char**)) task->exec_address;
 
         // change virtual address space
         if (task->vas != NULL) {
-            printk("setting new vas\n");
             set_page_directory(task->vas);
         }
 
