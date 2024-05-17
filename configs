@@ -1,22 +1,14 @@
 # General
-CONFIG_ARCH_X86_64 (enables x86_64 architecture) (only x86_64 is supported at the moment)
-CONFIG_DEBUG (prints a lot of debug information to the screen)
+CONFIG_VERBOSE (prints a lot of debug information to the screen)
 CONFIG_TTY_VGA (choose VGA driver, 80x20 resolution)
 CONFIG_TTY_VBE (use the VESA BIOS Extension, 1920x1080 resolution)
-
-# RTC (Real Time Clock)
 CONFIG_RTC (enables the RTC with datetime support)
 
 # Virtual Memory Manager
-CONFIG_VMM_PAGING (enables paging)
-CONFIG_VMM_PAGING_4K (uses 4KB pages) (only 4KB pages are supported at the moment)
-CONFIG_VMM_PAGING_4M (uses 4MB pages)
 CONFIG_UVMM_FIRSTFIT
 CONFIG_UVMM_BESTFIT
 CONFIG_UVMM_WORSTFIT
 CONFIG_UVMM_NEXTFIT
-
-# Kernem malloc and free
 CONFIG_READ_AFTER_FREE_PROT (after each free the memory is zeroed)
 
 # Scheduler
