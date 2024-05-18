@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     keypad(win1, TRUE);
 
     // display info message for the highlighted choice in win1
-    display_message(win2, main_menu[highlight-1].help, 1, 1);
+    display_message(win2, main_menu[highlight-1].help, 1, 1, "Info");
 
     while (1) {
         int ch = wgetch(win1);
@@ -69,13 +69,13 @@ int main(int argc, char *argv[]) {
             else {
                 // process choice
                 //display_message(win2, "Something is selected", 1, 1);
-                display_submenu(win1, main_menu[choice-1]);
+                display_submenu(win1, main_menu[choice-1], win2);
                 choice = 0;
             }
         }
 
         display_menu(win1, highlight, main_menu, n_choices, 2, 2);
-        display_message(win2, main_menu[highlight-1].help, 1, 1);
+        display_message(win2, main_menu[highlight-1].help, 1, 1, "Info");
     }
 
     delwin(win1);
@@ -91,22 +91,39 @@ void draw_window(WINDOW *win, int width, const char *title) {
     wrefresh(win);
 }
 
-void display_message(WINDOW *win, const char *message, int x, int y) {
+void display_message(WINDOW *win, const char *message, int x, int y, char *title) {
     werase(win);
     mvwprintw(win, y, x, "%s", message);
-    draw_window(win, getmaxx(win), "Info");
+    draw_window(win, getmaxx(win), title);
     wrefresh(win);
 }
 
-void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs, int x, int y) {
+void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
+                        int n_choices, int x, int y) {
     for (int i = 0; i < n_configs; ++i) {
-        if (highlight == i + 2) {
+        if (highlight == i + 1 + n_choices) {
             wattron(win, A_REVERSE);
-            mvwprintw(win, y, x, "%s", configs[i].prompt);
+            if (configs[i].type == BOOL && configs[i].default_val == 1) {
+                mvwprintw(win, y, x, "(*) %s", configs[i].prompt);
+            }
+            else if (configs[i].type == INT) {
+                mvwprintw(win, y, x, "(%d) %s", configs[i].default_val, configs[i].prompt);
+            }
+            else {
+                mvwprintw(win, y, x, "( ) %s", configs[i].prompt);
+            }
             wattroff(win, A_REVERSE);
         }
         else {
-            mvwprintw(win, y, x, "%s", configs[i].prompt);
+            if (configs[i].type == BOOL && configs[i].default_val == 1) {
+                mvwprintw(win, y, x, "(*) %s", configs[i].prompt);
+            }
+            else if (configs[i].type == INT) {
+                mvwprintw(win, y, x, "(%d) %s", configs[i].default_val, configs[i].prompt);
+            }
+            else {
+                mvwprintw(win, y, x, "( ) %s", configs[i].prompt);
+            }
         }
         ++y;
     }
@@ -118,11 +135,11 @@ void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices,
     for (int i = 0; i < n_choices; ++i) {
         if (highlight == i + 1) {
             wattron(win, A_REVERSE);
-            mvwprintw(win, y, x, "%s", choices[i].prompt);
+            mvwprintw(win, y, x, "%s -->", choices[i].prompt);
             wattroff(win, A_REVERSE);
         }
         else {
-            mvwprintw(win, y, x, "%s", choices[i].prompt);
+            mvwprintw(win, y, x, "%s -->", choices[i].prompt);
         }
         ++y;
     }
@@ -136,29 +153,130 @@ void display_menu(WINDOW *win, int highlight, Menu entries[], int n_entries, int
     for (int i = 0; i < n_entries; ++i) {
         if (highlight == i + 1) {
             wattron(win, A_REVERSE);
-            mvwprintw(win, y, x, "%s", entries[i].prompt);
+            mvwprintw(win, y, x, "%s -->", entries[i].prompt);
             wattroff(win, A_REVERSE);
         } else
-            mvwprintw(win, y, x, "%s", entries[i].prompt);
+            mvwprintw(win, y, x, "%s -->", entries[i].prompt);
         ++y;
     }
 
     wrefresh(win);
 }
 
-void display_submenu(WINDOW *win, Menu menu) {
+void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
+
+    int height, width;
+    getmaxyx(win, height, width);
+
+    WINDOW *choice_win = newwin(height / 2, width, height / 2, 0);
+
+    draw_window(choice_win, width, choice.prompt);
+    keypad(choice_win, TRUE);
+
+    int highlight = 1;
+
+    display_configs(choice_win, highlight, choice.configs,
+            choice.n_configs, 0, 2, 2);
+
+    wrefresh(choice_win);
+
+    while (1) {
+        int ch = wgetch(choice_win);
+
+        switch (ch) {
+            case 'q':
+                delwin(choice_win);
+                return;
+            case KEY_UP:
+                if (highlight == 1)
+                    highlight = choice.n_configs;
+                else
+                    --highlight;
+
+                break;
+            case KEY_DOWN:
+                if (highlight == choice.n_configs)
+                    highlight = 1;
+                else
+                    ++highlight;
+
+                break;
+            case 121:
+                // 'y'
+                choice.configs[highlight - 1].default_val = 1;
+
+                break;
+            case 110:
+                // 'n'
+                choice.configs[highlight - 1].default_val = 0;
+
+                break;
+            default:
+                break;
+        }
+
+        display_configs(choice_win, highlight, choice.configs,
+                choice.n_configs, 0, 2, 2);
+    }
+}
+
+void display_int_window(WINDOW *win, Config config) {
+
+    int height, width;
+    getmaxyx(win, height, width);
+
+    WINDOW *int_win = newwin(height / 2, width, height / 2, 0);
+    curs_set(1);
+
+    draw_window(int_win, width, config.prompt);
+
+    wrefresh(int_win);
+    int x = 1, y = 1;
+
+    while (1) {
+        int ch = wgetch(int_win);
+
+        if (ch != 10) {
+            if (ch >= '0' && ch <= '9')
+                mvwprintw(int_win, y, x++, "%c", ch);
+                // TODO: store characters in a buffer and convert it later to int
+        }
+        else {
+            delwin(int_win);
+            curs_set(0);
+            return;
+        }
+    }
+}
+
+void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
     int height, width;
     getmaxyx(win, height, width);
 
     WINDOW *new_window = newwin(height, width, 0, 0);
+    curs_set(0);
 
     draw_window(new_window, width, menu.prompt);
     keypad(new_window, TRUE);
 
     int highlight = 1;
     int choice = 0;
-    display_choices(new_window, highlight, menu.choices, menu.n_choices, 2, 2);
-    display_configs(new_window, highlight, menu.configs, menu.n_configs, 2, menu.n_choices + 2);
+
+    if (menu.choices == NULL && menu.configs == NULL)
+        return;
+
+    if (menu.choices != NULL) {
+        display_choices(new_window, highlight, menu.choices, menu.n_choices, 2, 2);
+        display_message(win2, menu.choices[0].help_message, 1, 1, "Info");
+    }
+
+    if (menu.configs != NULL && menu.choices != NULL)
+        display_configs(new_window, highlight, menu.configs, menu.n_configs,
+                menu.n_choices, 2, menu.n_choices + 2);
+    else {
+        display_configs(new_window, highlight, menu.configs, 0, menu.n_configs, 2, 2);
+        display_message(win2, menu.configs[0].help_message, 1, 1, "Info");
+    }
 
     int total_entries = menu.n_choices + menu.n_configs;
 
@@ -183,6 +301,20 @@ void display_submenu(WINDOW *win, Menu menu) {
                 else
                     ++highlight;
                 break;
+            case 121:
+                // 'y'
+                if (highlight > menu.n_choices) {
+                    menu.configs[highlight - 1 - menu.n_choices].default_val = 1;
+                }
+
+                break;
+            case 110:
+                // 'n'
+                if (highlight > menu.n_choices) {
+                    menu.configs[highlight - 1 - menu.n_choices].default_val = 0;
+                }
+
+                break;
             case 10:
                 choice = highlight;
                 break;
@@ -190,7 +322,31 @@ void display_submenu(WINDOW *win, Menu menu) {
                 break;
         }
 
+        if (choice != 0) {
+            // process choice
+            if (choice <= menu.n_choices) {
+                // new window for the choice
+                display_choice(win, menu.choices[choice-1], win2);
+            }
+            else if (menu.configs[choice - 1 - menu.n_choices].type != BOOL) {
+                // if type is INT or STRING
+                display_int_window(win, menu.configs[choice - 1 - menu.n_choices]);
+            }
+
+            choice = 0;
+        }
+
+        draw_window(new_window, width, menu.prompt);
         display_choices(new_window, highlight, menu.choices, menu.n_choices, 2, 2);
-        display_configs(new_window, highlight, menu.configs, menu.n_configs, 2, menu.n_choices + 2);
+        display_configs(new_window, highlight, menu.configs, menu.n_configs,
+                            menu.n_choices, 2, menu.n_choices + 2);
+
+        if (highlight <= menu.n_choices) {
+            display_message(win2, menu.choices[highlight - 1].help_message, 1, 1, "Info");
+        }
+        else {
+            display_message(win2, menu.configs[highlight - 1 - menu.n_choices].help_message, 1, 1, "Info");
+        }
     }
 }
+
