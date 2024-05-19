@@ -140,7 +140,7 @@ Config shell_fgc_configs[] = {
         "CONFIG_SH_FGC_BLACK",
         "Black",
         "",
-        1,
+        0,
         BOOL,
         NULL
     },
@@ -275,7 +275,7 @@ Config shell_fgc_configs[] = {
         "CONFIG_SH_FGC_WHITE",
         "White",
         "",
-        0,
+        1,
         BOOL,
         NULL
     }
@@ -488,6 +488,8 @@ void display_message(WINDOW *win, const char *message, int x, int y, char *title
 void display_menu(WINDOW *menu_win, int highlight, Menu *choices, int n_choices, int x, int y);
 void handle_general_setup_submenu(WINDOW *win, WINDOW *win2);
 void display_submenu(WINDOW *win, Menu menu, WINDOW *win2);
+void print_enabled_configurations(void);
+int check_dependencies(Config config);
 
 #endif
 

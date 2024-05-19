@@ -41,6 +41,8 @@ int main(int argc, char *argv[]) {
                 delwin(win2);
                 endwin();
 
+                print_enabled_configurations();
+
                 return 0;
             case KEY_UP:
                 if (highlight == 1)
@@ -98,33 +100,64 @@ void display_message(WINDOW *win, const char *message, int x, int y, char *title
     wrefresh(win);
 }
 
+void display_message2(WINDOW *win, Config config, int x, int y) {
+
+    if (config.type == BOOL && config.default_val == 1) {
+        mvwprintw(win, y, x, "(*) %s", config.prompt);
+    }
+    else if (config.type == INT) {
+        mvwprintw(win, y, x, "(%d) %s", config.default_val, config.prompt);
+    }
+    else {
+        mvwprintw(win, y, x, "( ) %s", config.prompt);
+    }
+}
+
 void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
                         int n_choices, int x, int y) {
+
     for (int i = 0; i < n_configs; ++i) {
         if (highlight == i + 1 + n_choices) {
             wattron(win, A_REVERSE);
-            if (configs[i].type == BOOL && configs[i].default_val == 1) {
-                mvwprintw(win, y, x, "(*) %s", configs[i].prompt);
-            }
-            else if (configs[i].type == INT) {
-                mvwprintw(win, y, x, "(%d) %s", configs[i].default_val, configs[i].prompt);
+
+            if (check_dependencies(configs[i])) {
+                display_message2(win, configs[i], x, y);
             }
             else {
-                mvwprintw(win, y, x, "( ) %s", configs[i].prompt);
+                if (has_colors() && start_color() == OK) {
+                    init_pair(1, COLOR_RED, COLOR_BLACK);
+                    wattron(win, COLOR_PAIR(1));
+
+                    display_message2(win, configs[i], x, y);
+
+                    wattroff(win, COLOR_PAIR(1));
+                }
+                else {
+                    display_message2(win, configs[i], x, y);
+                }
             }
+
             wattroff(win, A_REVERSE);
         }
         else {
-            if (configs[i].type == BOOL && configs[i].default_val == 1) {
-                mvwprintw(win, y, x, "(*) %s", configs[i].prompt);
-            }
-            else if (configs[i].type == INT) {
-                mvwprintw(win, y, x, "(%d) %s", configs[i].default_val, configs[i].prompt);
+            if (check_dependencies(configs[i])) {
+                display_message2(win, configs[i], x, y);
             }
             else {
-                mvwprintw(win, y, x, "( ) %s", configs[i].prompt);
+                if (has_colors() && start_color() == OK) {
+                    init_pair(1, COLOR_RED, COLOR_BLACK);
+                    wattron(win, COLOR_PAIR(1));
+
+                    display_message2(win, configs[i], x, y);
+
+                    wattroff(win, COLOR_PAIR(1));
+                }
+                else {
+                    display_message2(win, configs[i], x, y);
+                }
             }
         }
+
         ++y;
     }
 
@@ -147,7 +180,7 @@ void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices,
     wrefresh(win);
 }
 
-void display_menu(WINDOW *win, int highlight, Menu entries[], int n_entries, int x, int y) {
+void display_menu(WINDOW *win, int highlight, Menu *entries, int n_entries, int x, int y) {
     draw_window(win, getmaxx(win), "Step-by-step configuration for myOS x86_32");
 
     for (int i = 0; i < n_entries; ++i) {
@@ -205,10 +238,11 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
                 // 'y'
                 choice.configs[highlight - 1].default_val = 1;
 
-                break;
-            case 110:
-                // 'n'
-                choice.configs[highlight - 1].default_val = 0;
+                // disable all other configs
+                for (int i = 0; i < choice.n_configs; i++) {
+                    if (i != highlight - 1 && choice.configs[i].default_val == 1)
+                        choice.configs[i].default_val = 0;
+                }
 
                 break;
             default:
@@ -330,7 +364,8 @@ void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
             }
             else if (menu.configs[choice - 1 - menu.n_choices].type != BOOL) {
                 // if type is INT or STRING
-                display_int_window(win, menu.configs[choice - 1 - menu.n_choices]);
+                if (check_dependencies(menu.configs[choice - 1 - menu.n_choices]))
+                    display_int_window(win, menu.configs[choice - 1 - menu.n_choices]);
             }
 
             choice = 0;
@@ -348,5 +383,87 @@ void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
             display_message(win2, menu.configs[highlight - 1 - menu.n_choices].help_message, 1, 1, "Info");
         }
     }
+}
+
+void print_enabled_configurations(void) {
+    int n = ARRAY_SIZE(main_menu);
+
+    for (int i = 0; i < n; i++) {
+        Menu current = main_menu[i];
+
+        // get configurations from choices
+        for (int j = 0; j < current.n_choices; j++) {
+            Choice c = current.choices[j];
+
+            for (int k = 0; k < c.n_configs; k++) {
+                if (c.configs[k].default_val == 1 && c.configs[k].type == BOOL)
+                    printf("%s=y\n", c.configs[k].symbol);
+                else if (c.configs[k].type == INT)
+                    printf("%s=%d\n", c.configs[k].symbol, c.configs[k].default_val);
+            }
+        }
+
+        // get configurations
+        for (int j = 0; j < current.n_configs; j++) {
+            if (current.configs[j].default_val == 1 && current.configs[j].type == BOOL)
+                printf("%s=y\n", current.configs[j].symbol);
+            else if (current.configs[j].type == INT)
+                printf("%s=%d\n", current.configs[j].symbol, current.configs[j].default_val);
+        }
+    }
+}
+
+// checks if the given config is enabled or not
+int check_config(char *config) {
+    int n = ARRAY_SIZE(main_menu);
+
+    for (int i = 0; i < n; i++) {
+        Menu current = main_menu[i];
+
+        // get configurations from choices
+        for (int j = 0; j < current.n_choices; j++) {
+            Choice c = current.choices[j];
+
+            for (int k = 0; k < c.n_configs; k++) {
+                if (strcmp(c.configs[k].symbol, config) == 0) {
+                    if (c.configs[k].default_val != 0)
+                        return 1;
+    
+                    return 0;
+                }
+            }
+        }
+
+        // get configurations
+        for (int j = 0; j < current.n_configs; j++) {
+            if (strcmp(current.configs[j].symbol, config) == 0) {
+                if (current.configs[j].default_val != 0)
+                    return 1;
+    
+                return 0;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int check_dependencies(Config config) {
+    const char delim[] = ",";
+    char *token;
+
+    if (config.deps == NULL)
+        return 1;
+
+    token = strtok(config.deps, delim);
+
+    while (token != NULL) {
+        if (check_config(token) == 0)
+            return 0;
+
+        token = strtok(NULL, delim);
+    }
+
+    return 1;
 }
 
