@@ -80,7 +80,16 @@ Choice memory_manager_choices[] = {
 
 
 // ==============================Scheduler configurations=========================================
-Config scheduler_configs[] = {};
+Config scheduler_configs[] = {
+    {
+        "CONFIG_RR_TIME_QUANTUM",
+        "Round-Robin Time Quantum",
+        "Help message",
+        20,
+        INT,
+        "CONFIG_ROUND_ROBIN"
+    }
+};
 
 Config scheduler_alg_configs[] = {
     {

@@ -91,8 +91,9 @@ $(LIBC_AR):
 $(HEADER_FILE): .config
 	./generate_config_header.sh
 
-.config: Kconfig
-	kconfig-mconf $^
+.config: my_ncurses_menu.c my_ncurses_menu.h
+	gcc -o menu my_ncurses_menu.c -lncurses
+	./menu
 
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
@@ -100,12 +101,13 @@ run: $(TARGET)
 debug: $(TARGET)
 	$(QEMU) $(QEMUFLAGS_DEBUG)
 
-menuconfig: Kconfig
-	kconfig-mconf $^
+menuconfig: my_ncurses_menu.c my_ncurses_menu.h
+	gcc -o menu my_ncurses_menu.c -lncurses
+	./menu
 
 clean:
 	@for PROJECT in $(PROJECTS); do \
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(TARGET) create_disk_image $(HEADER_FILE)
+	rm -rf $(TARGET) create_disk_image $(HEADER_FILE) menu
