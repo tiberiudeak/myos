@@ -1,8 +1,8 @@
 #include <ncurses.h>
 #include <string.h>
-#include "my_ncurses_menu.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "my_ncurses_menu.h"
 
 int main(int argc, char *argv[]) {
     initscr();
@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     WINDOW *win1 = newwin(height, half_width, 0, 0);
     WINDOW *win2 = newwin(height, half_width, 0, half_width);
 
-    draw_window(win1, half_width, "Step-by-step configuration for myOS x86_32");
+    draw_window(win1, half_width, "myOS x86_32 Kernel Configuration");
     draw_window(win2, half_width, "Info");
 
     int choice = 0;
@@ -27,11 +27,11 @@ int main(int argc, char *argv[]) {
     int n_choices = ARRAY_SIZE(main_menu);
 
     // print main menu in win1
-    display_menu(win1, highlight, main_menu, n_choices, 2, 2);
+    display_menu(win1, highlight, main_menu, n_choices, MAIN_MENU_X, MAIN_MENU_Y);
     keypad(win1, TRUE);
 
     // display info message for the highlighted choice in win1
-    display_message(win2, main_menu[highlight-1].help, 1, 1, "Info");
+    display_message(win2, main_menu[highlight-1].help, SEC_MENU_X, SEC_MENU_Y, "Info");
 
     while (1) {
         int ch = wgetch(win1);
@@ -77,8 +77,8 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        display_menu(win1, highlight, main_menu, n_choices, 2, 2);
-        display_message(win2, main_menu[highlight-1].help, 1, 1, "Info");
+        display_menu(win1, highlight, main_menu, n_choices, MAIN_MENU_X, MAIN_MENU_Y);
+        display_message(win2, main_menu[highlight-1].help, SEC_MENU_X, SEC_MENU_Y, "Info");
     }
 
     delwin(win1);
@@ -89,6 +89,11 @@ int main(int argc, char *argv[]) {
 
 void draw_window(WINDOW *win, int width, const char *title) {
     werase(win);
+
+    // print navigation help only in the main window
+    if (win->_begx == 0 && win->_begy == 0)
+        mvwprintw(win, 2, 2, "%s", navigation_info);
+
     box(win, 0, 0);
     int startx = (width - strlen(title)) / 2;
     mvwprintw(win, 0, startx, "%s", title);
@@ -97,8 +102,10 @@ void draw_window(WINDOW *win, int width, const char *title) {
 
 void display_message(WINDOW *win, const char *message, int x, int y, char *title) {
     werase(win);
-    mvwprintw(win, y, x, "%s", message);
     draw_window(win, getmaxx(win), title);
+    mvwprintw(win, y, x, "%s", message);
+    box(win, 0, 0);
+    mvwprintw(win, 0, (getmaxx(win) - strlen(title)) / 2, "%s", title);
     wrefresh(win);
 }
 
@@ -144,7 +151,7 @@ void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
                     wattroff(win, COLOR_PAIR(1));
                 }
                 else {
-                    display_message2(win, configs[i], x, y, NULL);
+                    display_message2(win, configs[i], x, y, "(unmet dependencies)");
                 }
             }
 
@@ -164,7 +171,7 @@ void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
                     wattroff(win, COLOR_PAIR(1));
                 }
                 else {
-                    display_message2(win, configs[i], x, y, NULL);
+                    display_message2(win, configs[i], x, y, "(unmet dependencies)");
                 }
             }
         }
@@ -192,7 +199,7 @@ void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices,
 }
 
 void display_menu(WINDOW *win, int highlight, Menu *entries, int n_entries, int x, int y) {
-    draw_window(win, getmaxx(win), "Step-by-step configuration for myOS x86_32");
+    draw_window(win, getmaxx(win), "myOS x86_32 Kernel Configuration");
 
     for (int i = 0; i < n_entries; ++i) {
         if (highlight == i + 1) {
@@ -220,7 +227,7 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
     int highlight = 1;
 
     display_configs(choice_win, highlight, choice.configs,
-            choice.n_configs, 0, 2, 2);
+            choice.n_configs, 0, SEC_MENU_X, SEC_MENU_Y);
 
     wrefresh(choice_win);
 
@@ -261,7 +268,7 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
         }
 
         display_configs(choice_win, highlight, choice.configs,
-                choice.n_configs, 0, 2, 2);
+                choice.n_configs, 0, SEC_MENU_X, SEC_MENU_Y);
     }
 }
 
@@ -318,16 +325,18 @@ void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
         return;
 
     if (menu.choices != NULL) {
-        display_choices(new_window, highlight, menu.choices, menu.n_choices, 2, 2);
-        display_message(win2, menu.choices[0].help_message, 1, 1, "Info");
+        display_choices(new_window, highlight, menu.choices, menu.n_choices,
+                MAIN_MENU_X, MAIN_MENU_Y);
+        display_message(win2, menu.choices[0].help_message, SEC_MENU_X, SEC_MENU_Y, "Info");
     }
 
     if (menu.configs != NULL && menu.choices != NULL)
         display_configs(new_window, highlight, menu.configs, menu.n_configs,
-                menu.n_choices, 2, menu.n_choices + 2);
+                menu.n_choices, MAIN_MENU_X, menu.n_choices + MAIN_MENU_Y);
     else {
-        display_configs(new_window, highlight, menu.configs, 0, menu.n_configs, 2, 2);
-        display_message(win2, menu.configs[0].help_message, 1, 1, "Info");
+        display_configs(new_window, highlight, menu.configs, 0, menu.n_configs,
+                MAIN_MENU_X, MAIN_MENU_Y);
+        display_message(win2, menu.configs[0].help_message, SEC_MENU_X, SEC_MENU_Y, "Info");
     }
 
     int total_entries = menu.n_choices + menu.n_configs;
@@ -392,15 +401,18 @@ void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
         }
 
         draw_window(new_window, width, menu.prompt);
-        display_choices(new_window, highlight, menu.choices, menu.n_choices, 2, 2);
+        display_choices(new_window, highlight, menu.choices, menu.n_choices,
+                            MAIN_MENU_X, MAIN_MENU_Y);
         display_configs(new_window, highlight, menu.configs, menu.n_configs,
-                            menu.n_choices, 2, menu.n_choices + 2);
+                            menu.n_choices, MAIN_MENU_X, menu.n_choices + MAIN_MENU_Y);
 
         if (highlight <= menu.n_choices) {
-            display_message(win2, menu.choices[highlight - 1].help_message, 1, 1, "Info");
+            display_message(win2, menu.choices[highlight - 1].help_message,
+                    SEC_MENU_X, SEC_MENU_Y, "Info");
         }
         else {
-            display_message(win2, menu.configs[highlight - 1 - menu.n_choices].help_message, 1, 1, "Info");
+            display_message(win2, menu.configs[highlight - 1 - menu.n_choices].help_message,
+                    SEC_MENU_X, SEC_MENU_Y, "Info");
         }
     }
 }

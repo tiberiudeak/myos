@@ -3,7 +3,15 @@
 
 #include <ncurses.h>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
+#define ARRAY_SIZE(a)   (sizeof(a) / sizeof(a[0]))
+
+// lower text for navigation information - need to be increased if
+// lines are added to the navigation_info string
+#define MAIN_MENU_Y     6
+#define MAIN_MENU_X     2
+
+#define SEC_MENU_X      2
+#define SEC_MENU_Y      2
 
 typedef enum {
     INT, BOOL
@@ -453,39 +461,56 @@ Choice shell_choices[] = {
 };
 // ===============================================================================================
 
-
+char navigation_info[] = "Arrow keys navigate the menu. Enter selects menus/submenus (-->).\n\
+  Pressing 'Y' includes/enables, 'N' excludes/disables features. Press 'q' to exit\n\
+  Legend: (*) enabled, ( ) excluded";
 
 Menu main_menu[] = {
     {"General Setup",
-    "General Setup help message",
+    "General Setup Menu\n\n\
+    The General Setup Menu allows you to configure basic and essential settings\n\
+    for your operating system. This includes fundamental options that define the\n\
+    overall behavior and properties of the system.",
     general_setup_choices,
     general_setup_configs,
     ARRAY_SIZE(general_setup_choices),
     ARRAY_SIZE(general_setup_configs)},
 
     {"Memory Manager",
-    "Memory Manager",
+    "Memory Manager Menu\n\n\
+    The Memory Manager is a critical component of the operating system responsible\n\
+    for handling all aspects of memory allocation, management and protection. This menu\n\
+    allows you to configure various settings that determine how memory is managed to\n\
+    ensure efficient and secure operation of the system.",
     memory_manager_choices,
     memory_manager_configs,
     ARRAY_SIZE(memory_manager_choices),
     ARRAY_SIZE(memory_manager_configs)},
 
     {"Scheduler",
-    "Scheduler configurations",
+    "Scheduler configurations\n\n\
+    Another crucial part of the operating system is the scheduler, managing the execution\n\
+    of processes by determining which process runs at any given time. This menu allows you\n\
+    to configure various aspects of the scheduling algorithm, ensuring efficient CPU\n\
+    utilization and responsive multitasking.",
     scheduler_choices,
     scheduler_configs,
     ARRAY_SIZE(scheduler_choices),
     ARRAY_SIZE(scheduler_configs)},
 
     {"Shell",
-    "Shell configurations",
+    "Shell configurations\n\n\
+    The shell is the command-line interface of the operating system, allowing you to\n\
+    interact with the system through commands. This menu provides options to configure\n\
+    aspects of the shell environment, enhancing usability, functionality and customization.",
     shell_choices,
     shell_configs,
     ARRAY_SIZE(shell_choices),
     ARRAY_SIZE(shell_configs)},
 
     {"Exit",
-    "Exit",
+    "Exit\n\n\
+    This is the exit. Exiting this menu will automatically save the configurations!",
     NULL,
     NULL,
     0,
