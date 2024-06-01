@@ -229,6 +229,8 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
     display_configs(choice_win, highlight, choice.configs,
             choice.n_configs, 0, SEC_MENU_X, SEC_MENU_Y);
 
+    display_message(win2, choice.configs[0].help_message, SEC_MENU_X, SEC_MENU_Y, "Info");
+
     wrefresh(choice_win);
 
     while (1) {
@@ -269,6 +271,7 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
 
         display_configs(choice_win, highlight, choice.configs,
                 choice.n_configs, 0, SEC_MENU_X, SEC_MENU_Y);
+        display_message(win2, choice.configs[highlight-1].help_message, SEC_MENU_X, SEC_MENU_Y, "Info");
     }
 }
 

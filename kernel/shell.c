@@ -72,7 +72,7 @@ void tokenize(const char *str, char **argv) {
 
 void show_available_commands(void) {
     printk("Available commands:\n");
-    printk("\tmemmap\t - display memory map layout created by the E280 BIOS function\n");
+    printk("\tmemmap\t - display memory map layout created by the E820 BIOS function\n");
     printk("\tuptime\t - display the uptime in milliseconds\n");
     printk("\tpmeminfo - display information about the physical memory\n");
 #ifdef CONFIG_RTC

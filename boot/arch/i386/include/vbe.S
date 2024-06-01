@@ -83,8 +83,19 @@ vbe_get_info:
     cmp $0x4F, %ax              # if AX != 0x004F, error
     jne .vbe_error
 
-
     # print mode information (debug)
+    # mov (VbeModeInfoBlock+25), %bx
+    # and $0x00FF, %bx
+    # cmp $0x20, %bx
+    # jne something
+    # push %bx
+    # call print_hex
+    # add $0x2, %sp
+    # mov $0xE0A, %ax
+    # int $0x10
+    # mov $0x0D, %al
+    # int $0x10
+
     # mov (VbeModeInfoBlock+18), %bx
     # push %bx
     # call print_hex
@@ -99,15 +110,7 @@ vbe_get_info:
     # mov $0xE20, %ax
     # int $0x10
 
-    # mov (VbeModeInfoBlock+25), %bx
-    # and $0x00FF, %bx
-    # push %bx
-    # call print_hex
-    # add $0x2, %sp
-    # mov $0xE0A, %ax
-    # int $0x10
-    # mov $0x0D, %al
-    # int $0x10
+# something:
 
     # check if current mode is the one we wanted
     mov (VbeModeInfoBlock+18), %ax  # move the width in AX
@@ -125,7 +128,6 @@ vbe_get_info:
     and $0x00FF, %ax                # get only the bpp byte
     cmp %bx, %ax                    # compare the bpps
     jne .vbe_goto_next_mode
-
 
     # desired mode found, now set it
     mov $0x4F02, %ax                # AX will be 0x4F02 (set video mode)
