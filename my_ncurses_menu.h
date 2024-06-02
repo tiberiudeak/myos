@@ -377,7 +377,49 @@ Config scheduler_configs[] = {
     {
         "CONFIG_RR_TIME_QUANTUM",
         "Round-Robin Time Quantum",
-        "Help message",
+        "Round Robin Time Quantum\n\n\
+        The Round Robin Time Quantum configuration sets the length of time, in milliseconds,\n\
+        that each process is allowed to run before the CPU switches to the next process in the\n\
+        ready queue. This value is crucial in the Round Robin scheduling algorithm, determining\n\
+        the maximum amount of time a process can execute before being preempted to give other\n\
+        processes a chance to run.\n\n\
+        Key Features:\n\n\
+        - Time-Slice Allocation: Defines the duration each process can use the CPU before being\n\
+                    preempted.\n\
+        - Preemption: Ensures that processes are interrupted after their time quantum expires,\n\
+                    allowing for a more equitable distribution of CPU time among processes.\n\
+        - Responsiveness: Smaller time quantums can improve the system's responsiveness, making it\n\
+                    suitable for interactive and real-time systems.\n\n\
+        Considerations:\n\n\
+        - Short Time Quantum:\n\
+            Pros:\n\
+                - Improved Responsiveness: Shorter time slices make the system more responsive,\n\
+                    which is ideal for interactive applications where quick user feedback is\n\
+                    important.\n\
+                - Fairness: Ensures that all processes get frequent CPU access, improving overall\n\
+                    fairness.\n\
+            Cons:\n\
+                - Increased Overhead: More frequent context switches can lead to higher overhead,\n\
+                    reducing overall system efficiency.\n\
+                - Higher Latency for Long Processes: Processes that require more CPU time may\n\
+                    experience higher completion time due to frequent interruptions.\n\n\
+        - Long Time Quantum:\n\
+            Pros:\n\
+                - Reduced Overhead: Fewer context switches decrease the overhead, potentially\n\
+                    improving system efficiency.\n\
+                - Better for CPU-Bound Processes: Longer time slices benefit CPU-bound processes,\n\
+                    allowing them to complete tasks without frequent interruptions.\n\
+            Cons:\n\
+                - Reduced Responsiveness: Longer time slices can lead to slower response times,\n\
+                    making the system less suitable for interactive applications.\n\
+                - Potential for Uneven Distribution: Processes that require less CPU time might\n\
+                    have to wait longer, reducing perceived fairness.\n\n\
+        Choosing the optimal time quantum is a balance between responsiveness and efficiency.\n\
+        The ideal value depends on the specific requirements of your system and the nature of the\n\
+        processes running. Interactive Systems: Smaller time quantum (e.g., 20-50 milliseconds) to\n\
+        ensure high responsiveness and quick user feedback. Batch Systems: Larger time quantum\n\
+        (e.g., 100-200 milliseconds) to minimize overhead and allow longer processes to run more\n\
+        efficiently.",
         20,
         INT,
         "CONFIG_ROUND_ROBIN"
@@ -387,8 +429,44 @@ Config scheduler_configs[] = {
 Config scheduler_alg_configs[] = {
     {
         "CONFIG_ROUND_ROBIN",
-        "Round-Robin",
-        "Help message",
+        "Round-Robin (RR)",
+        "Round Robin Scheduling Algorithm\n\n\
+        The Round Robin (RR) scheduling algorithm is a widely used and straightforward approach\n\
+        for managing the execution of processes in a time-sharing operating system. In Round\n\
+        Robin scheduling, each process is assigned a fixed time slice, or quantum, during which\n\
+        it is allowed to execute. Once a process's quantum expires, the next process in the ready\n\
+        queue is given the CPU. This cycle continues until all processes have completed their\n\
+        execution.\n\n\
+        Key Features:\n\n\
+        - Time Slices (Quanta): Each process is assigned a small unit of CPU time called a time\n\
+                        slice or quantum. The size of the quantum can significantly impact the\n\
+                        performance and responsiveness of the system.\n\
+        - Preemption: If a process does not finish its execution within its allocated time slice,\n\
+                        it is preempted and moved to the back of the ready queue, allowing the next\n\
+                        process to run.\n\
+        - Fairness: RR ensures that all processes get an equal share of the CPU, preventing any\n\
+                        single process from monopolizing the CPU.\n\n\
+        Pros:\n\n\
+        - Fairness: Each process gets an equal opportunity to execute, making RR ideal for\n\
+                        time-sharing systems where multiple applications need to share the CPU.\n\
+        - Responsiveness: RR provides good response times for short processes, as no process has to\n\
+                        wait too long before getting another turn on the CPU.\n\n\
+        Cons:\n\n\
+        - Context Switching Overhead: Frequent context switches can occur, especially if the time\n\
+                        quantum is small, leading to overhead that can degrade overall system\n\
+                        performance.\n\
+        - Performance Sensitivity: The performance of RR is highly sensitive to the choice of the\n\
+                        time quantum. If the quantum is too large, RR behaves like FCFS; if too\n\
+                        small, context switching overhead increases.\n\n\
+        Use Cases:\n\n\
+        - Time-Sharing Systems: RR is particularly well-suited for time-sharing systems where\n\
+                        multiple users or tasks need to share the CPU fairly.\n\
+        - Interactive Systems: Systems that require good responsiveness for user interactions,\n\
+                        such as desktop operating systems and interactive applications, can\n\
+                        benefit from RR scheduling.\n\n\n\
+        By selecting the Round Robin scheduling algorithm, you ensure that your operating system\n\
+        can handle multiple processes efficiently and fairly, providing a balanced approach to CPU\n\
+        time allocation that can enhance the responsiveness and usability of the system.",
         1,
         BOOL,
         NULL
@@ -396,8 +474,44 @@ Config scheduler_alg_configs[] = {
 
     {
         "CONFIG_SIMPLE_SCH",
-        "Simple",
-        "Help message",
+        "First Come First Served (FCFS)",
+        "First Come First Served Scheduling Algorithm\n\n\
+        The First Come First Served (FCFS) scheduling algorithm is the simplest and most\n\
+        straightforward process scheduling approach used in this operating system. In FCFS\n\
+        scheduling, processes are executed in the order they arrive in the ready queue. The\n\
+        process that arrives first is executed first, and once a process starts execution, it\n\
+        runs to completion without being preempted.\n\n\
+        Key Features:\n\n\
+        - Order of Arrival: Processes are executed in the exact order they arrive in the ready\n\
+                queue.\n\
+        - Non-Preemptive: Once a process starts executing, it runs until it finishes, without\n\
+                being interrupted by other processes.\n\n\
+        Pros:\n\n\
+        - Predictability: The execution order is predictable, which can simplify the analysis and\n\
+                understanding of system behavior.\n\
+        - Simplicity: The implementation is straightforward and requires minimal overhead, making\n\
+                it easy to understand and maintain.\n\n\
+        Cons:\n\n\
+        - Convoy Effect: Short processes stuck waiting behind long processes can cause the system\n\
+                to become inefficient, known as the convoy effect.\n\
+        - Starvation: If a process runs indefinitely, other processes won't have a chance to run,\n\
+                leading to potential starvation.\n\
+        - Poor Performance for Time-Sharing Systems: FCFS is not suitable for interactive or\n\
+                time-sharing systems where responsiveness and fairness are important.\n\n\
+        Use Cases:\n\n\
+        - Batch Systems: FCFS is well-suited for batch processing systems where jobs are processed\n\
+                in the order they arrive, and turnaround time is more important than response time.\n\
+        - Simple and Predictable Environments: Environments where simplicity and predictability\n\
+                are more valuable than efficiency, such as simple embedded systems or educational\n\
+                environments.\n\
+        - Non-Interactive Systems: Systems where processes do not require frequent interaction or\n\
+                quick response times, as FCFS can handle a continuous flow of batch jobs\n\
+                effectively.\n\n\n\
+        By choosing the First Come First Served scheduling algorithm, you ensure a straightforward\n\
+        and predictable approach to process scheduling. While it may not be the most efficient for\n\
+        all scenarios, its simplicity and fairness can be advantageous in specific use cases,\n\
+        providing a clear and easy-to-understand method for managing process execution in your\n\
+        operating system.",
         0,
         BOOL,
         NULL
@@ -407,7 +521,13 @@ Config scheduler_alg_configs[] = {
 Choice scheduler_choices[] = {
     {
         "Scheduling Algorithm",
-        "Help message",
+        "Scheduling Algorithm\n\n\
+        The Scheduling Algorithm configuration menu allows you to choose the algorithm used by\n\
+        the operating system's scheduler to manage the execution of processes. The scheduler is a\n\
+        critical component of the operating system that decides which process runs at any given\n\
+        time, ensuring efficient CPU utilization and responsive system performance. Each scheduling\n\
+        algorithm has its own characteristics, advantages, and disadvantages, making them suitable\n\
+        for different types of workloads and system requirements.",
         scheduler_alg_configs,
         ARRAY_SIZE(scheduler_alg_configs)
     }
