@@ -31,7 +31,7 @@ void PIT_IRQ0_handler(interrupt_regs *r) {
 	ticks++;
 	uptime++;
 
-#ifndef CONFIG_SIMPLE_SCH
+#ifndef CONFIG_FCFS_SCH
     // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
@@ -92,7 +92,7 @@ rr_sch:
 
         current_running_task->state = TASK_RUNNING;
     }
-#endif /* !CONFIG_SIMPLE_SCH */
+#endif /* !CONFIG_FCFS_SCH */
 }
 
 /**

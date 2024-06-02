@@ -19,12 +19,18 @@ int main(int argc, char *argv[]) {
     WINDOW *win1 = newwin(height, half_width, 0, 0);
     WINDOW *win2 = newwin(height, half_width, 0, half_width);
 
-    draw_window(win1, half_width, "myOS x86_32 Kernel Configuration");
+    draw_window(win1, half_width, main_menu_title);
     draw_window(win2, half_width, "Info");
 
     int choice = 0;
     int highlight = 1;
+
+    // if step by step, only the first menu is visible from the start
+#ifdef STEP_BY_STEP
+    int n_choices = 1;
+#else
     int n_choices = ARRAY_SIZE(main_menu);
+#endif
 
     // print main menu in win1
     display_menu(win1, highlight, main_menu, n_choices, MAIN_MENU_X, MAIN_MENU_Y);
@@ -64,6 +70,12 @@ int main(int argc, char *argv[]) {
                 break;
         }
 
+#ifdef STEP_BY_STEP
+        if (choice != 0) {
+            display_submenu(win1, main_menu[choice-1], win2);
+            choice = 0;
+        }
+#else
         if (choice != 0) {
             if (choice == n_choices) {
                 endwin();
@@ -71,14 +83,29 @@ int main(int argc, char *argv[]) {
             }
             else {
                 // process choice
-                //display_message(win2, "Something is selected", 1, 1);
                 display_submenu(win1, main_menu[choice-1], win2);
                 choice = 0;
             }
         }
+#endif
+
+#ifdef STEP_BY_STEP
+    n_choices = 1;
+
+    for (int i = 0; i < ARRAY_SIZE(main_menu); i++) {
+        for (int j = 0; j < main_menu[i].n_configs; j++) {
+            if (main_menu[i].configs[j].prompt != NULL &&
+                strcmp(main_menu[i].configs[j].prompt, "Done") == 0 &&
+                main_menu[i].configs[j].default_val == 1) {
+                n_choices++;
+            }
+        }
+    }
+#endif
 
         display_menu(win1, highlight, main_menu, n_choices, MAIN_MENU_X, MAIN_MENU_Y);
         display_message(win2, main_menu[highlight-1].help, SEC_MENU_X, SEC_MENU_Y, "Info");
+
     }
 
     delwin(win1);
@@ -199,7 +226,7 @@ void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices,
 }
 
 void display_menu(WINDOW *win, int highlight, Menu *entries, int n_entries, int x, int y) {
-    draw_window(win, getmaxx(win), "myOS x86_32 Kernel Configuration");
+    draw_window(win, getmaxx(win), main_menu_title);
 
     for (int i = 0; i < n_entries; ++i) {
         if (highlight == i + 1) {
@@ -378,7 +405,14 @@ void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
                 // 'n'
                 if (highlight > menu.n_choices &&
                         check_dependencies(menu.configs[highlight - 1 - menu.n_choices])) {
+#ifdef STEP_BY_STEP
+                    // once 'Done' is selected, if cannot be disabled
+                    if (strcmp(menu.configs[highlight - 1 - menu.n_choices].prompt, "Done")
+                            != 0)
                     menu.configs[highlight - 1 - menu.n_choices].default_val = 0;
+#else
+                    menu.configs[highlight - 1 - menu.n_choices].default_val = 0;
+#endif
                 }
 
                 break;

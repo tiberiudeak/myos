@@ -128,7 +128,19 @@ Config general_setup_configs[] = {
         current date and time from the command line.",
         1,
         BOOL,
-        NULL}
+        NULL
+    }
+#ifdef STEP_BY_STEP
+    ,{
+        "CONFIG_DONE",
+        "Done",
+        "Select when done with the configurations in the current menu in order to have access\n\
+        to the next menu",
+        0,
+        BOOL,
+        NULL
+    }
+#endif
 };
 
 Config video_mode_configs[] = {
@@ -212,6 +224,17 @@ Config memory_manager_configs[] = {
         BOOL,
         NULL
     }
+#ifdef STEP_BY_STEP
+    ,{
+        "CONFIG_DONE",
+        "Done",
+        "Select when done with the configurations in the current menu in order to have access\n\
+        to the next menu",
+        0,
+        BOOL,
+        NULL
+    }
+#endif
 };
 
 Config mem_alloc_alg_configs[] = {
@@ -424,6 +447,17 @@ Config scheduler_configs[] = {
         INT,
         "CONFIG_ROUND_ROBIN"
     }
+#ifdef STEP_BY_STEP
+    ,{
+        "CONFIG_DONE",
+        "Done",
+        "Select when done with the configurations in the current menu in order to have access\n\
+        to the next menu",
+        0,
+        BOOL,
+        NULL
+    }
+#endif
 };
 
 Config scheduler_alg_configs[] = {
@@ -473,7 +507,7 @@ Config scheduler_alg_configs[] = {
     },
 
     {
-        "CONFIG_SIMPLE_SCH",
+        "CONFIG_FCFS_SCH",
         "First Come First Served (FCFS)",
         "First Come First Served Scheduling Algorithm\n\n\
         The First Come First Served (FCFS) scheduling algorithm is the simplest and most\n\
@@ -562,6 +596,17 @@ Config shell_configs[] = {
         INT,
         "CONFIG_SH_HISTORY"
     }
+#ifdef STEP_BY_STEP
+    ,{
+        "CONFIG_DONE",
+        "Done",
+        "Select when done with the configurations in the current menu in order to have access\n\
+        to the next menu",
+        0,
+        BOOL,
+        NULL
+    }
+#endif
 };
 
 Config shell_fgc_configs[] = {
@@ -882,56 +927,72 @@ char navigation_info[] = "Use the arrow keys navigate the menu. Enter selects me
   Legend: (*) enabled, ( ) excluded";
 
 Menu main_menu[] = {
-    {"General Setup",
-    "General Setup Menu\n\n\
-    The General Setup Menu allows you to configure basic and essential settings\n\
-    for your operating system. This includes fundamental options that define the\n\
-    overall behavior and properties of the system.",
-    general_setup_choices,
-    general_setup_configs,
-    ARRAY_SIZE(general_setup_choices),
-    ARRAY_SIZE(general_setup_configs)},
+    {
+        "General Setup",
+        "General Setup Menu\n\n\
+        The General Setup Menu allows you to configure basic and essential settings\n\
+        for your operating system. This includes fundamental options that define the\n\
+        overall behavior and properties of the system.",
+        general_setup_choices,
+        general_setup_configs,
+        ARRAY_SIZE(general_setup_choices),
+        ARRAY_SIZE(general_setup_configs)
+    },
 
-    {"Memory Manager",
-    "Memory Manager Menu\n\n\
-    The Memory Manager is a critical component of the operating system responsible\n\
-    for handling all aspects of memory allocation, management and protection. This menu\n\
-    allows you to configure various settings that determine how memory is managed to\n\
-    ensure efficient and secure operation of the system.",
-    memory_manager_choices,
-    memory_manager_configs,
-    ARRAY_SIZE(memory_manager_choices),
-    ARRAY_SIZE(memory_manager_configs)},
+    {
+        "Memory Manager",
+        "Memory Manager Menu\n\n\
+        The Memory Manager is a critical component of the operating system responsible\n\
+        for handling all aspects of memory allocation, management and protection. This menu\n\
+        allows you to configure various settings that determine how memory is managed to\n\
+        ensure efficient and secure operation of the system.",
+        memory_manager_choices,
+        memory_manager_configs,
+        ARRAY_SIZE(memory_manager_choices),
+        ARRAY_SIZE(memory_manager_configs)
+    },
 
-    {"Scheduler",
-    "Scheduler Configurations\n\n\
-    Another crucial part of the operating system is the scheduler, managing the execution\n\
-    of processes by determining which process runs at any given time. This menu allows you\n\
-    to configure various aspects of the scheduling algorithm, ensuring efficient CPU\n\
-    utilization and responsive multitasking.",
-    scheduler_choices,
-    scheduler_configs,
-    ARRAY_SIZE(scheduler_choices),
-    ARRAY_SIZE(scheduler_configs)},
+    {
+        "Scheduler",
+        "Scheduler Configurations\n\n\
+        Another crucial part of the operating system is the scheduler, managing the execution\n\
+        of processes by determining which process runs at any given time. This menu allows you\n\
+        to configure various aspects of the scheduling algorithm, ensuring efficient CPU\n\
+        utilization and responsive multitasking.",
+        scheduler_choices,
+        scheduler_configs,
+        ARRAY_SIZE(scheduler_choices),
+        ARRAY_SIZE(scheduler_configs)
+    },
 
-    {"Shell",
-    "Shell Configurations\n\n\
-    The shell is the command-line interface of the operating system, allowing you to\n\
-    interact with the system through commands. This menu provides options to configure\n\
-    aspects of the shell environment, enhancing usability, functionality and customization.",
-    shell_choices,
-    shell_configs,
-    ARRAY_SIZE(shell_choices),
-    ARRAY_SIZE(shell_configs)},
+    {
+        "Shell",
+        "Shell Configurations\n\n\
+        The shell is the command-line interface of the operating system, allowing you to\n\
+        interact with the system through commands. This menu provides options to configure\n\
+        aspects of the shell environment, enhancing usability, functionality and customization.",
+        shell_choices,
+        shell_configs,
+        ARRAY_SIZE(shell_choices),
+        ARRAY_SIZE(shell_configs)
+    },
 
-    {"Exit",
-    "Exit\n\n\
-    This is the exit. Exiting this menu will automatically save the configurations!",
-    NULL,
-    NULL,
-    0,
-    0},
+    {
+        "Exit",
+        "Exit\n\n\
+        This is the exit. Exiting this menu will automatically save the configurations!",
+        NULL,
+        NULL,
+        0,
+        0
+    },
 };
+
+#ifdef STEP_BY_STEP
+char *main_menu_title = "myOS x86_64 Step-by-Step Kernel Configuration";
+#else
+char *main_menu_title = "myOS x86_64 Kernel Configuration";
+#endif
 
 void draw_window(WINDOW *win, int width, const char *title);
 void display_message(WINDOW *win, const char *message, int x, int y, char *title);

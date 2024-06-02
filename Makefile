@@ -105,6 +105,10 @@ menuconfig: my_ncurses_menu.c my_ncurses_menu.h
 	gcc -o menu my_ncurses_menu.c -lncurses
 	./menu
 
+menuconfig-steps: my_ncurses_menu.c my_ncurses_menu.h
+	gcc -DSTEP_BY_STEP -o menu my_ncurses_menu.c -lncurses
+	./menu
+
 clean:
 	@for PROJECT in $(PROJECTS); do \
 		$(MAKE) -C $$PROJECT clean; \

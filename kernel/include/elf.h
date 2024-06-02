@@ -85,7 +85,7 @@ typedef struct {
 void elf_after_program_execution(int);
 uint8_t prepare_elf_execution(int, char**);
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
     int32_t execute_elf(int, char**);
 #endif
 

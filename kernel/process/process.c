@@ -120,7 +120,7 @@ void destroy_task(task_struct *task) {
     kfree(task);
 }
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
 void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
 
     // save current context somehow to restore it when exit is called?
@@ -148,5 +148,5 @@ void enter_usermode(uint32_t entry_point, uint32_t stack_address) {
                           "iret\n"              // perform iret
                           : : "b"(stack_address), "r"(entry_point));
 }
-#endif /* CONFIG_SIMPLE_SCH */
+#endif /* CONFIG_FCFS_SCH */
 

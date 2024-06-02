@@ -56,7 +56,7 @@ typedef struct {
 task_struct *create_task(void *, int, char**, int);
 void destroy_task(task_struct *);
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
     void enter_usermode(uint32_t, uint32_t);
 #endif
 

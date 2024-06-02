@@ -13,7 +13,7 @@ CONFIG_READ_AFTER_FREE_PROT (after each free the memory is zeroed)
 
 # Scheduler
 CONFIG_ROUND_ROBIN (round-robin scheduling algorithm)
-CONFIG_SIMPLE_SCH (simple scheduling alg. - executing a task until finished)
+CONFIG_FCFS_SCH (simple scheduling alg. - executing a task until finished)
 CONFIG_RR_TIME_QUANTUM (time quantum for the round-robin scheduler)
 
 # Shell

@@ -67,7 +67,7 @@ task_struct *dequeue_task(void) {
     return task;
 }
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
 /**
  * @brief Initialize the scheduler task queue
  *

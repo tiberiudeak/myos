@@ -473,7 +473,7 @@ err2:
     return 1;
 }
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
 int32_t execute_elf(int argc, char **argv) {
     if (argc < 1) {
         printk("argc has to be at least 1!\n");
@@ -546,5 +546,5 @@ err2:
     restore_kernel_address_space();
     return 1;
 }
-#endif /* CONFIG_SIMPLE_SCH */
+#endif /* CONFIG_FCFS_SCH */
 

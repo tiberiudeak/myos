@@ -93,7 +93,7 @@ void kmain() {
     printk("-- type help for available commands --\n\n");
 	shell_init();               // initialize the shell
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
     ret = scheduler_init();
 
     if (ret) {

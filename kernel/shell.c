@@ -80,7 +80,7 @@ void show_available_commands(void) {
 #endif
     printk("\tdl\t\t - display information about the disk layout (from the superblock)\n");
     printk("\tls\t\t - list the contents of the current directory\n");
-#ifndef CONFIG_SIMPLE_SCH
+#ifndef CONFIG_FCFS_SCH
     printk("\tps\t\t - print processes in the scheduler's task queue\n");
 #endif
 #ifdef CONFIG_SH_HISTORY
@@ -165,7 +165,7 @@ void shell_exec_command(char *command) {
         tokenize(command, argv);
 
         // create new task
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
         task_struct *new_task = create_task(execute_elf, number_params, argv, 1);
 #else
         task_struct *new_task = create_task(NULL, number_params, argv, 1);
@@ -196,7 +196,7 @@ void shell_exec_command(char *command) {
 	}
 #endif
 
-#ifndef CONFIG_SIMPLE_SCH
+#ifndef CONFIG_FCFS_SCH
 	else if (strncmp(command, "ps", 2) == 0) {
         display_running_processes();
 	}

@@ -20,7 +20,7 @@ typedef struct {
 void enqueue_task(task_struct *task);
 task_struct *dequeue_task(void);
 
-#ifdef CONFIG_SIMPLE_SCH
+#ifdef CONFIG_FCFS_SCH
 uint8_t scheduler_init(void);
 uint8_t init_task_queue(void);
 void simple_task_scheduler(void);
