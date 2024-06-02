@@ -42,35 +42,35 @@
 
 #ifdef CONFIG_TTY_VBE
 
-#ifdef CONFIG_SH_BKC_BLUE
+#ifdef CONFIG_SH_BGC_BLUE
     static const uint32_t background_color = VBE_COLOR_BLUE;
-#elif CONFIG_SH_BKC_GREEN
+#elif CONFIG_SH_BGC_GREEN
     static const uint32_t background_color = VBE_COLOR_GREEN;
-#elif CONFIG_SH_BKC_CYAN
+#elif CONFIG_SH_BGC_CYAN
     static const uint32_t background_color = VBE_COLOR_CYAN;
-#elif CONFIG_SH_BKC_RED
+#elif CONFIG_SH_BGC_RED
     static const uint32_t background_color = VBE_COLOR_RED;
-#elif CONFIG_SH_BKC_MAGENTA
+#elif CONFIG_SH_BGC_MAGENTA
     static const uint32_t background_color = VBE_COLOR_MAGENTA;
-#elif CONFIG_SH_BKC_BROWN
+#elif CONFIG_SH_BGC_BROWN
     static const uint32_t background_color = VBE_COLOR_BROWN;
-#elif CONFIG_SH_BKC_LIGHT_GREY
+#elif CONFIG_SH_BGC_LIGHT_GREY
     static const uint32_t background_color = VBE_COLOR_LIGHT_GREY;
-#elif CONFIG_SH_BKC_DARK_GREY
+#elif CONFIG_SH_BGC_DARK_GREY
     static const uint32_t background_color = VBE_COLOR_DARK_GREY;
-#elif CONFIG_SH_BKC_LIGHT_BLUE
+#elif CONFIG_SH_BGC_LIGHT_BLUE
     static const uint32_t background_color = VBE_COLOR_LIGHT_BLUE;
-#elif CONFIG_SH_BKC_LIGHT_GREEN
+#elif CONFIG_SH_BGC_LIGHT_GREEN
     static const uint32_t background_color = VBE_COLOR_LIGHT_GREEN;
-#elif CONFIG_SH_BKC_LIGHT_CYAN
+#elif CONFIG_SH_BGC_LIGHT_CYAN
     static const uint32_t background_color = VBE_COLOR_LIGHT_CYAN;
-#elif CONFIG_SH_BKC_LIGHT_RED
+#elif CONFIG_SH_BGC_LIGHT_RED
     static const uint32_t background_color = VBE_COLOR_LIGHT_RED;
-#elif CONFIG_SH_BKC_LIGHT_MAGENTA
+#elif CONFIG_SH_BGC_LIGHT_MAGENTA
     static const uint32_t background_color = VBE_COLOR_LIGHT_MAGENTA;
-#elif CONFIG_SH_BKC_LIGHT_BROWN
+#elif CONFIG_SH_BGC_LIGHT_BROWN
     static const uint32_t background_color = VBE_COLOR_LIGHT_BROWN;
-#elif CONFIG_SH_BKC_WHITE
+#elif CONFIG_SH_BGC_WHITE
     static const uint32_t background_color = VBE_COLOR_WHITE;
 #else
     static const uint32_t background_color = VBE_COLOR_BLACK;
@@ -79,35 +79,35 @@
 #else
 #include "vga.h"
 
-#ifdef CONFIG_SH_BKC_BLUE
+#ifdef CONFIG_SH_BGC_BLUE
     static const uint8_t background_color = VGA_COLOR_BLUE;
-#elif CONFIG_SH_BKC_GREEN
+#elif CONFIG_SH_BGC_GREEN
     static const uint8_t background_color = VGA_COLOR_GREEN;
-#elif CONFIG_SH_BKC_CYAN
+#elif CONFIG_SH_BGC_CYAN
     static const uint8_t background_color = VGA_COLOR_CYAN;
-#elif CONFIG_SH_BKC_RED
+#elif CONFIG_SH_BGC_RED
     static const uint8_t background_color = VGA_COLOR_RED;
-#elif CONFIG_SH_BKC_MAGENTA
+#elif CONFIG_SH_BGC_MAGENTA
     static const uint8_t background_color = VGA_COLOR_MAGENTA;
-#elif CONFIG_SH_BKC_BROWN
+#elif CONFIG_SH_BGC_BROWN
     static const uint8_t background_color = VGA_COLOR_BROWN;
-#elif CONFIG_SH_BKC_LIGHT_GREY
+#elif CONFIG_SH_BGC_LIGHT_GREY
     static const uint8_t background_color = VGA_COLOR_LIGHT_GREY;
-#elif CONFIG_SH_BKC_DARK_GREY
+#elif CONFIG_SH_BGC_DARK_GREY
     static const uint8_t background_color = VGA_COLOR_DARK_GREY;
-#elif CONFIG_SH_BKC_LIGHT_BLUE
+#elif CONFIG_SH_BGC_LIGHT_BLUE
     static const uint8_t background_color = VGA_COLOR_LIGHT_BLUE;
-#elif CONFIG_SH_BKC_LIGHT_GREEN
+#elif CONFIG_SH_BGC_LIGHT_GREEN
     static const uint8_t background_color = VGA_COLOR_LIGHT_GREEN;
-#elif CONFIG_SH_BKC_LIGHT_CYAN
+#elif CONFIG_SH_BGC_LIGHT_CYAN
     static const uint8_t background_color = VGA_COLOR_LIGHT_CYAN;
-#elif CONFIG_SH_BKC_LIGHT_RED
+#elif CONFIG_SH_BGC_LIGHT_RED
     static const uint8_t background_color = VGA_COLOR_LIGHT_RED;
-#elif CONFIG_SH_BKC_LIGHT_MAGENTA
+#elif CONFIG_SH_BGC_LIGHT_MAGENTA
     static const uint8_t background_color = VGA_COLOR_LIGHT_MAGENTA;
-#elif CONFIG_SH_BKC_LIGHT_BROWN
+#elif CONFIG_SH_BGC_LIGHT_BROWN
     static const uint8_t background_color = VGA_COLOR_LIGHT_BROWN;
-#elif CONFIG_SH_BKC_WHITE
+#elif CONFIG_SH_BGC_WHITE
     static const uint8_t background_color = VGA_COLOR_WHITE;
 #else
     static const uint8_t background_color = VGA_COLOR_BLACK;

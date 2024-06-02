@@ -541,7 +541,11 @@ Config shell_configs[] = {
     {
         "CONFIG_SH_HISTORY",
         "Shell History",
-        "Help message",
+        "Shell History\n\n\
+        The Shell History Configuration setting allows you to manage how command history is\n\
+        handled in your operating system's terminal. This feature enhances your productivity by\n\
+        keeping track of previously executed commands, enabling you to easily recall them.\n\n\
+        Enabling this configuration will introduce the 'history' command.",
         0,
         BOOL,
         NULL
@@ -550,7 +554,10 @@ Config shell_configs[] = {
     {
         "CONFIG_SH_HISTORY_MAX_SIZE",
         "History Size",
-        "Help message",
+        "History Size\n\n\
+        The History Size Configuration setting allows you to specify the maximum number of commands\n\
+        to be stored in the shell's history buffer. This determines how many previous commands are\n\
+        available for recall",
         20,
         INT,
         "CONFIG_SH_HISTORY"
@@ -703,9 +710,9 @@ Config shell_fgc_configs[] = {
     }
 };
 
-Config shell_bkc_configs[] = {
+Config shell_bgc_configs[] = {
     {
-        "CONFIG_SH_BCK_BLACK",
+        "CONFIG_SH_BGC_BLACK",
         "Black",
         "",
         1,
@@ -714,7 +721,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_BLUE",
+        "CONFIG_SH_BGC_BLUE",
         "Blue",
         "",
         0,
@@ -723,7 +730,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_GREEN",
+        "CONFIG_SH_BGC_GREEN",
         "Green",
         "",
         0,
@@ -732,7 +739,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_CYAN",
+        "CONFIG_SH_BGC_CYAN",
         "Cyan",
         "",
         0,
@@ -741,7 +748,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_RED",
+        "CONFIG_SH_BGC_RED",
         "Red",
         "",
         0,
@@ -750,7 +757,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_MAGENTA",
+        "CONFIG_SH_BGC_MAGENTA",
         "Magenta",
         "",
         0,
@@ -759,7 +766,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_BROWN",
+        "CONFIG_SH_BGC_BROWN",
         "Brown",
         "",
         0,
@@ -768,7 +775,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_GREY",
+        "CONFIG_SH_BGC_LIGHT_GREY",
         "Light Grey",
         "",
         0,
@@ -777,7 +784,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_DARK_GREY",
+        "CONFIG_SH_BGC_DARK_GREY",
         "Dark Grey",
         "",
         0,
@@ -786,7 +793,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_BLUE",
+        "CONFIG_SH_BGC_LIGHT_BLUE",
         "Light Blue",
         "",
         0,
@@ -795,7 +802,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_GREEN",
+        "CONFIG_SH_BGC_LIGHT_GREEN",
         "Light Green",
         "",
         0,
@@ -804,7 +811,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_CYAN",
+        "CONFIG_SH_BGC_LIGHT_CYAN",
         "Light Cyan",
         "",
         0,
@@ -813,7 +820,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_RED",
+        "CONFIG_SH_BGC_LIGHT_RED",
         "Light Red",
         "",
         0,
@@ -822,7 +829,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_MAGENTA",
+        "CONFIG_SH_BGC_LIGHT_MAGENTA",
         "Light Magenta",
         "",
         0,
@@ -831,7 +838,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_LIGHT_BROWN",
+        "CONFIG_SH_BGC_LIGHT_BROWN",
         "Light Brown",
         "",
         0,
@@ -840,7 +847,7 @@ Config shell_bkc_configs[] = {
     },
 
     {
-        "CONFIG_SH_BCK_WHITE",
+        "CONFIG_SH_BGC_WHITE",
         "White",
         "",
         0,
@@ -852,14 +859,18 @@ Config shell_bkc_configs[] = {
 Choice shell_choices[] = {
     {
         "Terminal Background Color",
-        "Help message",
-        shell_bkc_configs,
-        ARRAY_SIZE(shell_bkc_configs)
+        "Terminal Background Color\n\n\
+        The Terminal Background Color configuration allows you to set the default background\n\
+        color for the terminal in your operating system.",
+        shell_bgc_configs,
+        ARRAY_SIZE(shell_bgc_configs)
     },
 
     {
         "Terminal Text Color",
-        "Help message",
+        "Terminal Text Color\n\n\
+        The Terminal Text Color configuration allows you to set the default text color for the\n\
+        terminal in your operating system.",
         shell_fgc_configs,
         ARRAY_SIZE(shell_fgc_configs)
     }
@@ -893,7 +904,7 @@ Menu main_menu[] = {
     ARRAY_SIZE(memory_manager_configs)},
 
     {"Scheduler",
-    "Scheduler configurations\n\n\
+    "Scheduler Configurations\n\n\
     Another crucial part of the operating system is the scheduler, managing the execution\n\
     of processes by determining which process runs at any given time. This menu allows you\n\
     to configure various aspects of the scheduling algorithm, ensuring efficient CPU\n\
@@ -904,7 +915,7 @@ Menu main_menu[] = {
     ARRAY_SIZE(scheduler_configs)},
 
     {"Shell",
-    "Shell configurations\n\n\
+    "Shell Configurations\n\n\
     The shell is the command-line interface of the operating system, allowing you to\n\
     interact with the system through commands. This menu provides options to configure\n\
     aspects of the shell environment, enhancing usability, functionality and customization.",

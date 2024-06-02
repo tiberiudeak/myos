@@ -284,9 +284,10 @@ void display_int_window(WINDOW *win, Config *config) {
     curs_set(1);
 
     draw_window(int_win, width, config->prompt);
+    display_message(int_win, "Insert number: ", SEC_MENU_X, SEC_MENU_Y, config->prompt);
 
     wrefresh(int_win);
-    int x = 1, y = 1, index = 0;
+    int x = 17, y = 2, index = 0;
     char buffer[12] = {0};
 
     while (1) {
