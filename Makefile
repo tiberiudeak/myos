@@ -98,7 +98,7 @@ $(HEADER_FILE): .config
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
 
-debug: $(TARGET)
+gdb-debug: $(TARGET)
 	$(QEMU) $(QEMUFLAGS_DEBUG)
 
 menuconfig: my_ncurses_menu.c my_ncurses_menu.h
@@ -108,6 +108,23 @@ menuconfig: my_ncurses_menu.c my_ncurses_menu.h
 menuconfig-steps: my_ncurses_menu.c my_ncurses_menu.h
 	gcc -DSTEP_BY_STEP -o menu my_ncurses_menu.c -lncurses
 	./menu
+
+# default configuration profiles - each profile must have an entry here
+default: profiles/default
+	cp $^ ./.config
+	make run
+
+minimal: profiles/minimal
+	cp $^ ./.config
+	make run
+
+performance: profiles/performance
+	cp $^ ./.config
+	make run
+
+debug: profiles/debug
+	cp $^ ./.config
+	make run
 
 clean:
 	@for PROJECT in $(PROJECTS); do \

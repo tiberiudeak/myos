@@ -1,7 +1,7 @@
-#include <arch/i386/isr.h>
 #ifndef ARCH_I386_PIT_H
 #define ARCH_I386_PIT_H 1
 
+#include <arch/i386/isr.h>
 #include <stdint.h>
 
 #define CH0_DATA_PORT		0x40
@@ -45,6 +45,7 @@ void PIT_init(void);
 void PIT_IRQ0_handler(interrupt_regs *);
 void wait_millis(uint16_t);
 uint64_t get_uptime(void);
+uint32_t random(void);
 
 extern void irq0();
 

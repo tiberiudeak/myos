@@ -1,0 +1,11 @@
+# [minimal]
+# This is a default configuration profile.
+#
+# This profile focuses on minimal resource usage and simplicity.
+#
+CONFIG_TTY_VGA=y
+CONFIG_UVMM_FIRSTFIT=y
+CONFIG_FCFS_SCH=y
+CONFIG_SH_BGC_BLACK=y
+CONFIG_SH_FGC_WHITE=y
+

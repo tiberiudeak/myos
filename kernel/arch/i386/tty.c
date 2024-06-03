@@ -812,6 +812,17 @@ int printk(const char* restrict format, ...) {
 
 			written += len;
 		}
+		else if (*format == 'f') {
+			format++;
+			float d = va_arg(parameters, double);
+			char str[20] = {0};
+			ftoa(d, str, 2);
+
+			size_t len = strlen(str);
+			terminal_write(str, len);
+
+			written += len;
+		}
 		else if (*format == 'l') {
 			format++;
 

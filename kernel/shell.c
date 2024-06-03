@@ -1,4 +1,3 @@
-#include "include/mm/kmalloc.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -87,6 +86,7 @@ void show_available_commands(void) {
     printk("\thistory  - display shell history\n");
 #endif
     printk("\thelp\t - display available commands\n");
+    printk("\trand\t - generate random number between 0 and 99\n");
     printk("\n\ttype ./<name> to execute a file\n");
 }
 
@@ -130,9 +130,11 @@ void shell_exec_command(char *command) {
 	else if (strcmp(command, "pmeminfo") == 0) {
 		print_phymem_info();
 	}
+#ifdef CONFIG_RTC
 	else if (strcmp(command, "datetime") == 0) {
 		rtc_print_datetime();
 	}
+#endif
 	else if (strcmp(command, "dl") == 0) {
 		print_superblock_info();
 	}
@@ -212,6 +214,9 @@ void shell_exec_command(char *command) {
 	}
 	else if (strcmp(command, "kheap2") == 0) {
         kmalloc_free();
+	}
+	else if (strcmp(command, "rand") == 0) {
+        printk("%d\n", random() % 100);
 	}
 	else if (strcmp(command, "") == 0) {
 	}

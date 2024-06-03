@@ -1,0 +1,17 @@
+# [default]
+# This is a default configuration profile.
+#
+# This profile provides a balanced set of configurations suitable for
+# general use
+#
+CONFIG_TTY_VGA=y
+CONFIG_RTC=y
+CONFIG_UVMM_BESTFIT=y
+CONFIG_READ_AFTER_FREE_PROT=y
+CONFIG_ROUND_ROBIN=y
+CONFIG_RR_TIME_QUANTUM=20
+CONFIG_SH_BGC_BLACK=y
+CONFIG_SH_FGC_WHITE=y
+CONFIG_SH_HISTORY=y
+CONFIG_SH_HISTORY_MAX_SIZE=20
+

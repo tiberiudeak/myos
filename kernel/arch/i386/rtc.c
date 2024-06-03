@@ -1,3 +1,5 @@
+#ifdef CONFIG_RTC
+
 #include <arch/i386/rtc.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
@@ -99,6 +101,7 @@ void rtc_print_datetime(void) {
 	printk("%d.%d.%d  %d:%d:%d\n", time1.day, time1.month, time1.year,
 								time1.hour, time1.minutes, time1.seconds);
 }
+#endif /* CONFIG_RTC */
 
 // TODO: create IRQ8 handler that prints the datetime to the screen with
 // real time updates (so nothing will be printed to the bottom row except the datetime)

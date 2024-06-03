@@ -95,6 +95,10 @@ rr_sch:
 #endif /* !CONFIG_FCFS_SCH */
 }
 
+uint32_t random(void) {
+    return ((uptime * 214013L + 2531011L) >> 16) & 0x7FFF;
+}
+
 /**
  * @brief Initialize the Programmable Interrupt Timer
  *

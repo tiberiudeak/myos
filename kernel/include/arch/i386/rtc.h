@@ -76,9 +76,11 @@ typedef enum {
 	CMOS_RTC_REG_B_CU			= 0x80
 } CMOS_RTC_REG_B;
 
+#ifdef CONFIG_RTC
 uint8_t cmos_update_in_progress(void);
 uint8_t cmos_get_rtc_register(uint8_t);
 void cmos_Read_rtc(void);
 void rtc_print_datetime(void);
+#endif /* CONFIG_RTC */
 
 #endif /* !ARCH_I386_RTC_H */

@@ -1,0 +1,17 @@
+# [performance]
+# This is a default configuration profile.
+#
+# This profile is optimized for performance and responsiveness.
+#
+CONFIG_TTY_VBE=y
+CONFIG_TTY_VBE_WIDTH=1920
+CONFIG_TTY_VBE_HEIGHT=1080
+CONFIG_RTC=y
+CONFIG_UVMM_BESTFIT=y
+CONFIG_ROUND_ROBIN=y
+CONFIG_RR_TIME_QUANTUM=10
+CONFIG_SH_BGC_BLACK=y
+CONFIG_SH_FGC_WHITE=y
+CONFIG_SH_HISTORY=y
+CONFIG_SH_HISTORY_MAX_SIZE=20
+
