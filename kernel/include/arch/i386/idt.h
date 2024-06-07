@@ -27,9 +27,9 @@
  * a specific interrupt vector. Each entry is 8 bytes long and has
  * the following structure:
  *
- * 31                                 16 15 14 13 12 11 10 8 7               0
+ * 31                                 16 15 14 13 12 11    8 7               0
  * |------------------------------------|-------------------------------------|
- * |        offset (16-31)              |P | DPL | 0| D|Type|   always0 (0-7) |
+ * |        offset (16-31)              |P | DPL | 0 | Type |   always0 (0-7) |
  * |------------------------------------|-------------------------------------|
  * |        selector (0-15)             |           offset (0-15)             |
  * |------------------------------------|-------------------------------------|
@@ -39,7 +39,6 @@
  * selector: the 16-bit code segment selector in the GDT (see above its layout)
  * P: present bit, must be 1 for the descriptor to be valid
  * DPL: 2-bit value representing the descriptor privilege level
- * D: indicates whether the code segment is 32 bit, set to 1 for 32-bit code
  * Type: 3-bit value representing the gate type, 110 for interrupt gates
  */
 typedef struct {

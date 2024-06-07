@@ -40,14 +40,14 @@ $(LDFLAGS) \
 $(BOOT_OBJS) \
 $(LIBS)
 
-BINARIES=bootloader.bin
+BINARIES=bootloader
 
 .PHONY: all clean install install-headers install-boot
 .SUFFIXES: .o .S
 
 all: $(BINARIES)
 
-bootloader.bin: $(OBJS)
+bootloader: $(OBJS)
 	$(LD) $(LINK_LIST) -o $@
 
 %.o: %.S ../$(HEADER_FILE)
@@ -62,5 +62,6 @@ install: install-headers install-boot
 install-headers: ;
 
 install-boot: $(BINARIES)
-	cp $(BINARIES) ../bin
+	mkdir -p ../$(PROG_BIN_DIR)
+	cp $(BINARIES) ../$(PROG_BIN_DIR)
 

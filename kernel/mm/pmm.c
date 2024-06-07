@@ -1,6 +1,5 @@
 /* Physical memory manager */
 #include <mm/pmm.h>
-//#include <kernel/spinlock.h>
 #include <kernel/tty.h>
 #include <stddef.h>
 #include <math.h>
@@ -135,7 +134,7 @@ void __mark_region_reserved(uint32_t base_addr, uint32_t size) {
 /**
  * @brief Mark regions from the memory map as free or reserved in the bitmap
  *
- * This function goesthrough the memory map created by E820 two times, the first
+ * This function goes through the memory map created by E820 two times, the first
  * time marking the free blocks and the second time the reserved ones. This ensures
  * that overlapping parts in the map will be reserved.
  */
@@ -394,9 +393,7 @@ void *allocate_blocks(uint32_t num_blocks) {
 		return NULL;
 	}
 
-	//spinlock_acquire(&pmm_lock);
 	uint32_t first_fit_block = __find_first_fit(num_blocks);
-	//spinlock_release(&pmm_lock);
 
 	if (first_fit_block == 0) {
 		return NULL;

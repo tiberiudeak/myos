@@ -1,5 +1,4 @@
 #include <mm/kmalloc.h>
-#include <mm/kmalloc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <kernel/tty.h>
@@ -12,7 +11,7 @@ kblock_meta *metadata_blk_header;
 
 // starting virtual address will be the starting virtual address of the kernel (which
 // is 0xC0000000) plus the total size of the kernel, rounded up to the nearest page
-// alligned address -> done in the init() function
+// aligned address -> done in the init() function
 uint32_t starting_virtual_address = 0;
 uint32_t current_virtual_address = 0;
 

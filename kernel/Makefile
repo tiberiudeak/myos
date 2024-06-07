@@ -29,14 +29,14 @@ $(LDFLAGS) \
 $(KERNEL_OBJS) \
 $(LIBS)
 
-BINARIES=kernel.bin
+BINARIES=kernel
 
 .PHONY: all clean install install-headers install-kernel
 .SUFFIXES: .o .c .S
 
 all: $(BINARIES)
 
-kernel.bin: $(OBJS)
+kernel: $(OBJS)
 	$(LD) $(LINK_LIST) -o $@
 
 %.o: %.c
@@ -55,6 +55,6 @@ install-headers:
 	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
 
 install-kernel: $(BINARIES)
-	cp $(BINARIES) ../bin
+	cp $(BINARIES) ../$(PROG_BIN_DIR)
 
 -include $(KERNEL_DEPS)

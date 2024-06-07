@@ -19,7 +19,7 @@ isr_common_stub:
 	add $8, %esp
 	pop %ebx
 
-	mov %bx, %ds			# restore old segment
+	mov %bx, %ds			# restore old segments
 	mov %bx, %es
 	mov %bx, %fs
 	mov %bx, %gs

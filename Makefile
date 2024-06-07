@@ -48,10 +48,11 @@ BOOT_SRC_DIR:=boot
 KERNEL_SRC_DIR:=kernel
 LIBC_SRC_DIR:=libc
 PROG_SRC_DIR:=programs
+export PROG_BIN_DIR:=bin
 
 # final paths to the binaries
-BOOT_BIN:=$(BOOT_SRC_DIR)/bootloader.bin
-KERNEL_BIN:=$(KERNEL_SRC_DIR)/kernel.bin
+BOOT_BIN:=$(BOOT_SRC_DIR)/bootloader
+KERNEL_BIN:=$(KERNEL_SRC_DIR)/kernel
 LIBC_AR:=$(LIBC_SRC_DIR)/libc.a
 
 # list of all the binaries
@@ -71,9 +72,10 @@ $(TARGET): $(BINARIES)
 	@$(MAKE) -C $(PROG_SRC_DIR) install
 
 	gcc create_disk_image.c -o create_disk_image -lm
-	./create_disk_image $(TARGET) $(INCLUDED_FILES)
+	./create_disk_image $(TARGET)
 
 $(BOOT_BIN): $(HEADER_FILE)
+	@rm -rf $(PROG_BIN_DIR)
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(BOOT_SRC_DIR) install
@@ -131,4 +133,4 @@ clean:
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(TARGET) create_disk_image $(HEADER_FILE) menu
+	rm -rf $(TARGET) create_disk_image $(HEADER_FILE) menu $(PROG_BIN_DIR)

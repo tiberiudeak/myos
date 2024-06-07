@@ -530,69 +530,88 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 
 void usage(void) {
 	printf("Usage:\n");
-	printf("\t./create_disk_image <image_name> <file_with_included_files>\n");
+	printf("\t./create_disk_image <image_name>\n");
 }
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 3) {
+	int found = 0, ret, total_file_blocks, num_files = 0;
+	char image_name[20];
+
+	if (argc != 2) {
 		usage();
 		return 1;
 	}
 
-
-	char image_name[20];
 	strcpy(image_name, argv[1]);
 	FILE *image_fp = fopen(image_name, "wb"), *files_fp;
-	uint32_t total_file_blocks = 0;
 
 	printf("Creating the OS disk image %s...\n", image_name);
 
-    files_fp = fopen("files.txt", "r");
+    // add files from the bin directory to the files[] arrray
+	// count the number of files
+	files_fp = popen("ls bin | wc -l", "r");
+	fscanf(files_fp, "%d", &num_files);
+	pclose(files_fp);
 
-    if (files_fp == NULL) {
-        printf("error opening files.txt. Is the file present?\n");
-        return 1;
-    }
-
-    // add files from files.txt to the files[] arrray
-    char *file_name = malloc(sizeof(char) * 30);
-    size_t read, len = 30, index = 0;
-	uint32_t num_files = 0;
-
-    while ((read = getline(&file_name, &len, files_fp)) != -1) {
-        if (strlen(file_name) == 1)
-            continue;
-
-        if (file_name[0] == '#')
-            continue;
-
-        num_files++;
-    }
-
-    fseek(files_fp, 0, SEEK_SET);
-
+	// allocate memory for the files array
     file_pointer_type files[num_files];
 
-    while ((read = getline(&file_name, &len, files_fp)) != -1) {
-        if (strlen(file_name) == 1)
-            continue;
+	// get the file names
+	files_fp = popen("ls bin", "r");
 
-        if (file_name[0] == '#')
-            continue;
+	for (uint32_t i = 0; i < num_files; i++) {
+		fscanf(files_fp, "%s", files[i].name);
+	}
 
-        file_name[strlen(file_name) - 1] = '\0';    // get rid of the '\n' at the end
-                                                    //
-        strcpy(files[index].name, file_name);
-        files[index].fp = NULL;
-        files[index].size = 0;
-        index++;
-    }
-
-    free(file_name);
+	pclose(files_fp);
 
 	printf("total files in the image: %d\n", num_files);
 
+	// check if bootloader and kernel are present
+	for (uint32_t i = 0; i < num_files; i++) {
+		if (strcmp(files[i].name, "bootloader") == 0) {
+			found++;
+		}
+
+		if (strcmp(files[i].name, "kernel") == 0) {
+			found++;
+		}
+
+		if (i == num_files - 1 && found != 2) {
+			printf("Error: bootloader or kernel not found in bin/ directory! Names should be: bootloader and kernel\n");
+			return 1;
+		}
+	}
+
+	// rearrange files array so that bootloader is the first file
+	// and kernel is the second file
+	for (uint32_t i = 0; i < num_files; i++) {
+		if (strcmp(files[i].name, "bootloader") == 0) {
+			file_pointer_type temp = files[0];
+			files[0] = files[i];
+			files[i] = temp;
+			break;
+		}
+	}
+
+	for (uint32_t i = 0; i < num_files; i++) {
+		if (strcmp(files[i].name, "kernel") == 0) {
+			file_pointer_type temp = files[1];
+			files[1] = files[i];
+			files[i] = temp;
+			break;
+		}
+	}
+
+	// add the path to the file names
+	for (int i = 0; i < num_files; i++) {
+		char file_path[100] = "bin/";
+		strcat(file_path, files[i].name);
+		strcpy(files[i].name, file_path);
+	}
+
+	// open the files and get their sizes
 	for (uint32_t i = 0; i < num_files; i++) {
 		files[i].fp = fopen(files[i].name, "rb");
 		fseek(files[i].fp, 0, SEEK_END);
@@ -609,7 +628,7 @@ int main(int argc, char *argv[]) {
 	printf("total disk size of actual data (without bootloader): %d bytes\n", get_disk_size(files, num_files));
 
 	// create boot block
-	int ret = write_boot_block(files, image_fp);
+	ret = write_boot_block(files, image_fp);
 
 	if (ret) {
 		printf("Error creating the boot block\n");
