@@ -1,13 +1,13 @@
 # Project that hopefully will turn into a very basic OS :)
 
 ## Build
-In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. Without using one, there is a chance that a lot of unexpected things will happen because the compiler assumes that the code is running on the host operating system, which will not be the case. To set up one, follow the following steps (for Linux):
+In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. To set up one, follow the following steps (for Linux):
 
 1. Make sure you have the following packages installed: `gcc, g++, make, bison, flex, GMP, MPFR, MPC, Texinfo`. Search the specific names for your distribution. On Debia/Ubuntu you can install them with `sudo apt install build-essential bison flex libgmp3-dev libmpfr-dev libmpc-dev texinfo`.
 
 2. Download the source code for `gcc` and `binutils`. You can find them [here](https://www.gnu.org/software/gcc/) and [here](https://www.gnu.org/software/binutils/). Choose a version similar to the one you have installed on your system. You can check the version with `gcc --version` and `ld --version`.
 
-3. Choose a directory where you want to install the cross-compiler. I chose `$HOME/opt/cross` but you can choose whatever you want.
+3. Create a directory where you want to install the cross-compiler (for example `$HOME/opt/cross`).
 
 4. Build Binutils
 	- Run the following commands:
@@ -20,7 +20,7 @@ In order to build the project, you'll need to set up a gcc cross-compiler for i6
 		```
 		Replace `x.y.z` with the version you downloaded and `<path_to_cross_compiler_location>` with the path you chose in step 3.
 
-5. Add the `bin` directory of the cross-compiler to your `PATH` variable. You can do this by adding the following line to your `.bashrc` file if you want to make it permanent or by running it in the terminal if you want to make it temporary:
+5. Add the `bin` directory of the cross-compiler to your `PATH` variable. You can do this by adding the following line to your `.bashrc`/`.zshrc`, etc. file if you want to make it permanent or by running it in the terminal if you want to make it temporary:
 	```bash
 	export PATH="$HOME/opt/cross/bin:$PATH"
 	```
@@ -46,14 +46,6 @@ In order to build the project, you'll need to set up a gcc cross-compiler for i6
 ## Run
 
 In order to run the project, you'll need to have [qemu](https://www.qemu.org/) installed. You can then run the project by running `make run` in the root directory of the project.
-
-## Debug
-
-TODO
-
-## License
-
-TODO
 
 ## Description
 
