@@ -50,6 +50,7 @@ _start:
 	call disk_load				# call disk_load
 	add $0x08, %sp				# add 8 to stack pointer
 	push %dx					# push drive number back to stack
+    call move_cursor_nl
 
 	jmp 0x7e00					# jump to 2nd stage boot sector
 
@@ -62,7 +63,7 @@ _start:
 .include "./include/cursor_next_line.S"
 
 msg:
-	.asciz "Booting MyOS..."	# the message
+	.asciz "[INFO] Booting MyOS..."	# the message
 
 .space 510 - (. - _start)		# fill the rest of the bytes with 0
 .word 0xaa55					# boot signature

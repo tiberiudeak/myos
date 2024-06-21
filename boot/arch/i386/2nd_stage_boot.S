@@ -32,6 +32,7 @@ _start2:
 	call disk_load			# call disk load function
 	add $0x8, %sp			# restore stack pointer
 	push %si				# push drive number back to stack
+    call move_cursor_nl
 
 	# at this point, AX will have the number of sectors for the inode bitmap
 	mov %ax, %cx			# save that value in CX that will be used later to
@@ -73,9 +74,18 @@ _start2:
 	# to load the inodes and finally the kernel data
 
 	# detect memory
+	call move_cursor_nl
+    push $det_mem_msg
+    call print_string
+    add $0x2, %sp
+
 	push $0x1000			# push 0x1000 to the stack (memory loc.)
 	call detect_memory		# call the detect_memory function
 	add $0x2, %sp			# remove the pushed value from the stack
+
+    push $done_msg
+    call print_string
+    add $0x2, %sp
 
 	call move_cursor_nl
 
@@ -106,11 +116,17 @@ _start2:
     hlt
 
 .vbe_unsupported_msg:
-    .asciz "VESA BIOS Extension unsupported resolution!"
+    .asciz "VESA BIOS Extension: unsupported resolution!"
 .ENDIF
 
 msg2:
-	.asciz "Entered 2nd stage boot"
+	.asciz "[INFO] Entered 2nd stage boot"
+
+det_mem_msg:
+    .asciz "[INFO] Detecting memory using BIOS E820..."
+
+done_msg:
+    .asciz "done!"
 
 .space 2048 - (. - _start2)		# fill the rest of the bytes with 0
 

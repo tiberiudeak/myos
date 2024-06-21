@@ -50,10 +50,10 @@ a20_end:
 	ret						# return
 
 a20_ns_msg:
-	.asciz "A20 not supported"
+	.asciz "[ERROR] A20 not supported"
 
 a20_failed_msg:
-	.asciz "A20 failed to enable"
+	.asciz "[ERROR] A20 failed to enable"
 
 a20_ok_msg:
-	.asciz "A20 enabled"
+	.asciz "[INFO] A20 enabled"

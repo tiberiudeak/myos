@@ -8,6 +8,10 @@ vbe_get_info:
 
 
 
+    push $.vbe_start_msg
+    call print_string
+    add $0x2, %sp
+    call move_cursor_nl
 
     # get font from VGA BIOS and store it at address 0x5000 using the 
     # BIOS interrupt 0x10 0x1130
@@ -154,6 +158,10 @@ vbe_get_info:
     mov %bp, %sp
     pop %bp
 
+    push $.vbe_done_msg
+    call print_string
+    add $0x2, %sp
+
     xor %ax, %ax                    # set return code to 0
     ret
 
@@ -182,11 +190,15 @@ vbe_get_info:
     jmp .vbe_error
 
 .vbe_error_msg:
-    .asciz  "vbe error"
+    .asciz  "VBE error: "
 .vbe_succ_msg:
     .asciz  "vbe info success"
 .vbe_end_msg:
-    .asciz  "end of list"
+    .asciz  "[ERROR] end of list! "
+.vbe_start_msg:
+    .asciz "[INFO] Enabling graphics..."
+.vbe_done_msg:
+    .asciz "done!"
 
 # My VBE information
 vbe_width:      .word   CONFIG_TTY_VBE_WIDTH

@@ -4,6 +4,11 @@
 .code16
 
 _start3:
+    push $m
+    call print_string
+    add $0x2, %sp
+    call move_cursor_nl
+
 	# at this point, AX will have the number of sectors for the data bitmap
 	# and DI will have the starting address for the data bitmap blocks
 	# information that will be used in the third stage of the bootloader
@@ -40,6 +45,8 @@ _start3:
 	add $0x8, %sp			# restore stack pointer
 	push %si				# push drive number back to stack
 
+    call move_cursor_nl
+
 	# at this point, AX will have the number of sectors loaded for the inode blocks
 	# and DI will have the starting address for the inode blocks
 	mov %ax, %cx			# save AX into CX
@@ -71,9 +78,14 @@ _start3:
 	add $0x8, %sp			# restore stack pointer
 	push %si				# push drive number back to stack
 
+    call move_cursor_nl
+
 	# empty stack
 	add $0x2, %sp
 
+    push $swith_pr_mode_msg
+    call print_string
+    add $0x2, %sp
 
 	# make switch to protected mode
 	cli						# disable interrupts
@@ -83,16 +95,23 @@ _start3:
 	or $0x1, %eax			# set the first bit of eax to 1 (protected mode)
 	mov %eax, %cr0			# move the value of eax to cr0
 
+    #hlt
+    #aaa: jmp aaa
+
 	ljmp $CODE_SEG, $protected_mode_init	# jump to protected mode
 
 
 .include "./include/gdt.S"
 .include "./include/print_string.S"
-.include "./include/print_hex.S"
+#.include "./include/print_hex.S"
 .include "./include/disk_load.S"
+.include "./include/cursor_next_line.S"
 
 m:
-	.asciz "Third stage bootloader"
+	.asciz "[INFO] Entered 3rd stage boot"
+
+swith_pr_mode_msg:
+    .asciz "[INFO] Switching to Protected Mode..."
 
 .code32
 protected_mode_init:

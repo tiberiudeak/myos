@@ -135,6 +135,7 @@ void syscall_open(void) {
     int ret = load_file(&inode, (uint32_t)addr);
 
     if (ret) {
+        // TODO: goto err2 to free allocated memory
         goto err;
     }
 

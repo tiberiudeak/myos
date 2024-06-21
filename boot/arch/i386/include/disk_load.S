@@ -50,10 +50,10 @@ disk_load_error:
 	hlt
 
 disk_error_message:
-	.asciz "Disk read error occured!\n"
+	.asciz "[ERROR] Disk read error occured!\n"
 
 timer:
-	.asciz "Loading..."
+	.asciz "[INFO] Loading..."
 
 done:
 	.asciz "done!"
