@@ -3,8 +3,9 @@
 #include <time.h>
 
 void _start(int argc, char *argv[]) {
-    printf("this is a test from the ELF file!\n");
+    printf("running an infinite loop...\n");
     while(1);
-    exit(1);
+
+    exit(0);
 }
 

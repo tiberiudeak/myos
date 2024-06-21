@@ -989,9 +989,9 @@ Menu main_menu[] = {
 };
 
 #ifdef STEP_BY_STEP
-char *main_menu_title = "myOS x86_64 Step-by-Step Kernel Configuration";
+char *main_menu_title = "myOS x86_32 Step-by-Step Kernel Configuration";
 #else
-char *main_menu_title = "myOS x86_64 Kernel Configuration";
+char *main_menu_title = "myOS x86_32 Kernel Configuration";
 #endif
 
 void draw_window(WINDOW *win, int width, const char *title);
