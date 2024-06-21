@@ -1,6 +1,7 @@
 tmp
 ata-pio
 compile_commands.json
+dependency_graph
 .cache
 sysroot
 bin

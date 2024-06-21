@@ -91,7 +91,7 @@ $(LIBC_AR):
 	@$(MAKE) -C $(LIBC_SRC_DIR) install
 
 $(HEADER_FILE): .config
-	./generate_config_header.sh
+	@./generate_config_header.sh
 
 .config: my_ncurses_menu.c my_ncurses_menu.h
 	gcc -o menu my_ncurses_menu.c -lncurses
@@ -113,20 +113,24 @@ menuconfig-steps: my_ncurses_menu.c my_ncurses_menu.h
 
 # default configuration profiles - each profile must have an entry here
 default: profiles/default
-	cp $^ ./.config
-	make run
+	@echo "Getting the default configuration profile..."
+	@cp $^ ./.config
+	@make
 
 minimal: profiles/minimal
-	cp $^ ./.config
-	make run
+	@echo "Getting the minimal configuration profile..."
+	@cp $^ ./.config
+	@make
 
 performance: profiles/performance
-	cp $^ ./.config
-	make run
+	@echo "Getting the performance configuration profile..."
+	@cp $^ ./.config
+	@make
 
 debug: profiles/debug
-	cp $^ ./.config
-	make run
+	@echo "Getting the debug configuration profile..."
+	@cp $^ ./.config
+	@make
 
 clean:
 	@for PROJECT in $(PROJECTS); do \

@@ -3,7 +3,7 @@
 ## Build
 In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. To set up one, follow the following steps (for Linux):
 
-1. Make sure you have the following packages installed: `gcc, g++, make, bison, flex, GMP, MPFR, MPC, Texinfo`. Search the specific names for your distribution. On Debia/Ubuntu you can install them with `sudo apt install build-essential bison flex libgmp3-dev libmpfr-dev libmpc-dev texinfo`.
+1. Make sure you have the following packages installed: `gcc, g++, make, bison, flex, GMP, MPFR, MPC, Texinfo`. Consult your distro documentation on the exact names of those packages.
 
 2. Download the source code for `gcc` and `binutils`. You can find them [here](https://www.gnu.org/software/gcc/) and [here](https://www.gnu.org/software/binutils/). Choose a version similar to the one you have installed on your system. You can check the version with `gcc --version` and `ld --version`.
 
