@@ -72,6 +72,13 @@ int main(int argc, char *argv[]) {
 
 #ifdef STEP_BY_STEP
         if (choice != 0) {
+            if (strcmp(main_menu[choice-1].prompt, "Exit") == 0) {
+                endwin();
+                print_enabled_configurations();
+
+                return 0;
+            }
+
             display_submenu(win1, main_menu[choice-1], win2);
             choice = 0;
         }
@@ -79,13 +86,14 @@ int main(int argc, char *argv[]) {
         if (choice != 0) {
             if (choice == n_choices) {
                 endwin();
-                return(0);
+                print_enabled_configurations();
+
+                return 0;
             }
-            else {
-                // process choice
-                display_submenu(win1, main_menu[choice-1], win2);
-                choice = 0;
-            }
+
+            // process choice
+            display_submenu(win1, main_menu[choice-1], win2);
+            choice = 0;
         }
 #endif
 

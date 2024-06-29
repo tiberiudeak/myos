@@ -7,6 +7,7 @@
 #include <arch/i386/irq.h>
 
 void keyboard_handler(interrupt_regs *r) {
+    (void) r; // remove compilation warning
 
 	/* TODO: check what scancode to use */
 

@@ -1,4 +1,4 @@
-# Project that hopefully will turn into a very basic OS :)
+# Minimalist 32-bit Operating System for x86, focused on configurability
 
 ## Build
 In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. To set up one, follow the following steps (for Linux):

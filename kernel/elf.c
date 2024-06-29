@@ -243,7 +243,9 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start, uint32_t *ustack_e
 
             // last program header, set heap after it, initial size: 4K
             uint32_t uheap_start = ALIGN((uint32_t)pr_header->p_vaddr + needed_blocks * BLOCK_SIZE, PAGE_SIZE);
+#ifdef CONFIG_VERBOSE
             uint32_t uheap_end = uheap_start + PAGE_SIZE;
+#endif
 
             void *addr = allocate_blocks(1);
 

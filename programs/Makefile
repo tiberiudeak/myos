@@ -11,7 +11,7 @@ ASFLAGS:=
 LIBS:=
 
 # add extra flags if needed
-CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra -fPIE
+CFLAGS:=$(CFLAGS) -ffreestanding -Wall -fPIE
 CPPFLAGS:=$(CPPFLAGS)
 LDFLAGS:=$(LDFLAGS)
 LIBS:=$(LIBS) -nostdlib -lk

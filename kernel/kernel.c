@@ -25,7 +25,7 @@ extern char kernel_end[];
 open_files_table_t *open_files_table;
 
 void halt_processor(void) {
-	__asm__ __volatile__ ("cli; hlt");
+	while(1) __asm__ __volatile__ ("cli; hlt");
 }
 
 void kmain() {

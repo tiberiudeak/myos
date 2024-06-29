@@ -173,6 +173,8 @@ uint32_t queue_size(void) {
  * @param argv Arguments
  */
 void init_task_func(int argc, char *argv[]) {
+    (void) argv; // remove compilation warning
+    (void) argc;
 #ifdef CONFIG_VERBOSE
     printk("init process started!\n");
 #endif
