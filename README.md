@@ -1,7 +1,7 @@
-# Minimalist 32-bit Operating System for x86, focused on configurability
+# Minimalist 32-bit Operating System for x86 focused on configurability
 
 ## Build
-In order to build the project, you'll need to set up a gcc cross-compiler for i686-elf. To set up one, follow the following steps (for Linux):
+To build the project, you'll need to set up a gcc cross-compiler for i686-elf. To set up one, follow the following steps (for Linux):
 
 1. Make sure you have the following packages installed: `gcc, g++, make, bison, flex, GMP, MPFR, MPC, Texinfo`. Consult your distro documentation on the exact names of those packages.
 
@@ -41,16 +41,8 @@ In order to build the project, you'll need to set up a gcc cross-compiler for i6
 
 7. You should now have a working cross-compiler. You can test it by running `i686-elf-gcc --version`.
 
-8. Now you should be able to compile the project by running `make` in the root directory of the project, that will generate the `myos.bin` file.
+8. Now you should be able to compile the project by running `make` in the project's root directory, which will generate the `myos.bin` file.
 
 ## Run
 
-In order to run the project, you'll need to have [qemu](https://www.qemu.org/) installed. You can then run the project by running `make run` in the root directory of the project.
-
-## Description
-
-### The Bootloader
-
-### The Kernel
-
-### The Libc
+To run the project, you must have [qemu](https://www.qemu.org/) installed. You can then run the project by running `make run` in the project's root directory.
