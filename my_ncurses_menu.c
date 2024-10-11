@@ -126,7 +126,10 @@ void draw_window(WINDOW *win, int width, const char *title) {
     werase(win);
 
     // print navigation help only in the main window
-    if (win->_begx == 0 && win->_begy == 0)
+    int begx, begy;
+    getbegyx(win, begy, begx);
+
+    if (begx == 0 && begy == 0)
         mvwprintw(win, 2, 2, "%s", navigation_info);
 
     box(win, 0, 0);

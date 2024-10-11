@@ -14,6 +14,9 @@
 #include <string.h>
 #include <fcntl.h>
 
+extern void syscall_open();
+extern void syscall_close();
+
 elf_phys_mem_info *elf_phys_mem_info_header = NULL;
 extern task_struct *current_running_task;
 

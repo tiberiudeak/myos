@@ -400,7 +400,7 @@ void syscall_sbrk(void) {
         }
 
         // allocate and map memory
-        for (uint32_t i = 0, virt = addr_start; i < needed_blocks; i++, virt += PAGE_SIZE) {
+        for (uint32_t i = 0, virt = (uint32_t) addr_start; i < needed_blocks; i++, virt += PAGE_SIZE) {
             void *phys_addr = allocate_blocks(1);
 
             if (phys_addr == NULL) {
@@ -409,7 +409,7 @@ void syscall_sbrk(void) {
                 return;
             }
 
-            map_user_page(phys_addr, virt);
+            map_user_page(phys_addr, (void*) virt);
 
             pt_entry *page = get_page((uint32_t) virt);
 
