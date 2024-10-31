@@ -140,18 +140,6 @@ void clear_screen(void) {
     }
 }
 
-void terminal_initialize(void) {
-    framebuffer = (uint32_t*)vbe_mode->framebuffer;
-    VBE_WIDTH = vbe_mode->width;
-    VBE_HEIGHT = vbe_mode->height;
-
-	terminal_row = 0;
-	terminal_column = 0;
-    terminal_setcolor(default_color);
-
-    clear_screen();
-}
-
 void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 
     // get offset within the font data for the requested character
@@ -176,6 +164,28 @@ void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
             }
         }
     }
+}
+
+void terminal_backspace_cursor(char c) {
+    terminal_column--;
+    terminal_putentryat(c, background_color, terminal_column, terminal_row);
+}
+
+void set_cursor(size_t x, size_t y) {
+    terminal_putentryat('_', VBE_COLOR_WHITE, x, y);
+}
+
+void terminal_initialize(void) {
+    framebuffer = (uint32_t*)vbe_mode->framebuffer;
+    VBE_WIDTH = vbe_mode->width;
+    VBE_HEIGHT = vbe_mode->height;
+
+	terminal_row = 0;
+	terminal_column = 0;
+    terminal_setcolor(default_color);
+	set_cursor(terminal_column, terminal_row);
+
+    clear_screen();
 }
 
 void terminal_scroll(void) {
@@ -203,6 +213,8 @@ void terminal_putchar(char c) {
 	unsigned char uc = c;
 
 	if (c == '\t') {
+        terminal_putentryat('_', background_color, terminal_column, terminal_row);
+
 		terminal_column += 1;
 
 		if (terminal_column % 4 != 0) {
@@ -218,11 +230,13 @@ void terminal_putchar(char c) {
 			}
 		}
 
-		// set_cursor(terminal_column, terminal_row);
+		set_cursor(terminal_column, terminal_row);
 		return;
 	}
 
 	if (c == '\n') {
+        terminal_putentryat('_', background_color, terminal_column, terminal_row);
+
 		terminal_column = 0;
 
 		if (++terminal_row == (VBE_HEIGHT / 16)) {
@@ -230,11 +244,12 @@ void terminal_putchar(char c) {
 			terminal_scroll();
 		}
 
-		// set_cursor(terminal_column, terminal_row);
+		set_cursor(terminal_column, terminal_row);
 
 		return;
 	}
 
+    terminal_putentryat('_', background_color, terminal_column, terminal_row);
 	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 
 
@@ -247,7 +262,7 @@ void terminal_putchar(char c) {
 		}
 	}
 
-	// set_cursor(terminal_column, terminal_row);
+	set_cursor(terminal_column, terminal_row);
 }
 
 void terminal_write(const char* data, size_t size) {
@@ -336,10 +351,6 @@ uint8_t map_framebuffer(void) {
     return 0;
 }
 
-void terminal_backspace_cursor(char c) {
-    terminal_column--;
-    terminal_putentryat(c, background_color, terminal_column, terminal_row);
-}
 
 // void draw_square(int x, int y, int width, int height, uint32_t color) {
 //     if (x < 0 || x + width > VBE_WIDTH || y < 0 || y + height > VBE_HEIGHT) {
@@ -457,7 +468,7 @@ void terminal_scroll(void) {
 	for (x = 0; x < VGA_WIDTH * 2; x++) {
 		ptr = VGA_MEMORY + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
 		//*ptr = *(ptr + (VGA_WIDTH));
-        *ptr = vga_entry(' ', terminal_color);
+        *ptr = vga_entry(' ', default_color);
 	}
 }
 
@@ -489,6 +500,7 @@ void terminal_putchar(char c) {
 		}
 
 		set_cursor(terminal_column, terminal_row);
+
 		return;
 	}
 
