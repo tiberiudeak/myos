@@ -3,8 +3,8 @@
 
 #include <arch/i386/isr.h>
 
-void irq_handler(interrupt_regs *r);
-void irq_install_handler(int irq, void (*handler)(interrupt_regs *r));
+void irq_handler(struct interrupt_regs *r);
+void irq_install_handler(int irq, void (*handler)(struct interrupt_regs *r));
 void irq_uninstall_handler(int irq);
 void add_irqs_to_idt(void);
 

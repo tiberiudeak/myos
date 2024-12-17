@@ -3,19 +3,19 @@
 
 #include <stdint.h>
 
-typedef struct {
+struct RSDP_descriptor {
 	char Signature[8];
 	uint8_t Checksum;
 	char OEMID[6];
 	uint8_t Revision;
 	uint32_t RsdtAddress;
-} __attribute__((packed)) RSDP_descriptor_t;
+} __attribute__((packed));
 
 /**
  * ACPI System Descriptor Table Header which is common to
  * all the SDTs.
 */
-typedef struct ACPISDT_header {
+struct ACPISDT_header {
 	char Signature[4];
 	uint32_t Length;
 	uint8_t Revision;
@@ -25,23 +25,22 @@ typedef struct ACPISDT_header {
 	uint32_t OEMRevision;
 	uint32_t CreatorID;
 	uint32_t CreatorRevision;
-} ACPISDT_header;
+};
 
-typedef struct {
+struct RSDT {
 	struct ACPISDT_header header;
 	uint32_t pointer_to_other_SDT[];
-} RSDT;
+};
 
-typedef struct GenericAddressStructure
-{
+struct GenericAddressStructure {
   uint8_t AddressSpace;
   uint8_t BitWidth;
   uint8_t BitOffset;
   uint8_t AccessSize;
   uint64_t Address;
-} GenericAddressStructure;
+};
 
-typedef struct {
+struct FADT {
 	struct ACPISDT_header header;
 	uint32_t FirmwareCtrl;
 	uint32_t Dsdt;
@@ -84,7 +83,7 @@ typedef struct {
   uint8_t  Reserved2;
   uint32_t Flags;
 
-  GenericAddressStructure ResetReg;
+  struct GenericAddressStructure ResetReg;
 
   uint8_t  ResetValue;
   uint8_t  Reserved3[3];
@@ -92,19 +91,19 @@ typedef struct {
   uint64_t                X_FirmwareControl;
   uint64_t                X_Dsdt;
 
-  GenericAddressStructure X_PM1aEventBlock;
-  GenericAddressStructure X_PM1bEventBlock;
-  GenericAddressStructure X_PM1aControlBlock;
-  GenericAddressStructure X_PM1bControlBlock;
-  GenericAddressStructure X_PM2ControlBlock;
-  GenericAddressStructure X_PMTimerBlock;
-  GenericAddressStructure X_GPE0Block;
-  GenericAddressStructure X_GPE1Block;
-} FADT;
+  struct GenericAddressStructure X_PM1aEventBlock;
+  struct GenericAddressStructure X_PM1bEventBlock;
+  struct GenericAddressStructure X_PM1aControlBlock;
+  struct GenericAddressStructure X_PM1bControlBlock;
+  struct GenericAddressStructure X_PM2ControlBlock;
+  struct GenericAddressStructure X_PMTimerBlock;
+  struct GenericAddressStructure X_GPE0Block;
+  struct GenericAddressStructure X_GPE1Block;
+};
 
 void ACPI_init(void);
 void *RSDP_detect(void);
-int RSDP_validate(RSDP_descriptor_t *rsdp);
+int RSDP_validate(struct RSDP_descriptor *rsdp);
 void *find_FACP(void *);
 
 #endif /* KERNEL_ACPI_H */

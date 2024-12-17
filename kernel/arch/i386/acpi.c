@@ -45,10 +45,10 @@ void *RSDP_detect() {
  *
  * @return 0 if the RSDP is valid, 1 otherwise.
  */
-int RSDP_validate(RSDP_descriptor_t *rsdp) {
+int RSDP_validate(struct RSDP_descriptor *rsdp) {
 	uint8_t checksum = 0;
 
-	for (size_t i = 0; i < sizeof(RSDP_descriptor_t); i++) {
+	for (size_t i = 0; i < sizeof(struct RSDP_descriptor); i++) {
 		checksum += ((char *)rsdp)[i];
 	}
 
@@ -73,7 +73,7 @@ void ACPI_init() {
 #ifdef CONFIG_VERBOSE
 	printk("Detecting ACPI");
 #endif
-	RSDP_descriptor_t *rsdp = RSDP_detect();
+	struct RSDP_descriptor *rsdp = RSDP_detect();
 
 	if (rsdp == NULL) {
 #ifdef CONFIG_VERBOSE
@@ -89,7 +89,7 @@ void ACPI_init() {
 		return;
 	}
 
-	FADT *fadt = (FADT*) find_FACP((void *)rsdp->RsdtAddress);
+	struct FADT *fadt = (struct FADT*) find_FACP((void *)rsdp->RsdtAddress);
 
 	if (fadt == NULL) {
 #ifdef CONFIG_VERBOSE
@@ -113,7 +113,7 @@ void ACPI_init() {
  *
  * @return the checksum
  */
-int ACPI_do_checksum(ACPISDT_header *table_header) {
+int ACPI_do_checksum(struct ACPISDT_header *table_header) {
 	unsigned char sum = 0;
 
 	for (size_t i = 0; i < table_header->Length; i++) {
@@ -132,11 +132,11 @@ int ACPI_do_checksum(ACPISDT_header *table_header) {
  * @param RSDT_pointer address of the RSDT
  */
 void *find_FACP(void *RSDT_pointer) {
-	RSDT *rsdt = (RSDT*) RSDT_pointer;
+	struct RSDT *rsdt = (struct RSDT*) RSDT_pointer;
 	int entries = (rsdt->header.Length - sizeof(rsdt->header)) / 4;
 
 	for (int i = 0; i < entries; i++) {
-		ACPISDT_header *h = (ACPISDT_header*) rsdt->pointer_to_other_SDT[i];
+		struct ACPISDT_header *h = (struct ACPISDT_header*) rsdt->pointer_to_other_SDT[i];
 
 		if (memcmp(h->Signature, "FACP", 4) == 0) {
 			if (ACPI_do_checksum(h) == 0) {

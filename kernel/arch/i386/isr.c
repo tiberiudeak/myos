@@ -94,7 +94,7 @@ char *exception_messages[] = {
  *
  * @param r Pointer to the interrupt registers struct
  */
-void page_fault_handler(interrupt_regs *r) {
+void page_fault_handler(struct interrupt_regs *r) {
 	printkc(4, "%s\n", exception_messages[r->int_no]);
 	printk("Error Code: %d\n", r->err_code);
 
@@ -145,7 +145,7 @@ void page_fault_handler(interrupt_regs *r) {
         // restore kernel virtual address space
         restore_kernel_address_space();
 
-        extern task_struct *current_running_task;
+        extern struct task_struct *current_running_task;
         
         current_running_task->state = TASK_TERMINATED;
         while(1) __asm__ __volatile__ ("sti; hlt; cli");
@@ -162,7 +162,7 @@ void page_fault_handler(interrupt_regs *r) {
  *
  * @param r  The interrupt registers.
  */
-void isr_handler(interrupt_regs *r) {
+void isr_handler(struct interrupt_regs *r) {
 	if (r->int_no < 32) {
 		if (r->int_no == 14) {
 			page_fault_handler(r);

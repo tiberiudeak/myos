@@ -6,8 +6,8 @@
 #include <string.h>
 #include <stddef.h>
 
-page_directory *current_page_directory = 0;
-page_directory *kernel_page_directory = 0;
+struct page_directory *current_page_directory = 0;
+struct page_directory *kernel_page_directory = 0;
 
 /**
  * @brief Get entry from page table for the given virtual address
@@ -21,7 +21,7 @@ page_directory *kernel_page_directory = 0;
  *
  * @return Address of 4KB page frame corresponding to the virtual address
  */
-pt_entry *get_pt_entry(page_table *pt, address virtual_address) {
+pt_entry *get_pt_entry(struct page_table *pt, address virtual_address) {
 	if (pt == NULL) {
 		return NULL;
 	}
@@ -42,7 +42,7 @@ pt_entry *get_pt_entry(page_table *pt, address virtual_address) {
  *
  * @return Address of the corresponding page table
  */
-pd_entry *get_pd_entry(page_directory *pd, address virtual_address) {
+pd_entry *get_pd_entry(struct page_directory *pd, address virtual_address) {
 	if (pd == NULL) {
 		return NULL;
 	}
@@ -102,7 +102,7 @@ void free_page(pt_entry *pte) {
  *
  * @return 0 if successful, 1 otherwise
  */
-uint8_t set_page_directory(page_directory *pd) {
+uint8_t set_page_directory(struct page_directory *pd) {
 	if (pd == NULL) {
 		return 1;
 	}
@@ -139,7 +139,7 @@ void flush_tlb_entry(address virtual_address) {
  */
 uint8_t map_user_page(void *physical_address, void *virtual_address) {
 	// get current page directory
-	page_directory *pd = current_page_directory;
+	struct page_directory *pd = current_page_directory;
 
 	// get corresponding PDE for the given virtual address
 	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX((uint32_t)virtual_address)];
@@ -154,7 +154,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 		}
 
 		// clear page table
-		memset(block, 0, sizeof(page_table));
+		memset(block, 0, sizeof(struct page_table));
 
 		// set frame and present and read-write bits
 		SET_FRAME(pde, (uint32_t)block);
@@ -166,7 +166,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
     }
 
 	// get address of the page table
-	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+	struct page_table *pt = (struct page_table*)PAGE_GET_PHY_ADDRESS(pde);
 
 	// get corresponding PTE for the given virtual address
 	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX((uint32_t)virtual_address)];
@@ -192,7 +192,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
  */
 uint8_t map_page(void *physical_address, void *virtual_address) {
 	// get current page directory
-	page_directory *pd = current_page_directory;
+	struct page_directory *pd = current_page_directory;
 
 	// get corresponding PDE for the given virtual address
 	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX((uint32_t)virtual_address)];
@@ -207,7 +207,7 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
 		}
 
 		// clear page table
-		memset(block, 0, sizeof(page_table));
+		memset(block, 0, sizeof(struct page_table));
 
 		// set frame and present and read-write bits
 		SET_FRAME(pde, (uint32_t)block);
@@ -216,7 +216,7 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
 	}
 
 	// get address of the page table
-	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+	struct page_table *pt = (struct page_table*)PAGE_GET_PHY_ADDRESS(pde);
 
 	// get corresponding PTE for the given virtual address
 	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX((uint32_t)virtual_address)];
@@ -240,13 +240,13 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
  */
 pt_entry *get_page(address virtual_address) {
 	// get current page directory
-	page_directory *pd = current_page_directory;
+	struct page_directory *pd = current_page_directory;
 
 	// get corresponding PDE for the given virtutal address
 	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virtual_address)];
 
 	// get the page table
-	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+	struct page_table *pt = (struct page_table*)PAGE_GET_PHY_ADDRESS(pde);
 
 	// return the corresponding PTE for the given virtual address
 	return &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
@@ -284,14 +284,14 @@ void unmap_page(void *virtual_address) {
  */
 uint8_t initialize_virtual_memory(void) {
 	// allocate physical block for the page directory
-	page_directory *pd = (page_directory*) allocate_blocks(1);
+	struct page_directory *pd = (struct page_directory*) allocate_blocks(1);
 
 	if (pd == NULL) {
 		return 1;
 	}
 
 	// clear all entries in the page directory
-	memset(pd, 0, sizeof(page_directory));
+	memset(pd, 0, sizeof(struct page_directory));
 
 	// mark each entry in the PD as read-write
 	// for (uint32_t i = 0; i < 1024; i++) {
@@ -300,25 +300,25 @@ uint8_t initialize_virtual_memory(void) {
 
 	// allocate physical block for the page table that will be used
 	// for the identity mapping of the first 4MB
-	page_table *pt = (page_table*) allocate_blocks(1);
+	struct page_table *pt = (struct page_table*) allocate_blocks(1);
 
 	if (pt == NULL) {
 		return 1;
 	}
 
 	// clear all entries in the page table
-	memset(pt, 0, sizeof(page_table));
+	memset(pt, 0, sizeof(struct page_table));
 
 	// allocate physical block for the page table that will be used
 	// for the higher half kernel
-	page_table *pt3gb = (page_table*) allocate_blocks(1);
+	struct page_table *pt3gb = (struct page_table*) allocate_blocks(1);
 
 	if (pt3gb == NULL) {
 		return 1;
 	}
 
 	// clear all entries in the page table
-	memset(pt3gb, 0, sizeof(page_table));
+	memset(pt3gb, 0, sizeof(struct page_table));
 
 	// map 4MB of memory starting at 0x00000000 to the 4MB of physical memory starting
 	// at 0x00000000 (identity mapping)
@@ -380,8 +380,8 @@ uint8_t initialize_virtual_memory(void) {
  *
  * @return New page directory
  */
-page_directory *create_address_space(void) {
-    page_directory *dir = allocate_blocks(1);
+struct page_directory *create_address_space(void) {
+    struct page_directory *dir = allocate_blocks(1);
 
     if (dir == NULL) {
         return NULL;
@@ -391,7 +391,7 @@ page_directory *create_address_space(void) {
 #endif
 
 	// clear all entries in the page directory
-	memset(dir, 0, sizeof(page_directory));
+	memset(dir, 0, sizeof(struct page_directory));
 
     // map kernel into the virtual address space:
     // copy entries in the current page directory - what we need are only the
@@ -429,7 +429,7 @@ void restore_kernel_address_space(void) {
         }
     }
 
-    page_directory *tmp = current_page_directory;
+    struct page_directory *tmp = current_page_directory;
 
     // set kernel page directory to current page directory
     ret = set_page_directory(kernel_page_directory);
@@ -457,7 +457,7 @@ void free_proc_phys_mem(void) {
             pd_entry pde = current_page_directory->entries[i];
 
             // get page table corresponding to the pde
-            page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(&pde);
+            struct page_table *pt = (struct page_table*)PAGE_GET_PHY_ADDRESS(&pde);
             // printk("freeing %x %d\n", pt, i);
 
             for (uint32_t j = 0; j < 1024; j++) {
@@ -482,14 +482,14 @@ void free_proc_phys_mem(void) {
  */
 address get_physical_addr(address virt_addr) {
 	// get current page directory
-	page_directory *pd = current_page_directory;
+	struct page_directory *pd = current_page_directory;
 
     printk("%d - %x\n", PAGE_DIRECTORY_INDEX(virt_addr),pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)]);
 	// get corresponding PDE for the given virtutal address
 	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)];
 
 	// get the page table
-	page_table *pt = (page_table*)PAGE_GET_PHY_ADDRESS(pde);
+	struct page_table *pt = (struct page_table*)PAGE_GET_PHY_ADDRESS(pde);
 
     printk("%x - %x\n", PAGE_TABLE_INDEX(virt_addr), pt->entries[PAGE_TABLE_INDEX(virt_addr)]);
 

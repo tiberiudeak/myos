@@ -10,11 +10,11 @@
 #ifdef CONFIG_SH_HISTORY
 #define MAX_HISTORY_SIZE        CONFIG_SH_HISTORY_MAX_SIZE
 
-typedef struct {
+struct sh_circular_buffer {
     char commands[MAX_HISTORY_SIZE][MAX_COMMAND_LENGTH];
     int start;
     int count;
-} sh_circular_buffer;
+};
 
 void history_add_command(const char *);
 void history_display(void);

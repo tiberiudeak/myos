@@ -3,15 +3,15 @@
 
 #include <stdint.h>
 
-typedef struct {
+struct interrupt_regs {
 	uint32_t cr2;
 	uint32_t ds;
 	uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;
 	uint32_t int_no, err_code;
 	uint32_t eip, cs, eflags, useresp, ss;
-} interrupt_regs;
+};
 
-void isr_handler(interrupt_regs *r);
+void isr_handler(struct interrupt_regs *r);
 void add_isrs_to_idt(void);
 
 extern void isr0();

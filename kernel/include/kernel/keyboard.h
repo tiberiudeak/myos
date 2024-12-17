@@ -60,14 +60,14 @@ static uint8_t scancode_map_shifted[] =
 
 /* TODO: add scancode 2 and 3 */
 
-typedef struct {
+struct key_info {
 	uint8_t scancode;
 	uint8_t shift;
 	uint8_t ctrl;
 	uint8_t caps;
-} __attribute__((packed)) key_info_t;
+} __attribute__((packed));
 
-void keyboard_handler(interrupt_regs *);
+void keyboard_handler(struct interrupt_regs *);
 void keyboard_init(void);
 
 #endif /* !KERNEL_KEY_H */

@@ -9,8 +9,8 @@
 #include <stddef.h>
 #include <string.h>
 
-task_queue_t *task_queue = NULL;
-task_struct *current_running_task;
+struct task_queue *task_queue = NULL;
+struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
 #ifdef CONFIG_RR_TIME_QUANTUM
@@ -24,8 +24,8 @@ const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
  *
  * @param task  The task to be put in the task queue
  */
-void enqueue_task(task_struct *task) {
-    task_node_t *new_node = kmalloc(sizeof(task_node_t));
+void enqueue_task(struct task_struct *task) {
+    struct task_node *new_node = kmalloc(sizeof(struct task_node));
 
     if (new_node != NULL) {
         new_node->task = task;
@@ -49,14 +49,14 @@ void enqueue_task(task_struct *task) {
  *
  * @return The task taken out from the queue
  */
-task_struct *dequeue_task(void) {
+struct task_struct *dequeue_task(void) {
     if (task_queue->front == NULL)
         return NULL;    // empty queue
 
 
-    task_node_t *front_node = task_queue->front;
+    struct task_node *front_node = task_queue->front;
 
-    task_struct *task = front_node->task;
+    struct task_struct *task = front_node->task;
     task_queue->front = front_node->next;
 
     if (task_queue->front == NULL) {
@@ -90,7 +90,7 @@ uint8_t scheduler_init(void) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t init_task_queue(void) {
-    task_queue = kmalloc(sizeof(task_queue_t));
+    task_queue = kmalloc(sizeof(struct task_queue));
 
     if (task_queue == NULL) {
         printk("out of memory\n");
@@ -123,7 +123,7 @@ void simple_task_scheduler(void) {
             continue;
         }
 
-        task_struct *task = dequeue_task();
+        struct task_struct *task = dequeue_task();
         current_running_task = task;
 
         void (*program)(int argc, char *argv[]);
@@ -155,7 +155,7 @@ void simple_task_scheduler(void) {
 uint32_t queue_size(void) {
     uint32_t count = 0;
 
-    task_node_t *current = task_queue->front;
+    struct task_node *current = task_queue->front;
     while (current != NULL) {
         count++;
         current = current->next;
@@ -178,6 +178,15 @@ void init_task_func(int argc, char *argv[]) {
 #ifdef CONFIG_VERBOSE
     printk("init process started!\n");
 #endif
+#ifdef CONFIG_TTY_VBE
+	int i = 0;
+	while (1) {
+		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLACK);
+		i++;
+		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLUE);
+		wait_millis(10);
+	}
+#endif
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
@@ -190,7 +199,7 @@ void init_task_func(int argc, char *argv[]) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t init_task_queue_rr(void) {
-    task_queue = kmalloc(sizeof(task_queue_t));
+    task_queue = kmalloc(sizeof(struct task_queue));
 
     if (task_queue == NULL) {
         printk("out of memory\n");
@@ -217,7 +226,7 @@ uint8_t init_task_queue_rr(void) {
 
     // create init task and add it to the queue
     void (*init)(int, char**) = init_task_func;
-    task_struct *init_task = create_task(init, 1, argv, 0);
+    struct task_struct *init_task = create_task(init, 1, argv, 0);
 
     if (init_task == NULL) {
         printk("init task is NULL!\n");
@@ -243,7 +252,7 @@ uint8_t init_task_queue_rr(void) {
  */
 void start_init_task(void) {
     // take init task from the queue
-    task_struct *task = dequeue_task();
+    struct task_struct *task = dequeue_task();
 
     // update current running task
     current_running_task = task;
@@ -279,7 +288,7 @@ uint8_t scheduler_init_rr(void) {
  * @param r "Context" of the previous task that needs to
  *          be updated
  */
-void change_context(interrupt_regs *r) {
+void change_context(struct interrupt_regs *r) {
     // TODO: update TSS for ring 0
 
     __asm__ __volatile__ ("mov $0x23, %eax\n"
@@ -306,7 +315,7 @@ void change_context(interrupt_regs *r) {
 }
 
 // start kernel task - work in progress
-void change_context_kernel(interrupt_regs *r) {
+void change_context_kernel(struct interrupt_regs *r) {
     *(&r->ds) = 0x10;
     *(&r->ss) = 0x10;
 
@@ -329,7 +338,7 @@ void change_context_kernel(interrupt_regs *r) {
  * @param r "Context" of the previous running task that needs to
  *          be updated
  */
-void resume_context(interrupt_regs *r) {
+void resume_context(struct interrupt_regs *r) {
     // restore segments
     *(&r->ss) = current_running_task->context->ss;
     *(&r->ds) = current_running_task->context->ds;
@@ -371,7 +380,7 @@ void schedule(void) {
     }
 
     // take task from the queue and update current running task
-    task_struct *task = dequeue_task();
+    struct task_struct *task = dequeue_task();
     current_running_task = task;
 
     // change virtual address space for user tasks
@@ -388,7 +397,7 @@ void display_running_processes(void) {
     //printk("processes:\n");
     printk("id: %d %s (running)\n", current_running_task->task_id,
             current_running_task->argv[0]);
-    task_node_t *tmp = task_queue->front;
+    struct task_node *tmp = task_queue->front;
 
     while (tmp != NULL) {
         printk("id: %d %s\n", tmp->task->task_id,

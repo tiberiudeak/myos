@@ -4,8 +4,8 @@
 #include <kernel/tty.h>
 #include <string.h>
 
-idt_gate_t idt_entries[256];
-idt_ptr_t idt_ptr_reg;
+struct idt_gate idt_entries[256];
+struct idt_ptr idt_ptr_reg;
 
 /**
  * @brief Set the idt_entries gate.
@@ -41,10 +41,10 @@ void init_idt() {
 #ifdef CONFIG_VERBOSE
 	printk("Initializing IDT");
 #endif
-	idt_ptr_reg.limit = (sizeof(idt_gate_t) * 256) - 1;
+	idt_ptr_reg.limit = (sizeof(struct idt_gate) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t)&idt_entries;
 
-	memset(&idt_entries, 0, sizeof(idt_gate_t) * 256);
+	memset(&idt_entries, 0, sizeof(struct idt_gate) * 256);
 
 	PIC_configure(0x20, 0x28);
 

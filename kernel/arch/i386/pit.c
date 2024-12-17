@@ -13,9 +13,9 @@ uint32_t uptime;
 
 // data from the scheduler
 extern const uint32_t running_time_quantum_ms;
-extern task_queue_t *task_queue;
+extern struct task_queue_t *task_queue;
 extern uint8_t scheduler_initialized;
-extern task_struct *current_running_task;
+extern struct task_struct *current_running_task;
 
 /**
  * @brief Timer interrupt handler
@@ -26,7 +26,7 @@ extern task_struct *current_running_task;
  * This is also the interrupt used by the round-robin scheduler
  * to switch between tasks.
  */
-void PIT_IRQ0_handler(interrupt_regs *r) {
+void PIT_IRQ0_handler(struct interrupt_regs *r) {
     uint8_t ret = 0;
 	ticks++;
 	uptime++;
@@ -119,7 +119,7 @@ void PIT_init() {
 	ticks = 0;
 	uptime = 0;
 
-    void (*timer_handler)(interrupt_regs *r) = PIT_IRQ0_handler;
+    void (*timer_handler)(struct interrupt_regs *r) = PIT_IRQ0_handler;
 	irq_install_handler(0, timer_handler);
 }
 

@@ -53,7 +53,7 @@ uint8_t cmos_get_rtc_register(uint8_t reg) {
  * midnight is 12, 1am  is 1 etc.
  */
 void rtc_print_datetime(void) {
-	rtc_datetime_t time1, time2;
+	struct rtc_datetime time1, time2;
 	uint16_t century = 20; // update every century!
 
 	while (cmos_update_in_progress()) ;

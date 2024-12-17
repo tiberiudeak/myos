@@ -79,25 +79,25 @@ typedef uint32_t address;
  * PAge directory: array of PAGES_PER_TABLE entries
  * 1024 page tables * 4MB = 4GB
  */
-typedef struct {
+struct page_directory {
 	pd_entry entries[PAGES_PER_TABLE];
-} page_directory;
+};
 
 /**
  * Page table: array of PAGES_PER_TABLE entries
  * 1024 * 4096 = 4MB each
  */
-typedef struct {
+struct page_table {
 	pt_entry entries[TABLES_PER_DIR];
-} page_table;
+};
 
 uint8_t initialize_virtual_memory(void);
 uint8_t map_page(void*, void*);
 uint8_t map_user_page(void*, void*);
 void unmap_page(void*);
 pt_entry *get_page(address);
-page_directory *create_address_space(void);
-uint8_t set_page_directory(page_directory *);
+struct page_directory *create_address_space(void);
+uint8_t set_page_directory(struct page_directory *);
 void restore_kernel_address_space(void);
 address get_physical_addr(address);
 void print_current_pd();

@@ -7,14 +7,14 @@
 #define CMOS_ADDRESS_PORT	0x70
 #define CMOS_DATA_PORT		0x71
 
-typedef struct {
+struct rtc_datetime {
 	uint8_t seconds;
 	uint8_t minutes;
 	uint8_t hour;
 	uint8_t	day;
 	uint8_t month;
 	uint16_t year;
-} __attribute__ ((packed)) rtc_datetime_t;
+} __attribute__ ((packed));
 
 typedef enum {
 	CMOS_RTC_REG_SECONDS			= 0x00,

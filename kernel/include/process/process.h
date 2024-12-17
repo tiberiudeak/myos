@@ -4,16 +4,16 @@
 #include <stdint.h>
 #include <mm/vmm.h>
 
-typedef enum {
+enum task_state {
     TASK_CREATED,
     TASK_READY,
     TASK_RUNNING,
     TASK_BLOCKED,
     TASK_TERMINATED
-} task_state_t;
+};
 
 // context of a running process
-typedef struct {
+struct proc_context {
     uint32_t gs;
     uint32_t fs;
     uint32_t es;
@@ -30,31 +30,31 @@ typedef struct {
     uint32_t cs;
     uint32_t flags;
     uint32_t ss;
-} proc_context_t;
+};
 
-typedef struct {
+struct mapping {
     void *address;
     uint32_t size;
-    struct mapping_t *next;
-} mapping_t;
+    struct mapping *next;
+};
 
 // task
-typedef struct {
+struct task_struct {
     uint32_t task_id;
-    task_state_t state;
+    enum task_state state;
     void *exec_address;
     int argc;
     char **argv;
-    page_directory *vas;
-    proc_context_t *context;
+    struct page_directory *vas;
+    struct proc_context *context;
     void *heap_start;
     void *program_break;
     uint32_t heap_size_blocks;
-    mapping_t *maps;
-} task_struct;
+    struct mapping *maps;
+};
 
-task_struct *create_task(void *, int, char**, int);
-void destroy_task(task_struct *);
+struct task_struct *create_task(void *, int, char**, int);
+void destroy_task(struct task_struct *);
 
 #ifdef CONFIG_FCFS_SCH
     void enter_usermode(uint32_t, uint32_t);

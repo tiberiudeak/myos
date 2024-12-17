@@ -5,9 +5,9 @@
 extern void gdt_flush(uint32_t);
 extern void tss_flush();
 
-gdt_entry_t gdt_entries[GDT_ENTRIES];
-gdt_ptr_t gdt_ptr;
-tss_entry_t tss_entry;
+struct gdt_entry gdt_entries[GDT_ENTRIES];
+struct gdt_ptr gdt_ptr;
+struct tss_entry tss_entry;
 
 /**
  * @brief Initialize the Global Descriptor Table (GDT).
@@ -27,7 +27,7 @@ void init_gdt() {
 #ifdef CONFIG_VERBOSE
 	printk("Initializing GDT");
 #endif
-	gdt_ptr.limit = (sizeof(gdt_entry_t) * GDT_ENTRIES) - 1;
+	gdt_ptr.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
 	gdt_ptr.base = (uint32_t)&gdt_entries;
 
 	// Null segment

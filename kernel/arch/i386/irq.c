@@ -13,7 +13,7 @@ void *irq_routines[16] = { 0 };
  * @param irq      The IRQ number.
  * @param handler  The handler function.
  */
-void irq_install_handler(int irq, void (*handler)(interrupt_regs *r)) {
+void irq_install_handler(int irq, void (*handler)(struct interrupt_regs *r)) {
 	irq_routines[irq] = handler;
 }
 
@@ -36,8 +36,8 @@ void irq_uninstall_handler(int irq) {
  *
  * @param r  The interrupt registers.
  */
-void irq_handler(interrupt_regs *r) {
-	void (*handler)(interrupt_regs *r);
+void irq_handler(struct interrupt_regs *r) {
+	void (*handler)(struct interrupt_regs *r);
 	handler = irq_routines[r->int_no - 32];
 	if (handler) {
 		handler(r);

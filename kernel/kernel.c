@@ -22,7 +22,7 @@
 extern char kernel_end[];
 
 // the system-wide table of open files
-open_files_table_t *open_files_table;
+struct open_files_table *open_files_table;
 
 void halt_processor(void) {
 	while(1) __asm__ __volatile__ ("cli; hlt");

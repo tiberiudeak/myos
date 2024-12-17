@@ -147,7 +147,7 @@ void display_message(WINDOW *win, const char *message, int x, int y, char *title
     wrefresh(win);
 }
 
-void display_message2(WINDOW *win, Config config, int x, int y, char *extra) {
+void display_message2(WINDOW *win, struct Config config, int x, int y, char *extra) {
 
     if (config.type == BOOL && config.default_val == 1) {
         if (extra)
@@ -169,7 +169,7 @@ void display_message2(WINDOW *win, Config config, int x, int y, char *extra) {
     }
 }
 
-void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
+void display_configs(WINDOW *win, int highlight, struct Config *configs, int n_configs,
                         int n_choices, int x, int y) {
 
     for (int i = 0; i < n_configs; ++i) {
@@ -220,7 +220,7 @@ void display_configs(WINDOW *win, int highlight, Config *configs, int n_configs,
     wrefresh(win);
 }
 
-void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices, int x, int y) {
+void display_choices(WINDOW *win, int highlight, struct Choice *choices, int n_choices, int x, int y) {
     for (int i = 0; i < n_choices; ++i) {
         if (highlight == i + 1) {
             wattron(win, A_REVERSE);
@@ -236,7 +236,7 @@ void display_choices(WINDOW *win, int highlight, Choice *choices, int n_choices,
     wrefresh(win);
 }
 
-void display_menu(WINDOW *win, int highlight, Menu *entries, int n_entries, int x, int y) {
+void display_menu(WINDOW *win, int highlight, struct Menu *entries, int n_entries, int x, int y) {
     draw_window(win, getmaxx(win), main_menu_title);
 
     for (int i = 0; i < n_entries; ++i) {
@@ -252,7 +252,7 @@ void display_menu(WINDOW *win, int highlight, Menu *entries, int n_entries, int 
     wrefresh(win);
 }
 
-void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
+void display_choice(WINDOW *win, struct Choice choice, WINDOW *win2) {
 
     int height, width;
     getmaxyx(win, height, width);
@@ -313,7 +313,7 @@ void display_choice(WINDOW *win, Choice choice, WINDOW *win2) {
     }
 }
 
-void display_int_window(WINDOW *win, Config *config) {
+void display_int_window(WINDOW *win, struct Config *config) {
 
     int height, width;
     getmaxyx(win, height, width);
@@ -350,7 +350,7 @@ void display_int_window(WINDOW *win, Config *config) {
     }
 }
 
-void display_submenu(WINDOW *win, Menu menu, WINDOW *win2) {
+void display_submenu(WINDOW *win, struct Menu menu, WINDOW *win2) {
     int height, width;
     getmaxyx(win, height, width);
 
@@ -477,11 +477,11 @@ void print_enabled_configurations(void) {
     int n = ARRAY_SIZE(main_menu);
 
     for (int i = 0; i < n; i++) {
-        Menu current = main_menu[i];
+        struct Menu current = main_menu[i];
 
         // get configurations from choices
         for (int j = 0; j < current.n_choices; j++) {
-            Choice c = current.choices[j];
+            struct Choice c = current.choices[j];
 
             for (int k = 0; k < c.n_configs; k++) {
                 if (check_dependencies(c.configs[k])) {
@@ -518,11 +518,11 @@ int check_config(char *config) {
     int n = ARRAY_SIZE(main_menu);
 
     for (int i = 0; i < n; i++) {
-        Menu current = main_menu[i];
+        struct Menu current = main_menu[i];
 
         // get configurations from choices
         for (int j = 0; j < current.n_choices; j++) {
-            Choice c = current.choices[j];
+            struct Choice c = current.choices[j];
 
             for (int k = 0; k < c.n_configs; k++) {
                 if (strcmp(c.configs[k].symbol, config) == 0) {
@@ -548,7 +548,7 @@ int check_config(char *config) {
     return 0;
 }
 
-int check_dependencies(Config config) {
+int check_dependencies(struct Config config) {
     const char delim[] = ",";
     char *token;
 

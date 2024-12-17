@@ -17,33 +17,33 @@ typedef enum {
     INT, BOOL
 } type;
 
-typedef struct {
+struct Config {
     char *symbol;
     char *prompt;
     char *help_message;
     int default_val;
     type type;
     char *deps;
-} Config;
+};
 
-typedef struct {
+struct Choice {
     char *prompt;
     char *help_message;
-    Config *configs;
+    struct Config *configs;
     int n_configs;
-} Choice;
+};
 
-typedef struct {
+struct Menu {
     char *prompt;
     char *help;
-    Choice *choices;
-    Config *configs;
+    struct Choice *choices;
+    struct Config *configs;
     int n_choices;
     int n_configs;
-} Menu;
+};
 
 // ==============================General Setup configurations=====================================
-Config general_setup_configs[] = {
+struct Config general_setup_configs[] = {
     {
         "CONFIG_TTY_VBE_WIDTH",
         "Graphics Mode Width",
@@ -143,7 +143,7 @@ Config general_setup_configs[] = {
 #endif
 };
 
-Config video_mode_configs[] = {
+struct Config video_mode_configs[] = {
     {
         "CONFIG_TTY_VGA",
         "VGA Text Mode",
@@ -190,7 +190,7 @@ Config video_mode_configs[] = {
     }
 };
 
-Choice general_setup_choices[] = {
+struct Choice general_setup_choices[] = {
     {
         "Video Mode",
         "Video Mode Configuration\n\n\
@@ -206,7 +206,7 @@ Choice general_setup_choices[] = {
 
 
 // ==============================Memory Manager configurations====================================
-Config memory_manager_configs[] = {
+struct Config memory_manager_configs[] = {
     {
         "CONFIG_READ_AFTER_FREE_PROT",
         "Read after free protection",
@@ -237,7 +237,7 @@ Config memory_manager_configs[] = {
 #endif
 };
 
-Config mem_alloc_alg_configs[] = {
+struct Config mem_alloc_alg_configs[] = {
     {
         "CONFIG_UVMM_BESTFIT",
         "Best Fit",
@@ -365,7 +365,7 @@ Config mem_alloc_alg_configs[] = {
     }
 };
 
-Choice memory_manager_choices[] = {
+struct Choice memory_manager_choices[] = {
     {
         "Memory Allocation Algorithm",
         "Memory Allocation Algorithms\n\n\
@@ -396,7 +396,7 @@ Choice memory_manager_choices[] = {
 
 
 // ==============================Scheduler configurations=========================================
-Config scheduler_configs[] = {
+struct Config scheduler_configs[] = {
     {
         "CONFIG_RR_TIME_QUANTUM",
         "Round-Robin Time Quantum",
@@ -460,7 +460,7 @@ Config scheduler_configs[] = {
 #endif
 };
 
-Config scheduler_alg_configs[] = {
+struct Config scheduler_alg_configs[] = {
     {
         "CONFIG_ROUND_ROBIN",
         "Round-Robin (RR)",
@@ -552,7 +552,7 @@ Config scheduler_alg_configs[] = {
     }
 };
 
-Choice scheduler_choices[] = {
+struct Choice scheduler_choices[] = {
     {
         "Scheduling Algorithm",
         "Scheduling Algorithm\n\n\
@@ -571,7 +571,7 @@ Choice scheduler_choices[] = {
 
 
 // ==============================Shell configurations=============================================
-Config shell_configs[] = {
+struct Config shell_configs[] = {
     {
         "CONFIG_SH_HISTORY",
         "Shell History",
@@ -609,7 +609,7 @@ Config shell_configs[] = {
 #endif
 };
 
-Config shell_fgc_configs[] = {
+struct Config shell_fgc_configs[] = {
     {
         "CONFIG_SH_FGC_BLACK",
         "Black",
@@ -755,7 +755,7 @@ Config shell_fgc_configs[] = {
     }
 };
 
-Config shell_bgc_configs[] = {
+struct Config shell_bgc_configs[] = {
     {
         "CONFIG_SH_BGC_BLACK",
         "Black",
@@ -901,7 +901,7 @@ Config shell_bgc_configs[] = {
     }
 };
 
-Choice shell_choices[] = {
+struct Choice shell_choices[] = {
     {
         "Terminal Background Color",
         "Terminal Background Color\n\n\
@@ -926,7 +926,7 @@ char navigation_info[] = "Use the arrow keys navigate the menu. Enter selects me
   Pressing 'Y' includes/enables, 'N' excludes/disables features. Press 'q' to exit\n\
   Legend: (*) enabled, ( ) excluded";
 
-Menu main_menu[] = {
+struct Menu main_menu[] = {
     {
         "General Setup",
         "General Setup Menu\n\n\
@@ -996,11 +996,11 @@ char *main_menu_title = "myOS x86_32 Kernel Configuration";
 
 void draw_window(WINDOW *win, int width, const char *title);
 void display_message(WINDOW *win, const char *message, int x, int y, char *title);
-void display_menu(WINDOW *menu_win, int highlight, Menu *choices, int n_choices, int x, int y);
+void display_menu(WINDOW *menu_win, int highlight, struct Menu *choices, int n_choices, int x, int y);
 void handle_general_setup_submenu(WINDOW *win, WINDOW *win2);
-void display_submenu(WINDOW *win, Menu menu, WINDOW *win2);
+void display_submenu(WINDOW *win, struct Menu menu, WINDOW *win2);
 void print_enabled_configurations(void);
-int check_dependencies(Config config);
+int check_dependencies(struct Config config);
 
 #endif
 

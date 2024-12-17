@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include <malloc.h>
 
-block_meta *metadata_blk_header = NULL;
+struct block_meta *metadata_blk_header = NULL;
 
-block_meta *last_block = NULL;
+struct block_meta *last_block = NULL;
 
 /**
  * @brief Initialize memory managed by malloc
@@ -37,8 +37,8 @@ void malloc_init(void) {
  * @return Block address that fits the requested size
  */
 void *malloc_best_fit(size_t size) {
-    block_meta *current = metadata_blk_header;
-    block_meta *best_fit = NULL;
+    struct block_meta *current = metadata_blk_header;
+    struct block_meta *best_fit = NULL;
     size_t min = 0xFFFFFFFF;
 
     while (current != NULL) {
@@ -67,7 +67,7 @@ void *malloc_best_fit(size_t size) {
  * @return Block address that fits the requested size
 */
 void *malloc_first_fit(size_t size) {
-    block_meta *current = metadata_blk_header;
+    struct block_meta *current = metadata_blk_header;
 
     while (current != NULL) {
         if (size <= current->size && current->status == STATUS_FREE) {
@@ -93,8 +93,8 @@ void *malloc_first_fit(size_t size) {
  * @return Block address that fits the requested size
 */
 void *malloc_worst_fit(size_t size) {
-    block_meta *current = metadata_blk_header;
-    block_meta *worst_fit = NULL;
+    struct block_meta *current = metadata_blk_header;
+    struct block_meta *worst_fit = NULL;
     size_t max = 0;
 
     while (current != NULL) {
@@ -126,7 +126,7 @@ void *malloc_worst_fit(size_t size) {
  * @return Block address that fits the requested size
 */
 void *malloc_next_fit(size_t size) {
-    block_meta *current = last_block;
+    struct block_meta *current = last_block;
 
     while (current != NULL) {
         if (size <= current->size && current->status == STATUS_FREE) {
@@ -158,7 +158,7 @@ void *malloc_next_fit(size_t size) {
  * prints their size and status.
  */
 void print_malloc_list(void) {
-    block_meta *tmp = metadata_blk_header;
+    struct block_meta *tmp = metadata_blk_header;
 
     while (tmp != NULL) {
         printf("size: %d, status %d\n", tmp->size, tmp->status);
@@ -179,8 +179,8 @@ void print_malloc_list(void) {
  *
  * @return Address of data in the first block
  */
-void *malloc_split_block(block_meta *block, size_t size) {
-    block_meta *new_block = (void*) block + METADATA_BLK_SIZE + ALIGN(size);
+void *malloc_split_block(struct block_meta *block, size_t size) {
+    struct block_meta *new_block = (void*) block + METADATA_BLK_SIZE + ALIGN(size);
 
     new_block->size = block->size - ALIGN(size) - METADATA_BLK_SIZE;
     new_block->status = STATUS_FREE;
@@ -205,7 +205,7 @@ void *malloc_split_block(block_meta *block, size_t size) {
  * @return 0 if successfully expanded memory, -1 otherwise
  */
 uint8_t expand_last_block(size_t size) {
-    block_meta *current = metadata_blk_header;
+    struct block_meta *current = metadata_blk_header;
 
     while (current->next != NULL) {
         current = current->next;
@@ -237,7 +237,7 @@ uint8_t expand_last_block(size_t size) {
             return -1;
         }
 
-        block_meta *new_block = (block_meta *) addr;
+        struct block_meta *new_block = (struct block_meta *) addr;
         new_block->size = ALIGN(size);
         new_block->status = STATUS_FREE;
         new_block->next = NULL;
@@ -272,13 +272,13 @@ void *malloc(size_t size) {
 alloc_malloc:
     // find block for the requested size
 #ifdef CONFIG_UVMM_BESTFIT
-    block_meta *block = malloc_best_fit(size);
+    struct block_meta *block = malloc_best_fit(size);
 #elif CONFIG_UVMM_FIRSTFIT
-    block_meta *block = malloc_first_fit(size);
+    struct block_meta *block = malloc_first_fit(size);
 #elif CONFIG_UVMM_WORSTFIT
-    block_meta *block = malloc_worst_fit(size);
+    struct block_meta *block = malloc_worst_fit(size);
 #elif CONFIG_UVMM_NEXTFIT
-    block_meta *block = malloc_next_fit(size);
+    struct block_meta *block = malloc_next_fit(size);
 #endif
 
     if (block != NULL) {
@@ -317,8 +317,8 @@ void free(void *ptr) {
     if (ptr == NULL)
         return;
 
-    block_meta *current = metadata_blk_header;
-    block_meta *prev = NULL;
+    struct block_meta *current = metadata_blk_header;
+    struct block_meta *prev = NULL;
 
     while (current != NULL) {
         if ((void*) current + METADATA_BLK_SIZE == ptr) {
@@ -348,7 +348,7 @@ void free(void *ptr) {
         }
 
         prev = current;
-        current = (block_meta *) current->next;
+        current = (struct block_meta *) current->next;
     }
 }
 

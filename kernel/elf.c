@@ -18,7 +18,7 @@ extern void syscall_open();
 extern void syscall_close();
 
 elf_phys_mem_info *elf_phys_mem_info_header = NULL;
-extern task_struct *current_running_task;
+extern struct task_struct *current_running_task;
 
 /**
  * @brief Add new node with the given info to list
@@ -76,7 +76,7 @@ void deallocate_elf_memory(void) {
 }
 
 uint8_t add_process_mapping(void *addr, uint32_t size) {
-    mapping_t *map = kmalloc(sizeof(mapping_t));
+    struct mapping *map = kmalloc(sizeof(struct mapping));
 
     if (map == NULL) {
         return 1;
@@ -91,13 +91,13 @@ uint8_t add_process_mapping(void *addr, uint32_t size) {
         return 0;
     }
 
-    mapping_t *tmp = current_running_task->maps;
+    struct mapping *tmp = current_running_task->maps;
 
     while (tmp->next != NULL) {
-        tmp = (mapping_t*) tmp->next;
+        tmp = (struct mapping *) tmp->next;
     }
 
-    tmp->next = (struct mapping_t *) map;
+    tmp->next = (struct mapping *) map;
 
     return 0;
 }
@@ -408,7 +408,7 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
     }
 
     // data from the kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
     int ret;
 
     // open syscall to get the fd for the elf file
@@ -426,7 +426,7 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
         goto err2;
     }
 
-    open_files_table_t *oft_entry = open_files_table + fd;
+    struct open_files_table *oft_entry = open_files_table + fd;
 
     ret = check_elf(oft_entry->address);
 
@@ -486,7 +486,7 @@ int32_t execute_elf(int argc, char **argv) {
     }
 
     // data from the kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
     int ret;
 
     // open syscall to get the fd for the elf file
@@ -505,7 +505,7 @@ int32_t execute_elf(int argc, char **argv) {
         goto err2;
     }
 
-    open_files_table_t *oft_entry = open_files_table + fd;
+    struct open_files_table *oft_entry = open_files_table + fd;
 
     ret = check_elf(oft_entry->address);
 

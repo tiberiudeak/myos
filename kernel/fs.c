@@ -8,9 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-superblock_t *superblock = (superblock_t*)SUPERBLOCK_ADDRESS;
-inode_block_t current_directory;
-inode_block_t parent_directory;
+struct superblock *superblock = (struct superblock*)SUPERBLOCK_ADDRESS;
+struct inode_block current_directory;
+struct inode_block parent_directory;
 char current_path[MAX_PATH_LENGTH];
 
 void print_superblock_info(void) {
@@ -39,7 +39,7 @@ void print_superblock_info(void) {
  *
  * @return 1 if error occured, 0 otherwise
  */
-uint8_t load_file(inode_block_t *inode, uint32_t address) {
+uint8_t load_file(struct inode_block *inode, uint32_t address) {
     uint32_t number_of_blocks = bytes_to_blocks(inode->size_bytes);
     uint32_t read_blocks = 0;
     uint32_t offset = 0;
@@ -75,8 +75,8 @@ uint8_t load_file(inode_block_t *inode, uint32_t address) {
  *
  * @return The inode corresponding to the given id if found, empty inode otherwise
  */
-inode_block_t get_inode_from_id(uint32_t id) {
-    inode_block_t result = (inode_block_t){0};
+struct inode_block get_inode_from_id(uint32_t id) {
+    struct inode_block result = (struct inode_block){0};
     void *addr = kmalloc(FS_BLOCK_SIZE);
 
     if (addr == NULL) {
@@ -98,8 +98,8 @@ inode_block_t get_inode_from_id(uint32_t id) {
         }
 
         // block with inodes is loaded at addr, go through each inode and check id
-        for (size_t j = 0; j < FS_BLOCK_SIZE / sizeof(inode_block_t); j++) {
-            inode_block_t *current_inode = (inode_block_t*) addr + j;
+        for (size_t j = 0; j < FS_BLOCK_SIZE / sizeof(struct inode_block); j++) {
+            struct inode_block *current_inode = (struct inode_block*) addr + j;
 
             if (current_inode->id == id) {
                 result = *current_inode;
@@ -142,10 +142,10 @@ uint8_t fs_print_dir(void) {
         return 1;
     }
 
-    int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
+    int limit = (FS_BLOCK_SIZE / sizeof(struct directory_entry)) * bytes_to_blocks(needed_bytes);
 
     for (int i = 0; i < limit; i++) {
-        directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+        struct directory_entry *dir_entry = (struct directory_entry*)addr + i;
 
         // file's id
         uint32_t id = dir_entry->id;
@@ -155,7 +155,7 @@ uint8_t fs_print_dir(void) {
         }
 
         // search inode for file id
-        inode_block_t file_inode = get_inode_from_id(id);
+        struct inode_block file_inode = get_inode_from_id(id);
 
         if (file_inode.id == 0) {
             printk("file with id %d not found\n", id);
@@ -197,11 +197,11 @@ void ls_root_dir(void) {
         }
 
         // print content of root dir
-        // max entries is FS_BLOCK_SIZE / sizeof(directory_entry_t)
-        int limit = FS_BLOCK_SIZE / sizeof(directory_entry_t);
+        // max entries is FS_BLOCK_SIZE / sizeof(struct directory_entry)
+        int limit = FS_BLOCK_SIZE / sizeof(struct directory_entry);
 
         for (int i = 0; i < limit; i++) {
-            directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+            struct directory_entry *dir_entry = (struct directory_entry*)addr + i;
 
             if (dir_entry->id != 0) {
                 printk("%s\n", dir_entry->name);
@@ -249,7 +249,7 @@ uint8_t fs_init(void) {
         }
 
         // go to inode with id 1 (root dir) (second inode in the block)
-        inode_block_t *root_dir_inode = (inode_block_t*) ((void*)addr + sizeof(inode_block_t));
+        struct inode_block *root_dir_inode = (struct inode_block*) ((void*)addr + sizeof(struct inode_block));
 
         current_directory = *root_dir_inode;
         parent_directory = current_directory;   // parent of root is root
@@ -265,11 +265,11 @@ uint8_t fs_init(void) {
 
 
 // get inode of the requested file (last file in the given path)
-inode_block_t get_inode_from_path(char *path) {
+struct inode_block get_inode_from_path(char *path) {
     
     char *character = path;
-    inode_block_t current_directory_copy = current_directory;
-    inode_block_t parent_directory_copy = parent_directory;
+    struct inode_block current_directory_copy = current_directory;
+    struct inode_block parent_directory_copy = parent_directory;
     int file_found = 0;
 
     if (*character == '/') {
@@ -301,7 +301,7 @@ inode_block_t get_inode_from_path(char *path) {
 
             if (addr == NULL) {
                 printk("out of memory\n");
-                return (inode_block_t){0};
+                return (struct inode_block){0};
             }
 
             // load data blocks containing direcory entries
@@ -309,13 +309,13 @@ inode_block_t get_inode_from_path(char *path) {
 
             if (ret) {
                 kfree(addr);
-                return (inode_block_t){0};
+                return (struct inode_block){0};
             }
 
-            int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
+            int limit = (FS_BLOCK_SIZE / sizeof(struct directory_entry)) * bytes_to_blocks(needed_bytes);
 
             for (int i = 0; i < limit; i++) {
-                directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+                struct directory_entry *dir_entry = (struct directory_entry*)addr + i;
 
                 if (strcmp((char*)dir_entry->name, "..") == 0) {
                     printk("parent inode has id: %d\n", dir_entry->id);
@@ -347,7 +347,7 @@ inode_block_t get_inode_from_path(char *path) {
 
         if (addr == NULL) {
             printk("out of memory\n");
-            return (inode_block_t){0};
+            return (struct inode_block){0};
         }
 
         // load data blocks containing direcory entries
@@ -355,15 +355,15 @@ inode_block_t get_inode_from_path(char *path) {
 
         if (ret) {
             kfree(addr);
-            return (inode_block_t){0};
+            return (struct inode_block){0};
         }
 
-        int limit = (FS_BLOCK_SIZE / sizeof(directory_entry_t)) * bytes_to_blocks(needed_bytes);
-        inode_block_t tmp_inode;
+        int limit = (FS_BLOCK_SIZE / sizeof(struct directory_entry)) * bytes_to_blocks(needed_bytes);
+        struct inode_block tmp_inode;
 
         // go through each entry in the directory and search for the file name
         for (int i = 0; i < limit; i++) {
-            directory_entry_t *dir_entry = (directory_entry_t*)addr + i;
+            struct directory_entry *dir_entry = (struct directory_entry*)addr + i;
 
             if (strcmp((char*)dir_entry->name, name) == 0) {
                 file_found = 1;
@@ -372,7 +372,7 @@ inode_block_t get_inode_from_path(char *path) {
                     tmp_inode = get_inode_from_id(dir_entry->id);
                     if (tmp_inode.file_type != FILETYPE_DIR) {
                         kfree(addr);
-                        return (inode_block_t){0};
+                        return (struct inode_block){0};
                     }
 
                     parent_directory_copy = current_directory_copy;
@@ -383,7 +383,7 @@ inode_block_t get_inode_from_path(char *path) {
                     tmp_inode = get_inode_from_id(dir_entry->id);
                     if (tmp_inode.file_type == FILETYPE_DIR) {
                         kfree(addr);
-                        return (inode_block_t){0};
+                        return (struct inode_block){0};
                     }
 
                     kfree(addr);
@@ -394,7 +394,7 @@ inode_block_t get_inode_from_path(char *path) {
 
         if (file_found == 0) {
             kfree(addr);
-            return (inode_block_t){0};
+            return (struct inode_block){0};
         }
 
         kfree(addr);
@@ -406,20 +406,20 @@ inode_block_t get_inode_from_path(char *path) {
     // are inodes representing directories) at the id of "..". I can then get the
     // inode of the found index using the get_inode_from_id() function
 
-    return (inode_block_t){0};
+    return (struct inode_block){0};
 }
 
-inode_block_t create_file(char *path) {
+struct inode_block create_file(char *path) {
 
     // add directory entry in the current directory
     if (strcmp(path, "tmp") == 0) {
 
     }
 
-    return (inode_block_t){0};
+    return (struct inode_block){0};
 }
 
-uint8_t update_inode_data_disk(inode_block_t *inode) {
+uint8_t update_inode_data_disk(struct inode_block *inode) {
     uint32_t *tmp_sector = kmalloc(FS_SECTOR_SIZE);
     int ret;
 
@@ -433,11 +433,11 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
     if (ret)
         goto err;
 
-    inode_block_t *tmp_inode = (inode_block_t*) tmp_sector + (inode->id % 8);
+    struct inode_block *tmp_inode = (struct inode_block*) tmp_sector + (inode->id % 8);
     printk("test test: %d\n", tmp_inode->size_bytes);
     *tmp_inode = *inode;
 
-    tmp_inode = (inode_block_t*)tmp_sector + (inode->id % 8);
+    tmp_inode = (struct inode_block*)tmp_sector + (inode->id % 8);
     printk("test test: %d\n", tmp_inode->size_bytes);
 
     ret = write_sectors((superblock->first_inode_block * 8) + (inode->id / 8) + 1, 1, (uint32_t)tmp_sector);
@@ -450,7 +450,7 @@ uint8_t update_inode_data_disk(inode_block_t *inode) {
     //if (ret)
     //    goto err;
 
-    //tmp_inode = (inode_block_t*) tmp_sector;
+    //tmp_inode = (struct inode_block*) tmp_sector;
     //printk("test test after write: %d\n", tmp_inode->id);
 
     kfree(tmp_sector);
@@ -462,7 +462,7 @@ err:
 }
 
 
-uint8_t update_data_block_disk(inode_block_t *inode, uint32_t addr) {
+uint8_t update_data_block_disk(struct inode_block *inode, uint32_t addr) {
     uint32_t nr_blocks = bytes_to_blocks(inode->size_bytes);
     int ret;
 
@@ -479,7 +479,7 @@ uint8_t update_data_block_disk(inode_block_t *inode, uint32_t addr) {
 }
 
 void* init_open_files_table(void) {
-    open_files_table_t *tmp = (open_files_table_t*) kmalloc(sizeof(open_files_table_t) * MAX_OPEN_FILES);
+    struct open_files_table *tmp = (struct open_files_table *) kmalloc(sizeof(struct open_files_table) * MAX_OPEN_FILES);
 
     if (tmp == NULL) {
         printk("out of memory\n");
@@ -487,14 +487,14 @@ void* init_open_files_table(void) {
     }
 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
-        tmp[i] = (open_files_table_t){0};
+        tmp[i] = (struct open_files_table){0};
     }
 
     return tmp;
 }
 
 void* init_open_inodes_table(void) {
-    inode_block_t *tmp = (inode_block_t*) kmalloc(sizeof(inode_block_t) * MAX_OPEN_FILES);
+    struct inode_block *tmp = (struct inode_block*) kmalloc(sizeof(struct inode_block) * MAX_OPEN_FILES);
 
     if (tmp == NULL) {
         printk("out of memory\n");
@@ -502,7 +502,7 @@ void* init_open_inodes_table(void) {
     }
 
     for (int i = 0; i < MAX_OPEN_FILES; i++) {
-        tmp[i] = (inode_block_t){0};
+        tmp[i] = (struct inode_block){0};
     }
 
     return tmp;

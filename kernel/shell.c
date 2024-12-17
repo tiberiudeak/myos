@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 #ifdef CONFIG_SH_HISTORY
-sh_circular_buffer sh_history;
+struct sh_circular_buffer sh_history;
 #endif
 static char key_buffer[MAX_COMMAND_LENGTH];
 static int index;
@@ -168,9 +168,9 @@ void shell_exec_command(char *command) {
 
         // create new task
 #ifdef CONFIG_FCFS_SCH
-        task_struct *new_task = create_task(execute_elf, number_params, argv, 1);
+        struct task_struct *new_task = create_task(execute_elf, number_params, argv, 1);
 #else
-        task_struct *new_task = create_task(NULL, number_params, argv, 1);
+        struct task_struct *new_task = create_task(NULL, number_params, argv, 1);
 #endif
 
         for (int i = 0; i < number_params; i++) {

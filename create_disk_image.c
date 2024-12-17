@@ -20,11 +20,11 @@
 #include <math.h>
 #include "kernel/include/fs.h"
 
-typedef struct {
+struct file_pointer_type {
 	char name[60];
 	uint32_t size;
 	FILE *fp;
-} file_pointer_type;
+};
 
 /**
  * @brief Get number of bytes needed for padding until the given limit is reached
@@ -53,9 +53,9 @@ uint32_t padding_bytes(uint32_t bytes, uint32_t limit) {
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_boot_block(file_pointer_type files[], FILE *image_fp) {
+int write_boot_block(struct file_pointer_type files[], FILE *image_fp) {
 	uint32_t written_bytes = 0;
-	boot_block_t boot_block = {0};
+	struct boot_block boot_block = {0};
 
 	// read the first sector of the bootloader
 	int ret = fread((void*)boot_block.sectors[0], FS_SECTOR_SIZE, 1, files[0].fp);
@@ -135,7 +135,7 @@ int write_boot_block(file_pointer_type files[], FILE *image_fp) {
  *
  * @return Total size in bytes
  */
-int get_disk_size(file_pointer_type files[], int num_files) {
+int get_disk_size(struct file_pointer_type files[], int num_files) {
 	int size = 0;
 
 	// this doesn't take into consideration the bootloader
@@ -160,7 +160,7 @@ int get_disk_size(file_pointer_type files[], int num_files) {
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_superblock(superblock_t *superblock, file_pointer_type files[], FILE *image_fp, int num_files, int total_file_blocks) {
+int write_superblock(struct superblock *superblock, struct file_pointer_type files[], FILE *image_fp, int num_files, int total_file_blocks) {
 	// the number of files (without the bootloader), 0 reserved and 1 root (num_files - 1 + 2)
 	superblock->total_inodes = num_files + 1;
 
@@ -181,7 +181,7 @@ int write_superblock(superblock_t *superblock, file_pointer_type files[], FILE *
 	superblock->data_bitmap_blocks = data_blocks / (FS_BLOCK_SIZE * 8) +
 			((data_blocks % (FS_BLOCK_SIZE * 8) > 0) ? 1 : 0);
 
-	superblock->inode_blocks = bytes_to_blocks(superblock->total_inodes * sizeof(inode_block_t));
+	superblock->inode_blocks = bytes_to_blocks(superblock->total_inodes * sizeof(struct inode_block));
 
 	superblock->first_inode_block = superblock->first_data_bitmap_block + superblock->data_bitmap_blocks;
 	superblock->first_data_block = superblock->first_inode_block + superblock->inode_blocks;
@@ -209,7 +209,7 @@ int write_superblock(superblock_t *superblock, file_pointer_type files[], FILE *
 	printf("\tfirst free data bit: %d\n", superblock->first_free_data_bit);
 
 	// write superblock to image
-	int	ret = fwrite(superblock, sizeof(superblock_t), 1, image_fp);
+	int	ret = fwrite(superblock, sizeof(struct superblock), 1, image_fp);
 
 	if (ret == 0) {
 		printf("Error writing the superblock\n");
@@ -217,7 +217,7 @@ int write_superblock(superblock_t *superblock, file_pointer_type files[], FILE *
 	}
 
 	// writen bytes are 64B
-	uint32_t written_bytes = sizeof(superblock_t);
+	uint32_t written_bytes = sizeof(struct superblock);
 	uint32_t padding = padding_bytes(written_bytes, FS_BLOCK_SIZE);
 	uint8_t zero[FS_BLOCK_SIZE] = {0};
 
@@ -242,7 +242,7 @@ int write_superblock(superblock_t *superblock, file_pointer_type files[], FILE *
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_inode_bitmap(FILE *image_fp, superblock_t *superblock) {
+int write_inode_bitmap(FILE *image_fp, struct superblock *superblock) {
 	uint8_t sector[FS_BLOCK_SIZE] = {0};
 	uint32_t num_inodes = superblock->total_inodes;
 	uint32_t *p = (uint32_t*)sector;
@@ -284,7 +284,7 @@ int write_inode_bitmap(FILE *image_fp, superblock_t *superblock) {
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_data_bitmap(FILE *image_fp, superblock_t *superblock) {
+int write_data_bitmap(FILE *image_fp, struct superblock *superblock) {
 
 	uint8_t sector[FS_BLOCK_SIZE] = {0};
 	uint32_t num_data_block = superblock->data_blocks;
@@ -330,31 +330,31 @@ int write_data_bitmap(FILE *image_fp, superblock_t *superblock) {
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_pointer_type files[]) {
+int write_inodes(FILE *image_fp, int num_files, struct superblock *superblock, struct file_pointer_type files[]) {
 	uint32_t written_bytes = 0;
-	inode_block_t inode = {0};
+	struct inode_block inode = {0};
     time_t t;
     struct tm ts;
     time(&t);
     ts = *localtime(&t);
 
 	// inode 0
-	int ret = fwrite(&inode, sizeof(inode_block_t), 1, image_fp);
+	int ret = fwrite(&inode, sizeof(struct inode_block), 1, image_fp);
 
 	if (ret == 0) {
 		printf("Error writing first inode\n");
 		return 1;
 	}
 
-	written_bytes += sizeof(inode_block_t);
+	written_bytes += sizeof(struct inode_block);
 
 	// inode 1: root directory
 	inode.id = 1;
 	inode.file_type = FILETYPE_DIR;
-	inode.size_bytes = sizeof(directory_entry_t) * (num_files - 1); // -1 for the bootloader
+	inode.size_bytes = sizeof(struct directory_entry) * (num_files - 1); // -1 for the bootloader
 	inode.size_sectors = bytes_to_sectors(inode.size_bytes);
 
-	inode.extent[0] = (extent_block_t) {
+	inode.extent[0] = (struct extent_block) {
 		.first_block = superblock->first_data_block,
 		.length = bytes_to_blocks(inode.size_bytes)
 	};
@@ -363,14 +363,14 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
     inode.datetime.month = ts.tm_mon + 1;
     inode.datetime.year = ts.tm_year + 1900;
 
-	ret = fwrite(&inode, sizeof(inode_block_t), 1, image_fp);
+	ret = fwrite(&inode, sizeof(struct inode_block), 1, image_fp);
 
 	if (ret == 0) {
 		printf("Error writing root inode\n");
 		return 1;
 	}
 
-	written_bytes += sizeof(inode_block_t);
+	written_bytes += sizeof(struct inode_block);
 
 	//inode 2 and beyond: kernel and the rest of inodes
 	uint32_t id = 1;
@@ -378,7 +378,7 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
 			inode.extent[0].length;
 
 	for (size_t i = 1; i < num_files; i++) {
-		inode = (inode_block_t) {0};
+		inode = (struct inode_block) {0};
 		inode.id = ++id;
 		inode.file_type = FILETYPE_FILE;
 		inode.size_bytes = files[i].size;
@@ -388,19 +388,19 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
         inode.datetime.month = ts.tm_mon;
         inode.datetime.year = ts.tm_year + 1900;
 
-		inode.extent[0] = (extent_block_t) {
+		inode.extent[0] = (struct extent_block) {
 			.first_block = current_file_first_block,
 			.length = bytes_to_blocks(files[i].size)
 		};
 
-		ret = fwrite(&inode, sizeof(inode_block_t), 1, image_fp);
+		ret = fwrite(&inode, sizeof(struct inode_block), 1, image_fp);
 
 		if (ret == 0) {
 			printf("Error writing a file inode number %ld\n", i);
 			return 1;
 		}
 
-		written_bytes += sizeof(inode_block_t);
+		written_bytes += sizeof(struct inode_block);
 		current_file_first_block += inode.extent[0].length;
 	}
 
@@ -433,11 +433,11 @@ int write_inodes(FILE *image_fp, int num_files, superblock_t *superblock, file_p
  *
  * @return 1 if error occured, 0 otherwise
  */
-int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_pointer_type files[]) {
+int write_data(FILE *image_pt, int num_files, struct superblock *superblock, struct file_pointer_type files[]) {
 	uint32_t written_bytes = 0;
 
 	// write first data block which is the root directory that will contain a directory entry for each file/dir
-	directory_entry_t root_dir = {0};
+	struct directory_entry root_dir = {0};
 
 	// '.' current dir entry
 	root_dir.id = 1;
@@ -449,7 +449,7 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 		printf("Error writing directory entry in root block\n");
 		return 1;
 	}
-	written_bytes += sizeof(directory_entry_t);
+	written_bytes += sizeof(struct directory_entry);
 
 	// '..' parent dir entry
 	strcpy(root_dir.name, "..");
@@ -459,7 +459,7 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 		printf("Error writing directory entry in root block\n");
 		return 1;
 	}
-	written_bytes += sizeof(directory_entry_t);
+	written_bytes += sizeof(struct directory_entry);
 
 	uint32_t id = 2;
 	for (size_t i = 1; i < num_files; i++) {
@@ -473,7 +473,7 @@ int write_data(FILE *image_pt, int num_files, superblock_t *superblock, file_poi
 			printf("Error writing directory entry in root block\n");
 			return 1;
 		}
-		written_bytes += sizeof(directory_entry_t);
+		written_bytes += sizeof(struct directory_entry);
 	}
 
 	// END OF ROOT DIRECTORY BLOCK
@@ -555,7 +555,7 @@ int main(int argc, char *argv[]) {
 	pclose(files_fp);
 
 	// allocate memory for the files array
-    file_pointer_type files[num_files];
+    struct file_pointer_type files[num_files];
 
 	// get the file names
 	files_fp = popen("ls bin", "r");
@@ -588,7 +588,7 @@ int main(int argc, char *argv[]) {
 	// and kernel is the second file
 	for (uint32_t i = 0; i < num_files; i++) {
 		if (strcmp(files[i].name, "bootloader") == 0) {
-			file_pointer_type temp = files[0];
+			struct file_pointer_type temp = files[0];
 			files[0] = files[i];
 			files[i] = temp;
 			break;
@@ -597,7 +597,7 @@ int main(int argc, char *argv[]) {
 
 	for (uint32_t i = 0; i < num_files; i++) {
 		if (strcmp(files[i].name, "kernel") == 0) {
-			file_pointer_type temp = files[1];
+			struct file_pointer_type temp = files[1];
 			files[1] = files[i];
 			files[i] = temp;
 			break;
@@ -636,7 +636,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	// create superblock
-	superblock_t superblock = {0};
+	struct superblock superblock = {0};
 	ret = write_superblock(&superblock, files, image_fp, num_files, total_file_blocks);
 
 	if (ret) {

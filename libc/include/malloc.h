@@ -15,7 +15,7 @@
 // initial requested size is one block
 #define INITIAL_REQ_SIZE    (BLOCK_SIZE)
 
-typedef struct block_meta {
+struct block_meta {
     size_t size;
     uint8_t status;
     struct block_meta *next;

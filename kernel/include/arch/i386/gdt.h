@@ -11,30 +11,30 @@
  * GDT Descriptor structure. For more details, see the comments
  * in the boot/arch/i386/include/gdt.S file.
  */
-typedef struct {
+struct gdt_ptr {
 	uint16_t limit;
 	uint32_t base;
-} __attribute__((packed)) gdt_ptr_t;
+} __attribute__((packed));
 
 /**
  * GDT Entry structure. For more details, see the comments
  * in the boot/arch/i386/include/gdt.S file.
  */
-typedef struct {
+struct gdt_entry {
 	uint16_t limit;
 	uint16_t base_low;
 	uint8_t base_middle;
 	uint8_t access;
 	uint8_t flags;
 	uint8_t base_high;
-} __attribute__((packed)) gdt_entry_t;
+} __attribute__((packed));
 
 /**
  * Task State Segment (TSS) Entry structure that holds information
  * about a task, including general purpose registers, segment selectors,
  * the instruction pointer, the EFLAGS register and control register 3.
  */
-typedef struct {
+struct tss_entry {
 	uint32_t prev_tss;
 	uint32_t esp0;
 	uint32_t ss0;
@@ -62,7 +62,7 @@ typedef struct {
 	uint32_t ldt;
 	uint16_t trap;
 	uint16_t iomap_base;
-} __attribute__((packed)) tss_entry_t;
+} __attribute__((packed));
 
 /**
  * GDT Entry access flags. Layout:

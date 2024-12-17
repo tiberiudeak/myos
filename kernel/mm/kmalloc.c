@@ -7,7 +7,7 @@
 #include <global_addresses.h>
 
 extern char kernel_end[];           // symbol from the kernel linker script
-kblock_meta *metadata_blk_header;
+struct kblock_meta *metadata_blk_header;
 
 // starting virtual address will be the starting virtual address of the kernel (which
 // is 0xC0000000) plus the total size of the kernel, rounded up to the nearest page
@@ -59,7 +59,7 @@ uint8_t kmalloc_init(size_t size) {
     }
 
     // create metadata
-    metadata_blk_header = (kblock_meta*) starting_virtual_address;
+    metadata_blk_header = (struct kblock_meta*) starting_virtual_address;
 
     metadata_blk_header->size = (req_pages * PAGE_SIZE) - METADATA_BLK_SIZE;
     metadata_blk_header->status = STATUS_FREE;
@@ -80,11 +80,11 @@ uint8_t kmalloc_init(size_t size) {
  * This function prints the current list
  */
 void kmalloc_print_list(void) {
-    kblock_meta *current = metadata_blk_header;
+    struct kblock_meta *current = metadata_blk_header;
 
     while (current != NULL) {
         printk("node size: %d, status %d\n", current->size, current->status);
-        current = (kblock_meta *)current->next;
+        current = (struct kblock_meta *)current->next;
     }
 }
 
@@ -99,8 +99,8 @@ void kmalloc_print_list(void) {
  * @return The block address if one is found, NULL otherwise
  */
 void *kmalloc_find_best_fit(uint32_t size) {
-    kblock_meta *current = metadata_blk_header;
-    kblock_meta *best_fit = NULL;
+    struct kblock_meta *current = metadata_blk_header;
+    struct kblock_meta *best_fit = NULL;
 
     uint32_t min = 0xFFFFFFFF;
 
@@ -112,7 +112,7 @@ void *kmalloc_find_best_fit(uint32_t size) {
             }
         }
 
-        current = (kblock_meta*)current->next;
+        current = (struct kblock_meta*)current->next;
     }
 
     return best_fit;
@@ -129,8 +129,8 @@ void *kmalloc_find_best_fit(uint32_t size) {
  *
  * @return The address of the block that is allocated (same as the parameter)
  */
-void *kmalloc_split_block(kblock_meta *block, uint32_t size) {
-    kblock_meta *new_block = (void*)block + METADATA_BLK_SIZE + ALIGN(size, ALIGNMENT);
+void *kmalloc_split_block(struct kblock_meta *block, uint32_t size) {
+    struct kblock_meta *new_block = (void*)block + METADATA_BLK_SIZE + ALIGN(size, ALIGNMENT);
 
     new_block->size = block->size - ALIGN(size, ALIGNMENT) - METADATA_BLK_SIZE;
     new_block->status = STATUS_FREE;
@@ -158,10 +158,10 @@ void *kmalloc_split_block(kblock_meta *block, uint32_t size) {
  * @return Pointer to the node in the list that accommodated the requested size
  */
 void *kmalloc_expand_memory(uint32_t size) {
-    kblock_meta *current = metadata_blk_header;
+    struct kblock_meta *current = metadata_blk_header;
 
     while (current != NULL && current->next != NULL) {
-        current = (kblock_meta*)current->next;
+        current = (struct kblock_meta*)current->next;
     }
 
     uint32_t needed_size = size;
@@ -213,7 +213,7 @@ void *kmalloc_expand_memory(uint32_t size) {
 
     // if last block is not free
 
-    kblock_meta *new_block = (kblock_meta*)(local_starting_virtual_address);
+    struct kblock_meta *new_block = (struct kblock_meta*)(local_starting_virtual_address);
     new_block->size = (req_pages * PAGE_SIZE) - METADATA_BLK_SIZE;
     new_block->status = STATUS_FREE;
     new_block->next = NULL;
@@ -252,12 +252,12 @@ void *kmalloc(size_t size) {
     }
 
     // find best fit
-    kblock_meta *best_fit = (kblock_meta*) kmalloc_find_best_fit(size);
+    struct kblock_meta *best_fit = (struct kblock_meta*) kmalloc_find_best_fit(size);
 
     if (best_fit != NULL) {
         // split block if there is place for at least 8 bytes + sizeof metadata block
         if (best_fit->size - ALIGN(size, ALIGNMENT) >= METADATA_BLK_SIZE + ALIGN(1, ALIGNMENT)) {
-            kblock_meta *split_block = kmalloc_split_block(best_fit, size);
+            struct kblock_meta *split_block = kmalloc_split_block(best_fit, size);
 
             split_block->status = STATUS_ALLOC;
 
@@ -269,7 +269,7 @@ void *kmalloc(size_t size) {
     }
 
     // expand memory
-    kblock_meta *block = kmalloc_expand_memory(size);
+    struct kblock_meta *block = kmalloc_expand_memory(size);
 
     if (block == NULL) return NULL;
 
@@ -290,7 +290,7 @@ void *kmalloc(size_t size) {
 void kfree(void *ptr) {
     if (ptr == NULL) return;
 
-    kblock_meta *current = metadata_blk_header;
+    struct kblock_meta *current = metadata_blk_header;
 
     while (current != NULL) {
         if ((void*)current + METADATA_BLK_SIZE == ptr) {
@@ -340,7 +340,7 @@ void kfree(void *ptr) {
             return;
         }
 
-        current = (kblock_meta*)current->next;
+        current = (struct kblock_meta*)current->next;
     }
 
     /*

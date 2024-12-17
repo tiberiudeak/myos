@@ -122,7 +122,7 @@
 #include <mm/vmm.h>
 
 static uint8_t *font = (uint8_t*)VGA_BIOS_FONT;
-static const vbe_mode_info_block *vbe_mode = (vbe_mode_info_block*)VBE_MODE_INFO;
+static const struct vbe_mode_info_block *vbe_mode = (struct vbe_mode_info_block*)VBE_MODE_INFO;
 static uint32_t *framebuffer;
 
 static size_t terminal_row;

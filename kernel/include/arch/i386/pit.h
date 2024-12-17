@@ -42,7 +42,7 @@ typedef enum {
 } PIT_CW;
 
 void PIT_init(void);
-void PIT_IRQ0_handler(interrupt_regs *);
+void PIT_IRQ0_handler(struct interrupt_regs *);
 void wait_millis(uint16_t);
 uint64_t get_uptime(void);
 uint32_t random(void);

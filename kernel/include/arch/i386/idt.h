@@ -41,18 +41,18 @@
  * DPL: 2-bit value representing the descriptor privilege level
  * Type: 3-bit value representing the gate type, 110 for interrupt gates
  */
-typedef struct {
+struct idt_gate {
 	uint16_t low_offset;
 	uint16_t selector;
 	uint8_t reserved;
 	uint8_t flags;
 	uint16_t high_offset;
-} __attribute__((packed)) idt_gate_t;
+} __attribute__((packed));
 
-typedef struct {
+struct idt_ptr {
 	uint16_t limit;
 	uint32_t base;
-} __attribute__((packed)) idt_ptr_t;
+} __attribute__((packed));
 
 /**
  * IDT Entry flags. Layout:

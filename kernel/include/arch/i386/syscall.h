@@ -64,13 +64,13 @@ void syscall_open(void) {
     uint32_t flags = 0;
 
     // data from kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
 
     __asm__ __volatile__ ("mov %%ebx, %0\n"
                           "mov %%ecx, %1" : "=b"(path), "=c"(flags));
 
     // get file inode
-    inode_block_t inode = get_inode_from_path(path);
+    struct inode_block inode = get_inode_from_path(path);
 
     // file doesn't exist
     if (inode.id == 0) {
@@ -88,7 +88,7 @@ void syscall_open(void) {
     }
 
     // add to open files table
-    open_files_table_t *tmp_oft = open_files_table;
+    struct open_files_table *tmp_oft = open_files_table;
     int tmp_idx = 3; // skip first three entries
 
     // skip first three entries in the table (stdin, stdout and stderr)
@@ -108,14 +108,14 @@ void syscall_open(void) {
     // add new open_files_table_t entry at the found free position and return the position
 
     // allocate memory for the inode (as the inode is a local variable here)
-    void *addr = kmalloc(sizeof(inode_block_t));
+    void *addr = kmalloc(sizeof(struct inode_block));
 
     if (addr == NULL) {
         printk("out of memory\n");
         goto err;
     }
 
-    *(inode_block_t*)addr = inode;
+    *(struct inode_block*)addr = inode;
 
     tmp_oft->inode = addr;
     tmp_oft->reference_number = 0;
@@ -160,11 +160,11 @@ void syscall_close(void) {
     }
 
     // data from kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
 
     // get entry at fd index from the open files table
     // free the allocated memory and the entry
-    open_files_table_t entry = open_files_table[fd];
+    struct open_files_table entry = open_files_table[fd];
 
     // free memory allocated for the inode
     kfree(entry.inode);
@@ -173,7 +173,7 @@ void syscall_close(void) {
     kfree(entry.address);
 
     // empty entry
-    open_files_table[fd] = (open_files_table_t){0};
+    open_files_table[fd] = (struct open_files_table){0};
 
     // return 0 on success
     __asm__ __volatile__ ("mov $0, %eax");
@@ -185,7 +185,7 @@ err:
 
 void syscall_read(void) {
     // data from kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
 
     int fd = -1, read_bytes = 0;
     size_t count = 0;
@@ -210,7 +210,7 @@ void syscall_read(void) {
         return;
     }
 
-    open_files_table_t *oft = open_files_table + fd;
+    struct open_files_table *oft = open_files_table + fd;
 
     if (oft->address == 0)
         goto err;
@@ -239,7 +239,7 @@ err:
 
 void syscall_write(void) {
     // data from kernel
-    extern open_files_table_t *open_files_table;
+    extern struct open_files_table *open_files_table;
 
     int fd, ret = 0;
     size_t count, written_bytes = 0;
@@ -268,7 +268,7 @@ void syscall_write(void) {
         return;
     }
 
-    open_files_table_t *oft = open_files_table + fd;
+    struct open_files_table *oft = open_files_table + fd;
 
     if (oft->address == 0)
         goto err;
@@ -329,7 +329,7 @@ void syscall_exit(void) {
     restore_kernel_address_space();
 
     // cleanup task data
-    extern task_struct *current_running_task; // data from the scheduler
+    extern struct task_struct *current_running_task; // data from the scheduler
     //destroy_task(current_running_task);
 
 #ifdef CONFIG_FCFS_SCH
@@ -347,7 +347,7 @@ void syscall_sbrk(void) {
 
     __asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
 
-    extern task_struct *current_running_task; // data from the scheduler
+    extern struct task_struct *current_running_task; // data from the scheduler
     // printk("sbrk current program break addr: %x\n", current_running_task->program_break);
 
     // printk("free heap size: %d\n", (uint32_t)(current_running_task->heap_start +

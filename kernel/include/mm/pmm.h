@@ -9,12 +9,12 @@
 #define BLOCK_SIZE						4096 // 4K
 #define BITMAP_ADDRESS					0x60000
 
-typedef struct {
+struct mem_map_entry {
 	uint64_t base_addr;
 	uint64_t region_length;
 	uint32_t region_type;
 	uint32_t acpi;
-} __attribute__((packed)) mem_map_entry_t;
+} __attribute__((packed));
 
 void print_mem_map(void);
 uint8_t initialize_memory(void);

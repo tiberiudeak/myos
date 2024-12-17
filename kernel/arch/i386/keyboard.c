@@ -6,13 +6,13 @@
 #include <arch/i386/isr.h>
 #include <arch/i386/irq.h>
 
-void keyboard_handler(interrupt_regs *r) {
+void keyboard_handler(struct interrupt_regs *r) {
     (void) r; // remove compilation warning
 
 	/* TODO: check what scancode to use */
 
 	/* scancode 1 */
-	key_info_t *key_info = (key_info_t*) KEY_INFO_ADDRESS;
+	struct key_info *key_info = (struct key_info*) KEY_INFO_ADDRESS;
 	key_info->scancode = 0;
 
 	uint8_t scancode = port_byte_in(PS2_DATA_PORT);
@@ -47,6 +47,6 @@ void keyboard_handler(interrupt_regs *r) {
  * function.
  */
 void keyboard_init() {
-    void (*key_handler)(interrupt_regs *r) = keyboard_handler;
+    void (*key_handler)(struct interrupt_regs *r) = keyboard_handler;
 	irq_install_handler(1, key_handler);
 }

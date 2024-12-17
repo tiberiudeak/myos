@@ -23,7 +23,7 @@ void print_mem_map() {
 	int offset = 0;
 
 	for (size_t i = 0; i < *nr_entries; i++) {
-		mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + offset;
+		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
 
 		printk("E820: mem [%llx-%llx] %s\n", mem_map_entry->base_addr,
 			mem_map_entry->base_addr + mem_map_entry->region_length - 1,
@@ -143,7 +143,7 @@ void mark_e820_regions() {
 	int offset = 0;
 
 	for(size_t i = 0; i < *nr_entries; i++) {
-		mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + offset;
+		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
 
 		if (mem_map_entry->region_type == 1) {
 			__mark_region_free(mem_map_entry->base_addr, mem_map_entry->region_length);
@@ -155,7 +155,7 @@ void mark_e820_regions() {
 	offset = 0;
 
 	for(size_t i = 0; i < *nr_entries; i++) {
-		mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + offset;
+		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
 
 		if (mem_map_entry->region_type != 1) {
 			__mark_region_reserved(mem_map_entry->base_addr, mem_map_entry->region_length);
@@ -296,12 +296,12 @@ uint8_t initialize_memory(void) {
 	uint64_t base_address;
 	uint64_t end_address;
 
-	mem_map_entry_t *mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS;
+	struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS;
 	uint32_t *nr_entries = (uint32_t*) MEM_MAP_NR_ENTRIES_ADDRESS;
 
 	base_address = mem_map_entry->base_addr;
 
-	mem_map_entry = (mem_map_entry_t*) MEM_MAP_ADDRESS + (*nr_entries - 1);
+	mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + (*nr_entries - 1);
 	end_address = mem_map_entry->base_addr + mem_map_entry->region_length - 1;
 
 	uint32_t total_ram_size = end_address - base_address;

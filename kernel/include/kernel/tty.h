@@ -5,7 +5,7 @@
 #include <stdint.h>
 
 #ifdef CONFIG_TTY_VBE
-typedef struct {
+struct vbe_mode_info_block {
     uint16_t attributes;
     uint8_t window_a;
     uint8_t window_b;
@@ -41,7 +41,7 @@ typedef struct {
 	uint32_t off_screen_mem_off;
 	uint16_t off_screen_mem_size;
 	uint8_t reserved1[206];
-} __attribute__ ((packed)) vbe_mode_info_block;
+} __attribute__ ((packed));
 
 // VBE version of the VGA colors (the fformat is AARRGGBB: alpha, blue, green, red)
 typedef enum vbe_colors {

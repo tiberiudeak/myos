@@ -22,8 +22,8 @@ static uint32_t next_available_task_id = 1;
  *
  * @return The created task
  */
-task_struct *create_task(void *exec_address, int argc, char **argv, int userspace) {
-    task_struct *task = (task_struct*) kmalloc(sizeof(task_struct));
+struct task_struct *create_task(void *exec_address, int argc, char **argv, int userspace) {
+    struct task_struct *task = (struct task_struct*) kmalloc(sizeof(struct task_struct));
 #ifdef CONFIG_VERBOSE
     printk("create task: %s\n", argv[0]);
 #endif
@@ -68,7 +68,7 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
             task->vas = NULL;
         }
 
-        task->context = kmalloc(sizeof(proc_context_t));
+        task->context = kmalloc(sizeof(struct proc_context));
 
         if (task->context == NULL) {
             // free previous allocated memory
@@ -101,13 +101,13 @@ task_struct *create_task(void *exec_address, int argc, char **argv, int userspac
  *
  * @param task The task
  */
-void destroy_task(task_struct *task) {
+void destroy_task(struct task_struct *task) {
     // free memory used for maps
-    mapping_t *tmp = task->maps, *tmp2;
+    struct mapping *tmp = task->maps, *tmp2;
 
     while (tmp != NULL) {
         tmp2 = tmp;
-        tmp = (mapping_t *) tmp->next;
+        tmp = (struct mapping *) tmp->next;
         kfree(tmp2);
     }
 
