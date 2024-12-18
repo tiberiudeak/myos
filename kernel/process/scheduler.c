@@ -179,11 +179,47 @@ void init_task_func(int argc, char *argv[]) {
     printk("init process started!\n");
 #endif
 #ifdef CONFIG_TTY_VBE
-	int i = 0;
+	int i = 0, j = 0, state = 0;
 	while (1) {
-		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLACK);
-		i++;
-		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLUE);
+		if (i == 100 && state == 0)
+			state = 1;
+
+		if (i == 100 && j == 100 && state == 1)
+			state = 2;
+
+		if (i == 0 && state == 2)
+			state = 3;
+
+		if (j == 0 && state == 3)
+			state = 0;
+
+		if (state == 0) {
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_BLACK);
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLACK);
+			i++;
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLUE);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_CYAN);
+		} else if (state == 1) {
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLACK);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_BLACK);
+			j++;
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLUE);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_CYAN);
+		} else if (state == 2) {
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLACK);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_BLACK);
+			i--;
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLUE);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_CYAN);
+		} else {
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLACK);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_BLACK);
+			j--;
+			draw_square(400 + i, 200 + j, 10, VBE_COLOR_BLUE);
+			//draw_line(200, 200, 200 + i, 300 + j, VBE_COLOR_CYAN);
+		}
+
+
 		wait_millis(10);
 	}
 #endif

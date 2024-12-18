@@ -1,3 +1,4 @@
+#include <arch/i386/pit.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -341,19 +342,64 @@ void terminal_backspace_cursor(char c) {
     terminal_putentryat(c, background_color, terminal_column, terminal_row);
 }
 
-// void draw_square(int x, int y, int width, int height, uint32_t color) {
-//     if (x < 0 || x + width > VBE_WIDTH || y < 0 || y + height > VBE_HEIGHT) {
-//         return;
-//     }
-// 
-//     for (int i = y; i < y + height; ++i) {
-//         for (int j = x; j < x + width; ++j) {
-//             int pixelIndex = i * VBE_WIDTH + j;
-// 
-//             framebuffer[pixelIndex] = color;
-//         }
-//     }
-// }
+void put_pixel(unsigned int x, unsigned int y, uint32_t color) {
+    if (x > VBE_WIDTH || y > VBE_HEIGHT) {
+        return;
+    }
+
+	framebuffer[x + VBE_WIDTH * y] = color;
+}
+
+int abs(int n) { return ((n > 0) ? n : n*(-1)); }
+
+/*
+ * draw line with Bresenham's alg with integer arithm.
+ *
+ * (x1, y1) and (x2, y2) the two points
+ * color: the color of the pixels
+ */
+void draw_line(unsigned int x1, unsigned int y1, unsigned int x2,
+		unsigned int y2, uint32_t color) {
+	int dx = abs(x1 - x2);
+	int sx = x1 < x2 ? 1 : -1;
+	
+	int dy = -abs(y1 - y2);
+	int sy = y1 < y2 ? 1 : -1;
+	
+	int error = dx + dy, e2;
+
+	while (1) {
+		put_pixel(x1, y1, color);
+
+		if (x1 == x2 && y1 == y2)
+			break;
+
+		e2 = 2 * error;
+
+		if (e2 >= dy) {
+			error = error + dy;
+			x1 = x1 + sx;
+		}
+
+		if (e2 <= dx) {
+			error = error + dx;
+			y1 = y1 + sy;
+		}
+	}
+}
+
+void draw_square(unsigned int x, unsigned int y, unsigned int width,
+			uint32_t color) {
+    if (x + width > VBE_WIDTH || y + width > VBE_HEIGHT) {
+        return;
+    }
+
+    for (unsigned int i = y; i < y + width; ++i) {
+        for (unsigned int j = x; j < x + width; ++j) {
+			put_pixel(j, i, color);
+        }
+    }
+}
 
 #else /* CONFIG_TTY_VBE */
 

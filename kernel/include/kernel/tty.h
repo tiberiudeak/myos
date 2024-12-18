@@ -64,7 +64,9 @@ typedef enum vbe_colors {
 } vbe_colors;
 
 uint8_t map_framebuffer(void);
-void draw_square(int, int, int, int, uint32_t);
+void put_pixel(unsigned int, unsigned int, uint32_t);
+void draw_square(unsigned int, unsigned int, unsigned int, uint32_t);
+void draw_line(unsigned int, unsigned int, unsigned int, unsigned int, uint32_t);
 #endif /* CONFIG_TTY_VBE */
 
 void terminal_initialize(void);
