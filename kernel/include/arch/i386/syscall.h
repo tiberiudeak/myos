@@ -45,10 +45,10 @@ void syscall_test1(void) {
  * This function reads the number of milliseconds to wait from EBX and
  * calls wait_millis.
  */
-void syscall_sleep(void) {
-	uint16_t millis = 0;
+void syscall_sleep(int millis) {
+	//uint16_t millis = 0;
 
-	__asm__ __volatile__ ("movl %%ebx, %%ecx" : "=c"(millis) : );
+	//__asm__ __volatile__ ("movl %%ebx, %%ecx" : "=c"(millis) : );
 
 	wait_millis(millis);
 }
@@ -59,15 +59,15 @@ void syscall_sleep(void) {
  * the filepath will be in EBX
  * the flags will be in ECX
  */
-void syscall_open(void) {
-    char *path = 0;
-    uint32_t flags = 0;
+int syscall_open(char *path, uint32_t flags) {
+    //char *path = 0;
+    //uint32_t flags = 0;
 
     // data from kernel
     extern struct open_files_table *open_files_table;
 
-    __asm__ __volatile__ ("mov %%ebx, %0\n"
-                          "mov %%ecx, %1" : "=b"(path), "=c"(flags));
+    //__asm__ __volatile__ ("mov %%ebx, %0\n"
+    //                      "mov %%ecx, %1" : "=b"(path), "=c"(flags));
 
     // get file inode
     struct inode_block inode = get_inode_from_path(path);
@@ -142,18 +142,17 @@ void syscall_open(void) {
     tmp_oft->address = addr;
 
     // put index in the open files table into EAX and return
-    __asm__ __volatile__ ("mov %%ebx, %%eax" : : "b"(tmp_idx));
-    return;
+    //__asm__ __volatile__ ("mov %%ebx, %%eax" : : "b"(tmp_idx));
+    return tmp_idx;
 
 err:
-    __asm__ __volatile__ ("mov $-1, %eax");
+    //__asm__ __volatile__ ("mov $-1, %eax");
+	return -1;
 }
 
-void syscall_close(void) {
-    int fd = -1;
-
+int syscall_close(int fd) {
     // get file descriptor from EBX
-    __asm__ __volatile__ ("mov %%ebx, %0" : "=b"(fd));
+    //__asm__ __volatile__ ("mov %%ebx, %0" : "=b"(fd));
 
     if (fd < 0 || fd >= MAX_OPEN_FILES) {
         goto err;
@@ -176,38 +175,40 @@ void syscall_close(void) {
     open_files_table[fd] = (struct open_files_table){0};
 
     // return 0 on success
-    __asm__ __volatile__ ("mov $0, %eax");
-    return;
+    //__asm__ __volatile__ ("mov $0, %eax");
+    return 0;
 
 err:
-    __asm__ __volatile__ ("mov $-1, %eax");
+    //__asm__ __volatile__ ("mov $-1, %eax");
+	return -1;
 }
 
-void syscall_read(void) {
+size_t syscall_read(int fd, void *buf, size_t count) {
     // data from kernel
     extern struct open_files_table *open_files_table;
 
-    int fd = -1, read_bytes = 0;
-    size_t count = 0;
-    void *buf = NULL;
+	int read_bytes = 0;
+    //int fd = -1, read_bytes = 0;
+    //size_t count = 0;
+    //void *buf = NULL;
 
     //__asm__ __volatile__ ("mov %%ebx, %0\n"
     //                      "mov %%ecx, %1\n"
     //                      "mov %%edx, %2": "=b"(fd), "=c"(buf), "=d"(count)::
     //                      "edi", "esi");
 
-    __asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
-    __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
-    __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
+    //__asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
+    //__asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
+    //__asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
 
-    // printk("read parameters: fd: %d, count: %d, buf: %x\n", fd, count, buf);
+    printk("read parameters: fd: %d, count: %d, buf: %x\n", fd, count, buf);
 
     if (fd < 0 || fd >= MAX_OPEN_FILES || buf == NULL)
         goto err;
 
     if (count == 0) {
-        __asm__ __volatile__ ("mov $0, %eax");
-        return;
+        //__asm__ __volatile__ ("mov $0, %eax");
+        return 0;
     }
 
     struct open_files_table *oft = open_files_table + fd;
@@ -229,25 +230,27 @@ void syscall_read(void) {
     // copy bytes
     memcpy(buf, oft->address, read_bytes);
 
-    __asm__ __volatile__ ("mov %0, %%eax" : : "r"(read_bytes));
+    //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(read_bytes));
 
-    return;
+    return read_bytes;
 
 err:
-    __asm__ __volatile__ ("mov $-1, %eax");
+    //__asm__ __volatile__ ("mov $-1, %eax");
+	return -1;
 }
 
-void syscall_write(void) {
+size_t syscall_write(int fd, void *buf, size_t count) {
     // data from kernel
     extern struct open_files_table *open_files_table;
 
-    int fd, ret = 0;
-    size_t count, written_bytes = 0;
-    void *buf = NULL;
+	int written_bytes = 0;
+    //int fd, ret = 0;
+    //size_t count, written_bytes = 0;
+    //void *buf = NULL;
 
-    __asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
-    __asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
-    __asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
+    //__asm__ __volatile__ ("mov %%ebx, %0": "=r"(fd));
+    //__asm__ __volatile__ ("mov %%ecx, %0": "=r"(buf));
+    //__asm__ __volatile__ ("mov %%esi, %0": "=r"(count));
 
     // printk("write function called, fd: %d, buf: %x, count: %d\n", fd, buf, count);
 
@@ -255,8 +258,8 @@ void syscall_write(void) {
         goto err;
 
     if (count == 0) {
-        __asm__ __volatile__ ("mov $0, %eax");
-        return;
+        //__asm__ __volatile__ ("mov $0, %eax");
+        return 0;
     }
 
     // chech for special file descriptors: stdin, stdout, stderr
@@ -264,8 +267,8 @@ void syscall_write(void) {
         terminal_writestring(buf);
         written_bytes = strlen(buf);
 
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
-        return;
+        //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
+        return written_bytes;
     }
 
     struct open_files_table *oft = open_files_table + fd;
@@ -309,18 +312,16 @@ void syscall_write(void) {
     //if (ret)
     //    goto err;
 
-    __asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
-    return;
+    //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));
+    return written_bytes;
 
 err:
-    __asm__ __volatile__ ("mov $-1, %eax");
+    //__asm__ __volatile__ ("mov $-1, %eax");
+	return -1;
 }
 
-void syscall_exit(void) {
-    //__asm__ __volatile__ ("cli");
-    int return_code = -1;
-
-    __asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
+void syscall_exit(int return_code) {
+    //__asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
 
     // cleanup elf data
     elf_after_program_execution(return_code);
@@ -342,10 +343,8 @@ void syscall_exit(void) {
 #endif
 }
 
-void syscall_sbrk(void) {
-    intptr_t increment = 0;
-
-    __asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
+void *syscall_sbrk(intptr_t increment) {
+    //__asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
 
     extern struct task_struct *current_running_task; // data from the scheduler
     // printk("sbrk current program break addr: %x\n", current_running_task->program_break);
@@ -357,8 +356,8 @@ void syscall_sbrk(void) {
 
     if (increment == 0) {
         // return current program break
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(current_running_task->program_break));
-        return;
+        //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(current_running_task->program_break));
+        return current_running_task->program_break;
     }
 
     uint32_t next_pr_break = (uint32_t)(current_running_task->program_break + increment);
@@ -366,8 +365,8 @@ void syscall_sbrk(void) {
     // check if next program break exceeds upper limit
     if (next_pr_break >= KERNEL_VIRT_ADDR - BLOCK_SIZE * 4) {
         printk("heapp upper limit reached!\n");
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
-        return;
+        //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
+        return NULL;
     }
 
     // check if new address is still mapped
@@ -377,7 +376,8 @@ void syscall_sbrk(void) {
         uint32_t prev_pr_break = (uint32_t) current_running_task->program_break;
         current_running_task->program_break = (void*) next_pr_break;
 
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+        //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+		return (void *) prev_pr_break;
     }
     else {
         // extend heap with extra blocks
@@ -405,8 +405,8 @@ void syscall_sbrk(void) {
 
             if (phys_addr == NULL) {
                 printk("out of memory!\n");
-                __asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
-                return;
+                //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(-1));
+                return NULL;
             }
 
             map_user_page(phys_addr, (void*) virt);
@@ -424,7 +424,9 @@ void syscall_sbrk(void) {
         uint32_t prev_pr_break = (uint32_t) current_running_task->program_break;
         current_running_task->program_break = (void*) next_pr_break;
 
-        __asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+        //__asm__ __volatile__ ("mov %0, %%eax" : : "r"(prev_pr_break));
+		printk("%x\n", prev_pr_break);
+		return (void *) prev_pr_break;
     }
 }
 
@@ -452,60 +454,93 @@ void *syscalls[MAX_SYSCALLS] = {
  * epilogue sequences generated by the compiler and the only statements that
  * can be safely included are asm statements that do not have operands.
  */
-__attribute__ ((naked)) void syscall_handler(void) {
-	__asm__ __volatile__ ("cli\n"
-        "cmp $9, %eax\n"	// check if syscall exists
-	    										// number has to match MAX_SYSCALLS!
-	    "jge syscall_invalid\n"					// if not, invalid syscall
+//__attribute__ ((naked)) void syscall_handler(void) {
+//	__asm__ __volatile__ ("cli\n"
+//        "cmp $9, %eax\n"	// check if syscall exists
+//	    										// number has to match MAX_SYSCALLS!
+//	    "jge syscall_invalid\n"					// if not, invalid syscall
+//
+//        // save user mode state
+//	    "push %eax\n"
+//	    "push %gs\n"
+//	    "push %fs\n"
+//	    "push %es\n"
+//	    "push %ds\n"
+//	    "push %edi\n"
+//	    "push %esi\n"
+//	    "push %edx\n"
+//	    "push %ecx\n"
+//	    "push %ebx\n"
+//	    "push %esp\n"
+//
+//
+//        // get kernel mode state
+//        //"mov %eax, %ebx\n"
+//
+//        //"mov $0x10, %eax\n"
+//        //"mov %eax, %ds\n"
+//        //"mov %eax, %es\n"
+//        //"mov %eax, %fs\n"
+//        //"mov %eax, %gs\n"
+//
+//        // "mov $0xB, %eax\n"
+//        // "mov %eax, %cs\n"
+//        // "mov $0x90000, %esp\n"
+//        
+//
+//        //"mov $1, %eax\n"
+//
+//	    "movl $4, %edi\n"				// move value 4 in edx
+//	    "mul %edi\n"					// eax = eax * edx
+//	    "add $syscalls, %eax\n"			// add offset in eax to the beginning of the
+//	    "call *(%eax)\n"				// syscalls array to get the right syscall
+//	    "add $4, %esp\n"
+//
+//	    "pop %ebx\n"
+//	    "pop %ecx\n"
+//	    "pop %edx\n"
+//	    "pop %esi\n"
+//	    "pop %edi\n"
+//	    "pop %ds\n"
+//	    "pop %es\n"
+//	    "pop %fs\n"
+//	    "pop %gs\n"
+//	    "add $4, %esp\n"
+//	    "syscall_invalid:\n"
+//	    "iret");
+//}
+void *syscall_handler(struct interrupt_regs *r) {
+	if (r->eax >= MAX_SYSCALLS)
+		return NULL;
 
-        // save user mode state
-	    "push %eax\n"
-	    "push %gs\n"
-	    "push %fs\n"
-	    "push %es\n"
-	    "push %ds\n"
-	    "push %edi\n"
-	    "push %esi\n"
-	    "push %edx\n"
-	    "push %ecx\n"
-	    "push %ebx\n"
-	    "push %esp\n"
+	switch (r->eax) {
+		case 0:
+			syscall_test0();
+			break;
+		case 1:
+			syscall_test1();
+			break;
+		case 2:
+			syscall_sleep(r->ebx);
+			break;
+		case 3:
+			return (void *) syscall_open((char *)r->ebx, r->ecx);
+		case 4:
+			return (void *) syscall_close(r->ebx);
+		case 5:
+			return (void *) syscall_read(r->ebx, (void *)r->ecx, r->esi);
+		case 6:
+			return (void *) syscall_write(r->ebx, (void *)r->ecx, r->esi);
+		case 7:
+			syscall_exit(r->ebx);
+			break;
+		case 8:
+			return syscall_sbrk(r->ebx);
+		default:
+			printk("error: syscall not defined! (yet)\n");
+	}
 
-
-        // get kernel mode state
-        //"mov %eax, %ebx\n"
-
-        //"mov $0x10, %eax\n"
-        //"mov %eax, %ds\n"
-        //"mov %eax, %es\n"
-        //"mov %eax, %fs\n"
-        //"mov %eax, %gs\n"
-
-        // "mov $0xB, %eax\n"
-        // "mov %eax, %cs\n"
-        // "mov $0x90000, %esp\n"
-        
-
-        //"mov $1, %eax\n"
-
-	    "movl $4, %edi\n"				// move value 4 in edx
-	    "mul %edi\n"					// eax = eax * edx
-	    "add $syscalls, %eax\n"			// add offset in eax to the beginning of the
-	    "call *(%eax)\n"				// syscalls array to get the right syscall
-	    "add $4, %esp\n"
-
-	    "pop %ebx\n"
-	    "pop %ecx\n"
-	    "pop %edx\n"
-	    "pop %esi\n"
-	    "pop %edi\n"
-	    "pop %ds\n"
-	    "pop %es\n"
-	    "pop %fs\n"
-	    "pop %gs\n"
-	    "add $4, %esp\n"
-	    "syscall_invalid:\n"
-	    "iret");
+	return NULL;
 }
 
 #endif /* !KERNEL_SYSCALL_H */

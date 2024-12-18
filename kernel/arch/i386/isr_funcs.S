@@ -1,6 +1,7 @@
 .extern isr_handler
 
 isr_common_stub:
+	cli
 	pusha					# push current state of registers to stack
 	mov %ds, %eax
 	push %eax				# push DS to stack
@@ -60,6 +61,7 @@ isr_common_stub:
 .globl isr29
 .globl isr30
 .globl isr31
+.globl isr128
 
 isr0:
 	push $0					# push error code
@@ -215,4 +217,9 @@ isr30:
 isr31:
 	push $0
 	push $31
+	jmp isr_common_stub
+
+isr128:
+	push $0
+	push $128
 	jmp isr_common_stub

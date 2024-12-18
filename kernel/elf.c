@@ -14,8 +14,8 @@
 #include <string.h>
 #include <fcntl.h>
 
-extern void syscall_open();
-extern void syscall_close();
+extern int syscall_open(char *, uint32_t);
+extern int syscall_close(int);
 
 elf_phys_mem_info *elf_phys_mem_info_header = NULL;
 extern struct task_struct *current_running_task;
@@ -414,12 +414,12 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
     // open syscall to get the fd for the elf file
     int fd = -1;
 
-    __asm__ __volatile__ ("mov %0, %%ebx\n"
-                        "mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
+    //__asm__ __volatile__ ("mov %0, %%ebx\n"
+    //                    "mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
 
-    syscall_open();
+    fd = syscall_open(argv[0], O_RDWR);
 
-    __asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
+    //__asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
 
     if (fd < 0) {
         printk("%s no such file or directory!\n", argv[0]);
@@ -444,11 +444,11 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
         goto err;
 
     // close file descriptor
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+    //__asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
-    syscall_close();
+    ret = syscall_close(fd);
 
-    __asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
+    //__asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
 
     if (ret)
         return 1;
@@ -470,9 +470,9 @@ err:
     deallocate_elf_memory();
 
 err2:
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+    //__asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
-    syscall_close();
+    syscall_close(fd);
 
     restore_kernel_address_space();
     return 1;

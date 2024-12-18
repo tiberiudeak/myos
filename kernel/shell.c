@@ -1,3 +1,4 @@
+#include "include/process/scheduler.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -183,7 +184,7 @@ void shell_exec_command(char *command) {
             printk("task is NULL\n");
         }
         else {
-            enqueue_task(new_task);
+            enqueue_task(new_task, RUNNING_TASK_QUEUE);
         }
 
         index = 0;
