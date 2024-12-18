@@ -1,3 +1,4 @@
+#include "include/process/scheduler.h"
 #ifndef KERNEL_SYSCALL_H
 #define KERNEL_SYSCALL_H 1
 
@@ -25,6 +26,9 @@
 
 #define MAX_SYSCALLS	9
 
+// data from the scheduler
+extern struct task_struct *current_running_task;
+
 /**
  * Test syscall
  */
@@ -42,15 +46,46 @@ void syscall_test1(void) {
 /**
  * @brief Sleep syscall
  *
- * This function reads the number of milliseconds to wait from EBX and
- * calls wait_millis.
+ * Block process by putting it in the sleeping queue until the requested
+ * number of milliseconds pass. Schedule another process in the meanwhile
  */
-void syscall_sleep(int millis) {
-	//uint16_t millis = 0;
-
+void syscall_sleep(struct interrupt_regs *r) {
 	//__asm__ __volatile__ ("movl %%ebx, %%ecx" : "=c"(millis) : );
+	int ret;
 
-	wait_millis(millis);
+	// save context of process that initiated sleep syscall
+	current_running_task->state = TASK_BLOCKED;
+
+	save_current_context(r);
+
+	current_running_task->run_time = 0;
+	current_running_task->sleep_time = r->ebx;
+
+	// put task in the sleeping queue and call scheduler to
+	// schedule another task
+	schedule(SLEEPING_TASK_QUEUE);
+
+	// prepare elf execution if user space process
+	if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
+		ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
+
+		if (ret) {
+			// failed to prepare elf file, terminate task and call scheduler again
+			current_running_task = NULL;
+			current_running_task->state = TASK_TERMINATED;
+			printk("error: failed to prepare elf execution!!!!\n");
+		}
+	}
+
+	// update registers on the stack (context) for the new task
+	if (current_running_task->state == TASK_CREATED) {
+		change_context(r);
+	}
+	else {
+		resume_context(r);
+	}
+
+	current_running_task->state = TASK_RUNNING;
 }
 
 /**
@@ -330,7 +365,6 @@ void syscall_exit(int return_code) {
     restore_kernel_address_space();
 
     // cleanup task data
-    extern struct task_struct *current_running_task; // data from the scheduler
     //destroy_task(current_running_task);
 
 #ifdef CONFIG_FCFS_SCH
@@ -346,7 +380,6 @@ void syscall_exit(int return_code) {
 void *syscall_sbrk(intptr_t increment) {
     //__asm__ __volatile__ ("mov %%ebx, %0\n" : "=r"(increment));
 
-    extern struct task_struct *current_running_task; // data from the scheduler
     // printk("sbrk current program break addr: %x\n", current_running_task->program_break);
 
     // printk("free heap size: %d\n", (uint32_t)(current_running_task->heap_start +
@@ -521,7 +554,7 @@ void *syscall_handler(struct interrupt_regs *r) {
 			syscall_test1();
 			break;
 		case 2:
-			syscall_sleep(r->ebx);
+			syscall_sleep(r);
 			break;
 		case 3:
 			return (void *) syscall_open((char *)r->ebx, r->ecx);

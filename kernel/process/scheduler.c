@@ -10,6 +10,7 @@
 #include <string.h>
 
 struct task_queue *task_queue = NULL;
+struct task_queue *sleep_task_queue = NULL;
 struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
@@ -18,49 +19,77 @@ const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
 #endif
 
 /**
- * @brief Put task in task queue
+ * @brief Put task in specified queue
  *
- * This function puts the given task in the task queue.
+ * This function puts the given task in the specified task queue:
+ * running or spleeping task queue
  *
- * @param task  The task to be put in the task queue
+ * @param task			The task to be put in the queue
+ * @param queue_type	Queue type: running or sleeping
  */
-void enqueue_task(struct task_struct *task) {
-    struct task_node *new_node = kmalloc(sizeof(struct task_node));
+void enqueue_task(struct task_struct *task, QUEUE_TYPE queue_type) {
+	struct task_queue *queue = NULL;
+	struct task_node *new_node;
 
-    if (new_node != NULL) {
+	if (queue_type == RUNNING_TASK_QUEUE) {
+		queue = task_queue;
+	} else if (queue_type == SLEEPING_TASK_QUEUE) {
+		queue = sleep_task_queue;
+	} else {
+		printk("Error: no such queue! Doing nothing...\n");
+		return;
+	}
+
+    new_node = kmalloc(sizeof(struct task_node));
+
+    if (new_node != NULL && queue != NULL) {
         new_node->task = task;
         new_node->next = NULL;
 
-        if (task_queue->rear == NULL) {
-            task_queue->front = new_node;
+        if (queue->rear == NULL) {
+            queue->front = new_node;
         }
         else {
-            task_queue->rear->next = new_node;
+            queue->rear->next = new_node;
         }
 
-        task_queue->rear = new_node;
+        queue->rear = new_node;
     }
 }
 
 /**
- * @brief Get task from the task queue
+ * @brief Get task from the specified queue
  *
- * This fuction takes out and returns a task from the task queue if available.
+ * This fuction takes out and returns a task from the specified
+ * queue if available.
  *
+ * @param queue_type	The queue
  * @return The task taken out from the queue
  */
-struct task_struct *dequeue_task(void) {
-    if (task_queue->front == NULL)
+struct task_struct *dequeue_task(QUEUE_TYPE queue_type) {
+	struct task_queue *queue;
+	struct task_node *front_node;
+	struct task_struct *task;
+
+	if (queue_type == RUNNING_TASK_QUEUE) {
+		queue = task_queue;
+	} else if (queue_type == SLEEPING_TASK_QUEUE) {
+		queue = sleep_task_queue;
+	} else {
+		printk("Error: no such queue! Doing nothing...\n");
+		return NULL;
+	}
+
+    if (queue->front == NULL)
         return NULL;    // empty queue
 
+    front_node = queue->front;
 
-    struct task_node *front_node = task_queue->front;
+    task = front_node->task;
+    queue->front = front_node->next;
 
-    struct task_struct *task = front_node->task;
-    task_queue->front = front_node->next;
-
-    if (task_queue->front == NULL) {
-        task_queue->rear = NULL;    // empty queue
+    if (queue->front == NULL) {
+        queue->rear = NULL;    // empty queue
     }
 
     kfree(front_node);
@@ -123,7 +152,7 @@ void simple_task_scheduler(void) {
             continue;
         }
 
-        struct task_struct *task = dequeue_task();
+        struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
         current_running_task = task;
 
         void (*program)(int argc, char *argv[]);
@@ -146,16 +175,29 @@ void simple_task_scheduler(void) {
 #else
 
 /**
- * @brief Get size of the task queue
+ * @brief Get size of the specified queue
  *
- * This function returns the size of the task queue.
+ * This function returns the size of the specified queue.
  *
+ * @param queue_type	Queue type
  * @return The queue size
  */
-uint32_t queue_size(void) {
+uint32_t queue_size(QUEUE_TYPE queue_type) {
     uint32_t count = 0;
+	struct task_queue *queue;
+	struct task_node *current;
 
-    struct task_node *current = task_queue->front;
+	if (queue_type == RUNNING_TASK_QUEUE) {
+		queue = task_queue;
+	} else if (queue_type == SLEEPING_TASK_QUEUE) {
+		queue = sleep_task_queue;
+	} else {
+		printk("Error: no such queue! Doing nothing...\n");
+		return 0;
+	}
+
+
+    current = queue->front;
     while (current != NULL) {
         count++;
         current = current->next;
@@ -178,48 +220,49 @@ void init_task_func(int argc, char *argv[]) {
 #ifdef CONFIG_VERBOSE
     printk("init process started!\n");
 #endif
-#ifdef CONFIG_TTY_VBE
-	int i = 0;
-	while (1) {
-		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLACK);
-		i++;
-		draw_square(400 + i, 200, 10, 10, VBE_COLOR_BLUE);
-		wait_millis(10);
-	}
-#endif
     while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 /**
- * @brief Initialize the round-robin scheduler's task queue
+ * @brief Initialize the round-robin scheduler's queues
  *
  * This function performs the actual initialization of the task
- * queue by creating and adding to the queue the init task.
+ * queues by creating the sleeping queue and creating and adding
+ * the init task to the running queue
  *
  * @return 1 if error occured, 0 otherwise
  */
-uint8_t init_task_queue_rr(void) {
+uint8_t init_queues_rr(void) {
     task_queue = kmalloc(sizeof(struct task_queue));
 
     if (task_queue == NULL) {
         printk("out of memory\n");
-        return 1;
+		goto tq_err;
     }
 
     task_queue->front = NULL;
     task_queue->rear = NULL;
 
+	sleep_task_queue = kmalloc(sizeof(struct task_queue));
+
+	if (sleep_task_queue == NULL) {
+		printk("out of memory!\n");
+		goto sleep_tq_error;
+	}
+
+	sleep_task_queue->front = NULL;
+	sleep_task_queue->rear = NULL;
+
     char **argv = kmalloc(sizeof(char*) * 1);
 
     if (argv == NULL) {
-        return 1;
+        goto argv_err;
     }
 
     argv[0] = kmalloc(sizeof(char) * 10);
 
     if (argv[0] == NULL) {
-        kfree(argv);
-        return 1;
+		goto argv0_err;
     }
 
     strcpy(argv[0], "init");
@@ -230,10 +273,10 @@ uint8_t init_task_queue_rr(void) {
 
     if (init_task == NULL) {
         printk("init task is NULL!\n");
-        return 1;
+		goto null_init_task_err;
     }
 
-    enqueue_task(init_task);
+    enqueue_task(init_task, RUNNING_TASK_QUEUE);
 
     kfree(argv[0]);
     kfree(argv);
@@ -241,6 +284,17 @@ uint8_t init_task_queue_rr(void) {
     scheduler_initialized = 1;
 
     return 0;
+
+null_init_task_err:
+	kfree(argv[0]);
+argv0_err:
+	kfree(argv);
+argv_err:
+	kfree(sleep_task_queue);
+sleep_tq_error:
+	kfree(task_queue);
+tq_err:
+	return 1;
 }
 
 /**
@@ -252,7 +306,7 @@ uint8_t init_task_queue_rr(void) {
  */
 void start_init_task(void) {
     // take init task from the queue
-    struct task_struct *task = dequeue_task();
+    struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
 
     // update current running task
     current_running_task = task;
@@ -267,13 +321,13 @@ void start_init_task(void) {
  * @brief Initialize the round-robin scheduler
  *
  * This function calls the init_task_queue_rr() function
- * to initialize the task queue. Only used as a wrapper
+ * to initialize the queues. Only used as a wrapper
  * for the other function.
  *
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t scheduler_init_rr(void) {
-    return init_task_queue_rr();
+    return init_queues_rr();
 }
 
 /**
@@ -312,6 +366,25 @@ void change_context(struct interrupt_regs *r) {
 
     // change instruction pointer
     *(&r->eip) = current_running_task->context->eip;
+}
+
+void save_current_context(struct interrupt_regs *r) {
+		current_running_task->context->flags = r->eflags;
+		current_running_task->context->cs = r->cs;
+		current_running_task->context->eip = r->eip;
+		current_running_task->context->ebp = r->ebp;
+		current_running_task->context->esp = r->useresp;
+		current_running_task->context->edi = r->edi;
+		current_running_task->context->esi = r->esi;
+		current_running_task->context->edx = r->edx;
+		current_running_task->context->ecx = r->ecx;
+		current_running_task->context->ebx = r->ebx;
+		current_running_task->context->eax = r->eax;
+		current_running_task->context->ds = r->ds;
+		current_running_task->context->es = r->ds;
+		current_running_task->context->fs = r->ds;
+		current_running_task->context->gs = r->ds;
+		current_running_task->context->ss = r->ss;
 }
 
 // start kernel task - work in progress
@@ -371,17 +444,17 @@ void resume_context(struct interrupt_regs *r) {
  * the current running task with the new task. The function also
  * changes the virtual address space if the new task runs in user space.
  */
-void schedule(void) {
-
+void schedule(QUEUE_TYPE queue_type) {
     // put current running task in the queue if task
     // if not terminated
     if (current_running_task != NULL) {
-        enqueue_task(current_running_task);
+        enqueue_task(current_running_task, queue_type);
     }
 
-    // take task from the queue and update current running task
-    struct task_struct *task = dequeue_task();
+    // take task from the running queue and update current running task
+    struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
     current_running_task = task;
+
 
     // change virtual address space for user tasks
     if (task->vas != NULL) {
@@ -401,6 +474,14 @@ void display_running_processes(void) {
 
     while (tmp != NULL) {
         printk("id: %d %s\n", tmp->task->task_id,
+                tmp->task->argv[0]);
+        tmp = tmp->next;
+    }
+
+	tmp = sleep_task_queue->front;
+
+    while (tmp != NULL) {
+        printk("id: %d %s (blocked)\n", tmp->task->task_id,
                 tmp->task->argv[0]);
         tmp = tmp->next;
     }

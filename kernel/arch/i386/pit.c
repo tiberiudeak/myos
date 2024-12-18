@@ -1,3 +1,4 @@
+#include "include/process/scheduler.h"
 #include <arch/i386/isr.h>
 #include <arch/i386/pit.h>
 #include <arch/i386/irq.h>
@@ -10,10 +11,12 @@
 
 uint32_t ticks;
 uint32_t uptime;
+uint32_t wait_ticks;
 
 // data from the scheduler
 extern const uint32_t running_time_quantum_ms;
-extern struct task_queue_t *task_queue;
+extern struct task_queue *task_queue;
+extern struct task_queue *sleep_task_queue;
 extern uint8_t scheduler_initialized;
 extern struct task_struct *current_running_task;
 
@@ -27,37 +30,47 @@ extern struct task_struct *current_running_task;
  * to switch between tasks.
  */
 void PIT_IRQ0_handler(struct interrupt_regs *r) {
+	struct task_node *tn;
+	struct task_struct *ts;
     uint8_t ret = 0;
 	ticks++;
 	uptime++;
+	wait_ticks++;
 
 #ifndef CONFIG_FCFS_SCH
+	current_running_task->run_time++;
+
+	// update blockes tasks (from the sleeping queue)
+	if (scheduler_initialized && queue_size(SLEEPING_TASK_QUEUE) != 0) {
+		tn = sleep_task_queue->front;
+
+		while (tn != NULL) {
+			tn->task->sleep_time--;
+
+			if (--tn->task->sleep_time == 0) {
+				ts = dequeue_task(SLEEPING_TASK_QUEUE);
+				enqueue_task(ts, RUNNING_TASK_QUEUE);
+			}
+
+			tn = tn->next;
+		}
+	}
+
     // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
-    if (ticks % running_time_quantum_ms == 0 && scheduler_initialized && queue_size() != 0) {
+    if (current_running_task->run_time % running_time_quantum_ms == 0 && scheduler_initialized &&
+			queue_size(RUNNING_TASK_QUEUE) != 0) {
 
         // save current running task's context
         if (current_running_task->state != TASK_TERMINATED) {
-            current_running_task->context->flags = r->eflags;
-            current_running_task->context->cs = r->cs;
-            current_running_task->context->eip = r->eip;
-            current_running_task->context->ebp = r->ebp;
-            current_running_task->context->esp = r->useresp;
-            current_running_task->context->edi = r->edi;
-            current_running_task->context->esi = r->esi;
-            current_running_task->context->edx = r->edx;
-            current_running_task->context->ecx = r->ecx;
-            current_running_task->context->ebx = r->ebx;
-            current_running_task->context->eax = r->eax;
-            current_running_task->context->ds = r->ds;
-            current_running_task->context->es = r->ds;
-            current_running_task->context->fs = r->ds;
-            current_running_task->context->gs = r->ds;
-            current_running_task->context->ss = r->ss;
+			save_current_context(r);
 
             // change task state from RUNNING to READY
             current_running_task->state = TASK_READY;
+
+			// reset run time
+			current_running_task->run_time = 0;
         }
 
         // if task finished execution, free memory
@@ -68,7 +81,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 
 rr_sch:
         // call scheduler
-        schedule();
+        schedule(RUNNING_TASK_QUEUE);
 
         // prepare elf execution if user space process
         if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
@@ -132,9 +145,9 @@ void PIT_init() {
  * @param millis The number of milliseconds to wait
  */
 void wait_millis(uint16_t millis) {
-	ticks = 0;
+	wait_ticks = 0;
 
-	while (ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
+	while (wait_ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 /**

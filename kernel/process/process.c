@@ -33,6 +33,8 @@ struct task_struct *create_task(void *exec_address, int argc, char **argv, int u
         task->task_id = next_available_task_id++;
         task->exec_address = exec_address;
         task->argc = argc;
+		task->run_time = 0;
+		task->sleep_time = 0;
 
         if (argv != NULL) {
             task->argv = (char**) kmalloc(sizeof(char*) * argc);

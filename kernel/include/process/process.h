@@ -51,6 +51,8 @@ struct task_struct {
     void *program_break;
     uint32_t heap_size_blocks;
     struct mapping *maps;
+	uint32_t run_time;
+	uint32_t sleep_time;
 };
 
 struct task_struct *create_task(void *, int, char**, int);
