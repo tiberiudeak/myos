@@ -8,11 +8,14 @@
 #include <mm/vmm.h>
 #include <stddef.h>
 #include <string.h>
+#include <list.h>
 
 struct task_queue *task_queue = NULL;
 struct task_queue *sleep_task_queue = NULL;
 struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
+
+//struct embedded_link sleep_task_dqueue;
 
 #ifdef CONFIG_RR_TIME_QUANTUM
 const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
@@ -173,6 +176,81 @@ void simple_task_scheduler(void) {
     }
 }
 #else
+
+/*
+ * decrement delta time of first task in the sleeping delta queue
+ *
+ * @param delta_queue_h		head of delta queue
+ */
+void dq_decrement_head(struct embedded_link *delta_queue_h) {
+	struct delta_queue_node *dqn;
+
+	if (!list_is_empty(delta_queue_h)) {
+		dqn = get_container(delta_queue_h->next, struct delta_queue_node, list);
+
+		dqn->delta_time_ms--;
+	}
+}
+
+/*
+ * get element from delta queue
+ *
+ * @param delta_queue_h		head of delta queue
+ */
+struct task_struct *dq_dequeue(struct embedded_link *delta_queue_h) {
+	if (list_is_empty(delta_queue_h))
+		return NULL;
+
+	struct delta_queue_node *dqn = get_container(delta_queue_h->next,
+					struct delta_queue_node, list);
+	struct task_struct *ts = dqn->task;
+	list_delete(delta_queue_h, delta_queue_h->next);
+	kfree(dqn);
+
+	return ts;
+}
+
+/*
+ * add task struct to the delta queue
+ *
+ * @param delta_queue_h		head of delta queue
+ * @param ts				task struct to add
+ */
+void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
+	struct delta_queue_node *new_dqn = kmalloc(sizeof(struct delta_queue_node));
+	struct delta_queue_node *dqn;
+	struct embedded_link *cursor;
+	unsigned int wakeup_time = ts->sleep_time;
+
+	if (!new_dqn)
+		return;
+
+	new_dqn->task = ts;
+	new_dqn->delta_time_ms = ts->sleep_time;
+
+	if (list_is_empty(delta_queue_h)) {
+		list_add_front(delta_queue_h, &new_dqn->list);
+		return;
+	}
+
+	list_iterate(cursor, delta_queue_h) {
+		dqn = list_get_entry(cursor, struct delta_queue_node, list);
+
+		if (dqn->delta_time_ms < wakeup_time) {
+			wakeup_time -= dqn->delta_time_ms;
+		} else {
+			// add in the middle or at the beginning
+			new_dqn->delta_time_ms = wakeup_time;
+			list_add_before(delta_queue_h, cursor, &new_dqn->list);
+			dqn->delta_time_ms -= wakeup_time;
+			return;
+		}
+	}
+
+	// add at the end
+	new_dqn->delta_time_ms = wakeup_time;
+	list_add_end(delta_queue_h, &new_dqn->list);
+}
 
 /**
  * @brief Get size of the specified queue

@@ -39,6 +39,26 @@ inline void list_add_end(struct embedded_link *list_h,
 }
 
 /*
+ * add element before another element in the list
+ *
+ * @param list_h	head of list
+ * @param before	add new_node before this element
+ * @param new_node	new node to be added
+ */
+void list_add_before(struct embedded_link *list_h,
+		struct embedded_link *before, struct embedded_link *new_node) {
+
+	if (before->prev == list_h) {
+		list_add_front(list_h, new_node);
+	} else {
+		new_node->next = before;
+		new_node->prev = before->prev;
+		before->prev->next = new_node;
+		before->prev = new_node;
+	}
+}
+
+/*
  * delete given node from the list
  *
  * @param list_h	head of list
@@ -56,5 +76,14 @@ void list_delete(struct embedded_link *list_h,
 
 	node->next = NULL;
 	node->prev = NULL;
+}
+
+/*
+ * check if list is empty
+ *
+ * @param list_h	list to check
+ */
+inline int list_is_empty(struct embedded_link *list_h) {
+	return list_h->next == list_h;
 }
 

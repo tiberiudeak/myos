@@ -4,6 +4,7 @@
 #include <process/process.h>
 #include <arch/i386/isr.h>
 #include <stdint.h>
+#include <list.h>
 
 // node in the task queue
 struct task_node {
@@ -15,6 +16,28 @@ struct task_node {
 struct task_queue {
     struct task_node *front;
     struct task_node *rear;
+};
+
+/*
+ * delta queue for sleeping tasks
+ *
+ * tasks are sorted by the difference in sleeping
+ * times relative to the previous task
+ *
+ * e.g. task1 sleeps 10ms, task2 12ms and task3 2ms:
+ *
+ *          -------    -------    -------
+ * head ->  | 2ms | -> | 8ms | -> | 2ms |
+ *          -------    -------    -------
+ *           task3      task1      task2
+ *
+ * the head represents the next task to wake up, with the
+ * smallest remaining time
+ */
+struct delta_queue_node {
+	unsigned int delta_time_ms;
+	struct task_struct *task;
+	struct embedded_link list;
 };
 
 typedef enum {
@@ -39,6 +62,9 @@ void resume_context(struct interrupt_regs *);
 void change_context_kernel(struct interrupt_regs *);
 void display_running_processes(void);
 void save_current_context(struct interrupt_regs *r);
+void dq_decrement_head(struct embedded_link *);
+struct task_struct *dq_dequeue(struct embedded_link *);
+void dq_enqueue(struct embedded_link *, struct task_struct *);
 #endif
 
 #endif /* !_SCH_H */
