@@ -40,7 +40,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 #ifndef CONFIG_FCFS_SCH
 	current_running_task->run_time++;
 
-	// update blockes tasks (from the sleeping queue)
+	// update blocked tasks (from the sleeping queue)
 	if (scheduler_initialized && queue_size(SLEEPING_TASK_QUEUE) != 0) {
 		tn = sleep_task_queue->front;
 
