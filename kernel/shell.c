@@ -184,7 +184,7 @@ void shell_exec_command(char *command) {
             printk("task is NULL\n");
         }
         else {
-            enqueue_task(new_task, RUNNING_TASK_QUEUE);
+            enqueue_task(new_task);
         }
 
         index = 0;

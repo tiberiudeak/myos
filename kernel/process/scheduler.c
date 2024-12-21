@@ -1,98 +1,75 @@
-#include <arch/i386/isr.h>
+#include <list.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <arch/i386/pit.h>
+#include <arch/i386/isr.h>
 #include <kernel/tty.h>
 #include <kernel/shell.h>
+#include <kernel/list.h>
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
 #include <stddef.h>
 #include <string.h>
-#include <list.h>
 
 struct task_queue *task_queue = NULL;
-struct task_queue *sleep_task_queue = NULL;
+struct embedded_link sleep_task_dqueue;
 struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
 
-//struct embedded_link sleep_task_dqueue;
 
 #ifdef CONFIG_RR_TIME_QUANTUM
 const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
 #endif
 
 /**
- * @brief Put task in specified queue
+ * @brief Put task in task queue
  *
- * This function puts the given task in the specified task queue:
- * running or spleeping task queue
+ * This function puts the given task in the task queue:
  *
  * @param task			The task to be put in the queue
- * @param queue_type	Queue type: running or sleeping
  */
-void enqueue_task(struct task_struct *task, QUEUE_TYPE queue_type) {
-	struct task_queue *queue = NULL;
+void enqueue_task(struct task_struct *task) {
 	struct task_node *new_node;
-
-	if (queue_type == RUNNING_TASK_QUEUE) {
-		queue = task_queue;
-	} else if (queue_type == SLEEPING_TASK_QUEUE) {
-		queue = sleep_task_queue;
-	} else {
-		printk("Error: no such queue! Doing nothing...\n");
-		return;
-	}
 
     new_node = kmalloc(sizeof(struct task_node));
 
-    if (new_node != NULL && queue != NULL) {
+    if (new_node != NULL && task_queue != NULL) {
         new_node->task = task;
         new_node->next = NULL;
 
-        if (queue->rear == NULL) {
-            queue->front = new_node;
+        if (task_queue->rear == NULL) {
+            task_queue->front = new_node;
         }
         else {
-            queue->rear->next = new_node;
+            task_queue->rear->next = new_node;
         }
 
-        queue->rear = new_node;
+        task_queue->rear = new_node;
     }
 }
 
 /**
- * @brief Get task from the specified queue
+ * @brief Get task from the task queue
  *
- * This fuction takes out and returns a task from the specified
+ * This fuction takes out and returns a task from the task
  * queue if available.
  *
- * @param queue_type	The queue
  * @return The task taken out from the queue
  */
-struct task_struct *dequeue_task(QUEUE_TYPE queue_type) {
-	struct task_queue *queue;
+struct task_struct *dequeue_task(void) {
 	struct task_node *front_node;
 	struct task_struct *task;
 
-	if (queue_type == RUNNING_TASK_QUEUE) {
-		queue = task_queue;
-	} else if (queue_type == SLEEPING_TASK_QUEUE) {
-		queue = sleep_task_queue;
-	} else {
-		printk("Error: no such queue! Doing nothing...\n");
-		return NULL;
-	}
-
-    if (queue->front == NULL)
+    if (task_queue->front == NULL)
         return NULL;    // empty queue
 
-    front_node = queue->front;
+    front_node = task_queue->front;
 
     task = front_node->task;
-    queue->front = front_node->next;
+    task_queue->front = front_node->next;
 
-    if (queue->front == NULL) {
-        queue->rear = NULL;    // empty queue
+    if (task_queue->front == NULL) {
+        task_queue->rear = NULL;    // empty queue
     }
 
     kfree(front_node);
@@ -155,7 +132,7 @@ void simple_task_scheduler(void) {
             continue;
         }
 
-        struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
+        struct task_struct *task = dequeue_task();
         current_running_task = task;
 
         void (*program)(int argc, char *argv[]);
@@ -260,22 +237,11 @@ void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
  * @param queue_type	Queue type
  * @return The queue size
  */
-uint32_t queue_size(QUEUE_TYPE queue_type) {
+uint32_t queue_size(void) {
     uint32_t count = 0;
-	struct task_queue *queue;
 	struct task_node *current;
 
-	if (queue_type == RUNNING_TASK_QUEUE) {
-		queue = task_queue;
-	} else if (queue_type == SLEEPING_TASK_QUEUE) {
-		queue = sleep_task_queue;
-	} else {
-		printk("Error: no such queue! Doing nothing...\n");
-		return 0;
-	}
-
-
-    current = queue->front;
+    current = task_queue->front;
     while (current != NULL) {
         count++;
         current = current->next;
@@ -321,15 +287,8 @@ uint8_t init_queues_rr(void) {
     task_queue->front = NULL;
     task_queue->rear = NULL;
 
-	sleep_task_queue = kmalloc(sizeof(struct task_queue));
-
-	if (sleep_task_queue == NULL) {
-		printk("out of memory!\n");
-		goto sleep_tq_error;
-	}
-
-	sleep_task_queue->front = NULL;
-	sleep_task_queue->rear = NULL;
+	// init delta queue
+	list_init(&sleep_task_dqueue);
 
     char **argv = kmalloc(sizeof(char*) * 1);
 
@@ -354,7 +313,7 @@ uint8_t init_queues_rr(void) {
 		goto null_init_task_err;
     }
 
-    enqueue_task(init_task, RUNNING_TASK_QUEUE);
+    enqueue_task(init_task);
 
     kfree(argv[0]);
     kfree(argv);
@@ -368,8 +327,6 @@ null_init_task_err:
 argv0_err:
 	kfree(argv);
 argv_err:
-	kfree(sleep_task_queue);
-sleep_tq_error:
 	kfree(task_queue);
 tq_err:
 	return 1;
@@ -384,7 +341,7 @@ tq_err:
  */
 void start_init_task(void) {
     // take init task from the queue
-    struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
+    struct task_struct *task = dequeue_task();
 
     // update current running task
     current_running_task = task;
@@ -526,11 +483,15 @@ void schedule(QUEUE_TYPE queue_type) {
     // put current running task in the queue if task
     // if not terminated
     if (current_running_task != NULL) {
-        enqueue_task(current_running_task, queue_type);
+		if (queue_type == RUNNING_TASK_QUEUE) {
+			enqueue_task(current_running_task);
+		} else {
+			dq_enqueue(&sleep_task_dqueue, current_running_task);
+		}
     }
 
     // take task from the running queue and update current running task
-    struct task_struct *task = dequeue_task(RUNNING_TASK_QUEUE);
+    struct task_struct *task = dequeue_task();
     current_running_task = task;
 
 
@@ -545,7 +506,9 @@ void schedule(QUEUE_TYPE queue_type) {
 
 // display processes in the task queue
 void display_running_processes(void) {
-    //printk("processes:\n");
+	struct embedded_link *cursor;
+	struct delta_queue_node *dqn;
+
     printk("id: %d %s (running)\n", current_running_task->task_id,
             current_running_task->argv[0]);
     struct task_node *tmp = task_queue->front;
@@ -556,13 +519,12 @@ void display_running_processes(void) {
         tmp = tmp->next;
     }
 
-	tmp = sleep_task_queue->front;
+	list_iterate(cursor, &sleep_task_dqueue) {
+		dqn = list_get_entry(cursor, struct delta_queue_node, list);
 
-    while (tmp != NULL) {
-        printk("id: %d %s (blocked)\n", tmp->task->task_id,
-                tmp->task->argv[0]);
-        tmp = tmp->next;
-    }
+		printk("id: %d %s (blocked for %dms)\n", dqn->task->task_id,
+				dqn->task->argv[0], dqn->delta_time_ms);
+	}
 }
 
 #endif

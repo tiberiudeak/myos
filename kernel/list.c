@@ -1,4 +1,4 @@
-#include <list.h>
+#include <kernel/list.h>
 
 /*
  * initialize list - create sentinel

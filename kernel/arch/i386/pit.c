@@ -3,7 +3,9 @@
 #include <arch/i386/pit.h>
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
+#include <kernel/list.h>
 #include <kernel/tty.h>
+#include <list.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <mm/kmalloc.h>
@@ -16,7 +18,7 @@ uint32_t wait_ticks;
 // data from the scheduler
 extern const uint32_t running_time_quantum_ms;
 extern struct task_queue *task_queue;
-extern struct task_queue *sleep_task_queue;
+extern struct embedded_link sleep_task_dqueue;
 extern uint8_t scheduler_initialized;
 extern struct task_struct *current_running_task;
 
@@ -30,7 +32,7 @@ extern struct task_struct *current_running_task;
  * to switch between tasks.
  */
 void PIT_IRQ0_handler(struct interrupt_regs *r) {
-	struct task_node *tn;
+	struct delta_queue_node *dqn;
 	struct task_struct *ts;
     uint8_t ret = 0;
 	ticks++;
@@ -41,18 +43,14 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 	current_running_task->run_time++;
 
 	// update blocked tasks (from the sleeping queue)
-	if (scheduler_initialized && queue_size(SLEEPING_TASK_QUEUE) != 0) {
-		tn = sleep_task_queue->front;
+	if (scheduler_initialized && !list_is_empty(&sleep_task_dqueue)) {
+		dq_decrement_head(&sleep_task_dqueue);
 
-		while (tn != NULL) {
-			tn->task->sleep_time--;
+		dqn = list_get_entry(sleep_task_dqueue.next, struct delta_queue_node, list);
 
-			if (--tn->task->sleep_time == 0) {
-				ts = dequeue_task(SLEEPING_TASK_QUEUE);
-				enqueue_task(ts, RUNNING_TASK_QUEUE);
-			}
-
-			tn = tn->next;
+		if (dqn->delta_time_ms <= 0) {
+			ts = dq_dequeue(&sleep_task_dqueue);
+			enqueue_task(ts);
 		}
 	}
 
@@ -60,7 +58,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
     if (current_running_task->run_time % running_time_quantum_ms == 0 && scheduler_initialized &&
-			queue_size(RUNNING_TASK_QUEUE) != 0) {
+			queue_size() != 0) {
 
         // save current running task's context
         if (current_running_task->state != TASK_TERMINATED) {

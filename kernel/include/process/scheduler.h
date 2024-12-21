@@ -3,8 +3,8 @@
 
 #include <process/process.h>
 #include <arch/i386/isr.h>
+#include <kernel/list.h>
 #include <stdint.h>
-#include <list.h>
 
 // node in the task queue
 struct task_node {
@@ -45,8 +45,8 @@ typedef enum {
 	SLEEPING_TASK_QUEUE
 } QUEUE_TYPE;
 
-void enqueue_task(struct task_struct *, QUEUE_TYPE);
-struct task_struct *dequeue_task(QUEUE_TYPE);
+void enqueue_task(struct task_struct *);
+struct task_struct *dequeue_task(void);
 
 #ifdef CONFIG_FCFS_SCH
 uint8_t scheduler_init(void);
@@ -54,7 +54,7 @@ uint8_t init_task_queue(void);
 void simple_task_scheduler(void);
 #else
 uint8_t scheduler_init_rr(void);
-uint32_t queue_size(QUEUE_TYPE);
+uint32_t queue_size();
 void schedule(QUEUE_TYPE);
 void start_init_task(void);
 void change_context(struct interrupt_regs *);
