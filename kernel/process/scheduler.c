@@ -90,15 +90,7 @@ uint8_t scheduler_init(void) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t init_task_queue(void) {
-    task_queue = kmalloc(sizeof(struct task_queue));
-
-    if (task_queue == NULL) {
-        printk("out of memory\n");
-        return 1;
-    }
-
-    task_queue->front = NULL;
-    task_queue->rear = NULL;
+	list_init(&task_queue);
 
     scheduler_initialized = 1;
 
@@ -116,7 +108,7 @@ uint8_t init_task_queue(void) {
  */
 void simple_task_scheduler(void) {
     while (1) {
-        if (task_queue->front == NULL) {
+        if (list_is_empty(&task_queue)) {
             // sleep a bit 
             wait_millis(100);
 

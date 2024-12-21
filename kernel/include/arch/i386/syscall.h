@@ -50,7 +50,9 @@ void syscall_test1(void) {
  * number of milliseconds pass. Schedule another process in the meanwhile
  */
 void syscall_sleep(struct interrupt_regs *r) {
-	//__asm__ __volatile__ ("movl %%ebx, %%ecx" : "=c"(millis) : );
+#ifdef CONFIG_FCFS_SCH
+	wait_millis(r->ebx);
+#else
 	int ret;
 
 	// save context of process that initiated sleep syscall
@@ -86,6 +88,7 @@ void syscall_sleep(struct interrupt_regs *r) {
 	}
 
 	current_running_task->state = TASK_RUNNING;
+#endif
 }
 
 /**

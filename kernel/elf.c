@@ -493,12 +493,12 @@ int32_t execute_elf(int argc, char **argv) {
     //int fd = open(name, O_RDONLY);
     int fd = -1;
 
-    __asm__ __volatile__ ("mov %0, %%ebx\n"
-                        "mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
+    //__asm__ __volatile__ ("mov %0, %%ebx\n"
+                        //"mov %1, %%ecx\n": : "r"(argv[0]), "r"(O_RDWR));
 
-    syscall_open();
+    fd = syscall_open(argv[0], O_RDWR);
 
-    __asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
+    //__asm__ __volatile ("mov %%eax, %0" : "=r"(fd));
 
     if (fd < 0) {
         printk("%s no such file or directory!\n", argv[0]);
@@ -520,11 +520,11 @@ int32_t execute_elf(int argc, char **argv) {
     void *entry_point = load_elf(oft_entry->address, &ustack_start, &ustack_end);
 
     // close file descriptor
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+    //__asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
-    syscall_close();
+    ret = syscall_close(fd);
 
-    __asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
+    //__asm__ __volatile__ ("mov %%eax, %0" : "=r"(ret));
 
     if (ret)
         return 1;
@@ -544,9 +544,9 @@ err:
     deallocate_elf_memory();
 
 err2:
-    __asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
+    //__asm__ __volatile__ ("mov %0, %%ebx" : : "r"(fd));
 
-    syscall_close();
+    syscall_close(fd);
 
     restore_kernel_address_space();
     return 1;
