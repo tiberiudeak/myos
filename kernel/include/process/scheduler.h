@@ -9,13 +9,7 @@
 // node in the task queue
 struct task_node {
     struct task_struct *task;
-    struct task_node *next;
-};
-
-// task queue
-struct task_queue {
-    struct task_node *front;
-    struct task_node *rear;
+    struct embedded_link list;
 };
 
 /*
@@ -54,7 +48,7 @@ uint8_t init_task_queue(void);
 void simple_task_scheduler(void);
 #else
 uint8_t scheduler_init_rr(void);
-uint32_t queue_size();
+uint32_t queue_size(struct embedded_link *);
 void schedule(QUEUE_TYPE);
 void start_init_task(void);
 void change_context(struct interrupt_regs *);

@@ -17,7 +17,7 @@ uint32_t wait_ticks;
 
 // data from the scheduler
 extern const uint32_t running_time_quantum_ms;
-extern struct task_queue *task_queue;
+extern struct embedded_link task_queue;
 extern struct embedded_link sleep_task_dqueue;
 extern uint8_t scheduler_initialized;
 extern struct task_struct *current_running_task;
@@ -58,7 +58,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
     if (current_running_task->run_time % running_time_quantum_ms == 0 && scheduler_initialized &&
-			queue_size() != 0) {
+			!list_is_empty(&task_queue)) {
 
         // save current running task's context
         if (current_running_task->state != TASK_TERMINATED) {

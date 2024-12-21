@@ -11,7 +11,9 @@
 #include <stddef.h>
 #include <string.h>
 
-struct task_queue *task_queue = NULL;
+// ready task queue
+struct embedded_link task_queue;
+// sleeping task queue
 struct embedded_link sleep_task_dqueue;
 struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
@@ -33,18 +35,10 @@ void enqueue_task(struct task_struct *task) {
 
     new_node = kmalloc(sizeof(struct task_node));
 
-    if (new_node != NULL && task_queue != NULL) {
+    if (new_node != NULL) {
         new_node->task = task;
-        new_node->next = NULL;
 
-        if (task_queue->rear == NULL) {
-            task_queue->front = new_node;
-        }
-        else {
-            task_queue->rear->next = new_node;
-        }
-
-        task_queue->rear = new_node;
+		list_add_end(&task_queue, &new_node->list);
     }
 }
 
@@ -57,22 +51,19 @@ void enqueue_task(struct task_struct *task) {
  * @return The task taken out from the queue
  */
 struct task_struct *dequeue_task(void) {
-	struct task_node *front_node;
+	struct task_node *first_node;
 	struct task_struct *task;
 
-    if (task_queue->front == NULL)
-        return NULL;    // empty queue
+    if (list_is_empty(&task_queue)) {
+        return NULL;
+	}
 
-    front_node = task_queue->front;
+	first_node = list_get_entry(task_queue.next, struct task_node, list);
+	task = first_node->task;
 
-    task = front_node->task;
-    task_queue->front = front_node->next;
+	list_delete(&task_queue, task_queue.next);
+	kfree(first_node);
 
-    if (task_queue->front == NULL) {
-        task_queue->rear = NULL;    // empty queue
-    }
-
-    kfree(front_node);
     return task;
 }
 
@@ -237,15 +228,13 @@ void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
  * @param queue_type	Queue type
  * @return The queue size
  */
-uint32_t queue_size(void) {
+uint32_t queue_size(struct embedded_link *list_h) {
     uint32_t count = 0;
-	struct task_node *current;
+	struct embedded_link *cursor;
 
-    current = task_queue->front;
-    while (current != NULL) {
-        count++;
-        current = current->next;
-    }
+	list_iterate(cursor, list_h) {
+		count++;
+	}
 
     return count;
 }
@@ -277,15 +266,8 @@ void init_task_func(int argc, char *argv[]) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t init_queues_rr(void) {
-    task_queue = kmalloc(sizeof(struct task_queue));
-
-    if (task_queue == NULL) {
-        printk("out of memory\n");
-		goto tq_err;
-    }
-
-    task_queue->front = NULL;
-    task_queue->rear = NULL;
+	// init task queue
+	list_init(&task_queue);
 
 	// init delta queue
 	list_init(&sleep_task_dqueue);
@@ -327,8 +309,6 @@ null_init_task_err:
 argv0_err:
 	kfree(argv);
 argv_err:
-	kfree(task_queue);
-tq_err:
 	return 1;
 }
 
@@ -508,16 +488,17 @@ void schedule(QUEUE_TYPE queue_type) {
 void display_running_processes(void) {
 	struct embedded_link *cursor;
 	struct delta_queue_node *dqn;
+	struct task_node *tn;
 
     printk("id: %d %s (running)\n", current_running_task->task_id,
             current_running_task->argv[0]);
-    struct task_node *tmp = task_queue->front;
 
-    while (tmp != NULL) {
-        printk("id: %d %s\n", tmp->task->task_id,
-                tmp->task->argv[0]);
-        tmp = tmp->next;
-    }
+	list_iterate(cursor, &task_queue) {
+		tn = list_get_entry(cursor, struct task_node, list);
+
+        printk("id: %d %s\n", tn->task->task_id,
+                tn->task->argv[0]);
+	}
 
 	list_iterate(cursor, &sleep_task_dqueue) {
 		dqn = list_get_entry(cursor, struct delta_queue_node, list);
