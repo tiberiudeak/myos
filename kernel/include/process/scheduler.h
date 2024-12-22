@@ -29,7 +29,7 @@ struct task_node {
  * smallest remaining time
  */
 struct delta_queue_node {
-	unsigned int delta_time_ms;
+	int delta_time_ms;
 	struct task_struct *task;
 	struct embedded_link list;
 };

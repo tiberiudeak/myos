@@ -1,4 +1,3 @@
-#include <list.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <arch/i386/pit.h>
@@ -180,7 +179,7 @@ void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
 	struct delta_queue_node *new_dqn = kmalloc(sizeof(struct delta_queue_node));
 	struct delta_queue_node *dqn;
 	struct embedded_link *cursor;
-	unsigned int wakeup_time = ts->sleep_time;
+	int wakeup_time = ts->sleep_time;
 
 	if (!new_dqn)
 		return;
