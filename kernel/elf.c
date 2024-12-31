@@ -457,11 +457,10 @@ uint8_t prepare_elf_execution(int argc, char **argv) {
     set_argc_argv(&ustack_end);
 
     current_running_task->context->eip = (uint32_t)entry_point;
-    current_running_task->context->esp = (uint32_t)ustack_end;
+    current_running_task->context->useresp = (uint32_t)ustack_end;
 
 #ifdef CONFIG_VERBOSE
     printk("eip: %x\n", current_running_task->context->eip);
-    printk("esp: %x\n", current_running_task->context->esp);
 #endif
 
     return 0;

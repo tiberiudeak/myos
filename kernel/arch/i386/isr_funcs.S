@@ -1,4 +1,6 @@
 .extern isr_handler
+.extern isr_prob
+.extern current_running_task
 
 isr_common_stub:
 	cli
@@ -26,7 +28,29 @@ isr_common_stub:
 	mov %bx, %gs
 
 	popa					# restore registers
+
+	# check if isr was syscall
+	cmpl $0x80, (%esp)
+	jne isr_common_stub_pre_exit
 	add $8, %esp			# remove the error code and interrupt number
+
+	cmpl $0x2, (isr_prob)			# manual pop problem
+	jne	isr_common_stub_exit
+	push %eax					# save EAX
+	mov 0xc(%esp), %eax			# get EFLAGS
+	mov %eax, 0x14(%esp)		# and put it in the place of SS
+	mov 0x8(%esp), %eax			# get CS
+	mov %eax, 0x10(%esp)		# and put it in the place of ESP
+	mov 0x4(%esp), %eax			# get EIP
+	mov %eax, 0xc(%esp)			# and put it in the place of initial EFLAGS
+	pop %eax					# restore EAX
+	add $0x8, %esp				# delete initial (now moved) CS and EIP
+	mov $0x0, (isr_prob)		# reset prob
+	jmp isr_common_stub_exit	# and exit
+
+isr_common_stub_pre_exit:
+	add $8, %esp			# remove the error code and interrupt number
+isr_common_stub_exit:
 	iret					# return from interrupt
 
 .globl isr0

@@ -241,6 +241,9 @@ uint32_t queue_size(struct embedded_link *list_h) {
 void init_task_func(int argc, char *argv[]) {
     (void) argv; // remove compilation warning
     (void) argc;
+
+    scheduler_initialized = 1;
+
 #ifdef CONFIG_VERBOSE
     printk("init process started!\n");
 #endif
@@ -290,8 +293,6 @@ uint8_t init_queues_rr(void) {
 
     kfree(argv[0]);
     kfree(argv);
-
-    scheduler_initialized = 1;
 
     return 0;
 
@@ -348,21 +349,14 @@ uint8_t scheduler_init_rr(void) {
  * @param r "Context" of the previous task that needs to
  *          be updated
  */
-void change_context(struct interrupt_regs *r) {
-    // TODO: update TSS for ring 0
-
-    __asm__ __volatile__ ("mov $0x23, %eax\n"
-                          "mov %eax, %ds\n"
-                          "mov %eax, %es\n"
-                          "mov %eax, %fs\n"
-                          "mov %eax, %gs");
-
+void change_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
     // change DS and SS to user mode data segment selector
     *(&r->ds) = 0x23;
-    *(&r->ss) = 0x23;
 
-    // change stack address
-    *(&r->useresp) = current_running_task->context->esp;
+	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
+		*(&r->ss) = current_running_task->context->ss;
+		*(&r->useresp) = current_running_task->context->useresp;
+	}
 
     // clear flags (except for the interrupt bit)
     // TODO
@@ -372,6 +366,8 @@ void change_context(struct interrupt_regs *r) {
 
     // change instruction pointer
     *(&r->eip) = current_running_task->context->eip;
+
+    // TODO: update TSS for ring 0!!!!
 }
 
 void save_current_context(struct interrupt_regs *r) {
@@ -391,6 +387,7 @@ void save_current_context(struct interrupt_regs *r) {
 		current_running_task->context->fs = r->ds;
 		current_running_task->context->gs = r->ds;
 		current_running_task->context->ss = r->ss;
+		current_running_task->context->useresp = r->useresp;
 }
 
 // start kernel task - work in progress
@@ -417,9 +414,8 @@ void change_context_kernel(struct interrupt_regs *r) {
  * @param r "Context" of the previous running task that needs to
  *          be updated
  */
-void resume_context(struct interrupt_regs *r) {
+void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
     // restore segments
-    *(&r->ss) = current_running_task->context->ss;
     *(&r->ds) = current_running_task->context->ds;
     *(&r->cs) = current_running_task->context->cs;
 
@@ -435,11 +431,16 @@ void resume_context(struct interrupt_regs *r) {
     *(&r->eflags) = current_running_task->context->flags;
 
     // restore stack
-    *(&r->useresp) = current_running_task->context->esp;
     *(&r->ebp) = current_running_task->context->ebp;
+	*(&r->esp) = current_running_task->context->esp;
 
     // restore instruction pointer
     *(&r->eip) = current_running_task->context->eip;
+
+	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
+		*(&r->ss) = current_running_task->context->ss;
+		*(&r->useresp) = current_running_task->context->useresp;
+	}
 }
 
 /**

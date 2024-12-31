@@ -1,4 +1,6 @@
 .extern irq_handler
+.extern irq_prob
+.extern current_running_task
 
 irq_common_stub:
     cli
@@ -26,7 +28,59 @@ irq_common_stub:
 	mov %ax, %gs
 
 	popa						# restore registers
+
+	# fix problems only for timer interrupt
+	cmpl $0x20, (%esp)
+	jne irq_common_stub_pre_exit
 	add $8, %esp				# remove error code and interrupt number
+
+irq_manual_push:
+	cmpl $0x1, (irq_prob)			# manual push problem
+	jne irq_manual_pop
+	sub $0x8, %esp				# make place for ESP and SS
+	push %eax					# save EAX
+
+
+	mov 0xc(%esp), %eax			# get EIP from stack
+	mov %eax, 0x4(%esp)			# and put it in the new place
+	mov 0x10(%esp), %eax		# get CS from stack
+	mov %eax, 0x8(%esp)			# and put it in the new place
+	mov 0x14(%esp), %eax		# get EFLAGS from stack
+	mov %eax, 0xc(%esp)			# and put it in the new place
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task context
+	mov 0x40(%eax), %eax		# get USERESP from the context
+	mov %eax, 0x10(%esp)		# and save it onto the stack
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task context
+	mov 0x3c(%eax), %eax		# get SS from the context
+	mov %eax, 0x14(%esp)		# and save it onto the stack
+
+	pop %eax					# restore EAX
+	mov $0x0, (irq_prob)		# reset prob
+	jmp irq_common_stub_exit	# and exit
+
+
+irq_manual_pop:
+	cmpl $0x2, (irq_prob)			# manual pop problem
+	jne	irq_common_stub_exit
+	push %eax					# save EAX
+	mov 0xc(%esp), %eax			# get EFLAGS
+	mov %eax, 0x14(%esp)		# and put it in the place of SS
+	mov 0x8(%esp), %eax			# get CS
+	mov %eax, 0x10(%esp)		# and put it in the place of ESP
+	mov 0x4(%esp), %eax			# get EIP
+	mov %eax, 0xc(%esp)			# and put it in the place of initial EFLAGS
+	pop %eax					# restore EAX
+	add $0x8, %esp				# delete initial (now moved) CS and EIP
+	mov $0x0, (irq_prob)		# reset prob
+	jmp irq_common_stub_exit	# and exit
+
+irq_common_stub_pre_exit:
+	add $0x8, %esp				# remove error code and interrupt number
+irq_common_stub_exit:
 	iret						# return from interrupt
 
 .globl irq0

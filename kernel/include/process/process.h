@@ -30,6 +30,7 @@ struct proc_context {
     uint32_t cs;
     uint32_t flags;
     uint32_t ss;
+	uint32_t useresp;
 };
 
 struct mapping {
@@ -53,6 +54,7 @@ struct task_struct {
     struct mapping *maps;
 	uint32_t run_time;
 	uint32_t sleep_time;
+	int ring;
 };
 
 struct task_struct *create_task(void *, int, char**, int);

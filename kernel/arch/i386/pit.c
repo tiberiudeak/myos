@@ -1,11 +1,9 @@
-#include "include/process/scheduler.h"
 #include <arch/i386/isr.h>
 #include <arch/i386/pit.h>
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
 #include <kernel/list.h>
 #include <kernel/tty.h>
-#include <list.h>
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <mm/kmalloc.h>
@@ -14,6 +12,7 @@
 uint32_t ticks;
 uint32_t uptime;
 uint32_t wait_ticks;
+TASK_SWITCH_STACK_PROBLEM irq_prob;
 
 // data from the scheduler
 extern const uint32_t running_time_quantum_ms;
@@ -35,12 +34,15 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 	struct delta_queue_node *dqn;
 	struct task_struct *ts;
     uint8_t ret = 0;
+	int prev_ring;
+
 	ticks++;
 	uptime++;
 	wait_ticks++;
 
 #ifndef CONFIG_FCFS_SCH
 	current_running_task->run_time++;
+	prev_ring = current_running_task->ring;
 
 	// update blocked tasks (from the sleeping queue)
 	if (scheduler_initialized && !list_is_empty(&sleep_task_dqueue)) {
@@ -57,7 +59,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
     // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
-    if (current_running_task->run_time % running_time_quantum_ms == 0 && scheduler_initialized &&
+    if (current_running_task->run_time >= running_time_quantum_ms && scheduler_initialized &&
 			!list_is_empty(&task_queue)) {
 
         // save current running task's context
@@ -69,17 +71,21 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 
 			// reset run time
 			current_running_task->run_time = 0;
-        }
-
-        // if task finished execution, free memory
-        if (current_running_task->state == TASK_TERMINATED) {
+        } else {
+			// if task finished execution, free memory
             destroy_task(current_running_task);
             current_running_task = NULL;
-        }
+		}
 
 rr_sch:
         // call scheduler
         schedule(RUNNING_TASK_QUEUE);
+
+		if (prev_ring == 0 && current_running_task->ring == 3) {
+			irq_prob = MANUAL_PUSH;
+		} else if (prev_ring == 3 && current_running_task->ring == 0) {
+			irq_prob = MANUAL_POP;
+		}
 
         // prepare elf execution if user space process
         if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
@@ -95,10 +101,10 @@ rr_sch:
 
         // update registers on the stack (context) for the new task
         if (current_running_task->state == TASK_CREATED) {
-            change_context(r);
+            change_context(r, irq_prob);
         }
         else {
-            resume_context(r);
+            resume_context(r, irq_prob);
         }
 
         current_running_task->state = TASK_RUNNING;

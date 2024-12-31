@@ -39,6 +39,12 @@ typedef enum {
 	SLEEPING_TASK_QUEUE
 } QUEUE_TYPE;
 
+typedef enum {
+	NO_PROBLEM,
+	MANUAL_PUSH,
+	MANUAL_POP
+} TASK_SWITCH_STACK_PROBLEM;
+
 void enqueue_task(struct task_struct *);
 struct task_struct *dequeue_task(void);
 
@@ -51,8 +57,8 @@ uint8_t scheduler_init_rr(void);
 uint32_t queue_size(struct embedded_link *);
 void schedule(QUEUE_TYPE);
 void start_init_task(void);
-void change_context(struct interrupt_regs *);
-void resume_context(struct interrupt_regs *);
+void change_context(struct interrupt_regs *, TASK_SWITCH_STACK_PROBLEM);
+void resume_context(struct interrupt_regs *, TASK_SWITCH_STACK_PROBLEM);
 void change_context_kernel(struct interrupt_regs *);
 void display_running_processes(void);
 void save_current_context(struct interrupt_regs *r);

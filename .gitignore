@@ -5,6 +5,7 @@ dependency_graph
 .cache
 sysroot
 bin
+intel
 
 
 *~

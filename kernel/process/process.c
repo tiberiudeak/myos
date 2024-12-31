@@ -63,12 +63,6 @@ struct task_struct *create_task(void *exec_address, int argc, char **argv, int u
             strcpy(task->argv[i], argv[i]);
         }
 
-        if (userspace) {
-            task->vas = create_address_space();
-        }
-        else {
-            task->vas = NULL;
-        }
 
         task->context = kmalloc(sizeof(struct proc_context));
 
@@ -86,8 +80,27 @@ struct task_struct *create_task(void *exec_address, int argc, char **argv, int u
             return NULL;
         }
 
-        if (!userspace)
+        if (userspace) {
+            task->vas = create_address_space();
+			task->ring = 3;
+			task->context->cs = 0x1B;
+			task->context->ds = 0x23;
+			task->context->es = 0x23;
+			task->context->fs = 0x23;
+			task->context->gs = 0x23;
+			task->context->ss = 0x23;
+        }
+        else {
+            task->vas = NULL;
+			task->ring = 0;
             task->context->eip = (uint32_t)exec_address;
+			task->context->cs = 0x8;
+			task->context->ds = 0x10;
+			task->context->es = 0x10;
+			task->context->fs = 0x10;
+			task->context->gs = 0x10;
+			task->context->ss = 0x10;
+        }
     }
     
     task->maps = NULL;

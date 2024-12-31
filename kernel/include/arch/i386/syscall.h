@@ -1,4 +1,3 @@
-#include "include/process/scheduler.h"
 #ifndef KERNEL_SYSCALL_H
 #define KERNEL_SYSCALL_H 1
 
@@ -25,6 +24,7 @@
 #include <fcntl.h>
 
 #define MAX_SYSCALLS	9
+TASK_SWITCH_STACK_PROBLEM isr_prob;
 
 // data from the scheduler
 extern struct task_struct *current_running_task;
@@ -67,6 +67,11 @@ void syscall_sleep(struct interrupt_regs *r) {
 	// schedule another task
 	schedule(SLEEPING_TASK_QUEUE);
 
+	// if new current_running_task is a kernel task
+	if (current_running_task->ring == 0) {
+		isr_prob = MANUAL_POP;
+	}
+
 	// prepare elf execution if user space process
 	if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
 		ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
@@ -81,10 +86,10 @@ void syscall_sleep(struct interrupt_regs *r) {
 
 	// update registers on the stack (context) for the new task
 	if (current_running_task->state == TASK_CREATED) {
-		change_context(r);
+		change_context(r, isr_prob);
 	}
 	else {
-		resume_context(r);
+		resume_context(r, isr_prob);
 	}
 
 	current_running_task->state = TASK_RUNNING;
