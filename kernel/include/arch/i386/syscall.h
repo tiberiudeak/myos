@@ -363,11 +363,12 @@ err:
 	return -1;
 }
 
-void syscall_exit(int return_code) {
+void syscall_exit(struct interrupt_regs *r) {
     //__asm__ __volatile__ ("mov %%ebx, %0" : "=r"(return_code));
+	int ret;
 
     // cleanup elf data
-    elf_after_program_execution(return_code);
+    elf_after_program_execution(r->ebx);
 
     // restore kernel virtual address space
     restore_kernel_address_space();
@@ -380,8 +381,35 @@ void syscall_exit(int return_code) {
 #else
     current_running_task->state = TASK_TERMINATED;
 
-    // wait for the timer interrupt to call the scheduler
-    while(1) __asm__ __volatile__ ("sti; hlt; cli");
+	destroy_task(current_running_task);
+	current_running_task = NULL;
+
+	schedule(RUNNING_TASK_QUEUE);
+
+	if (current_running_task->ring == 0) {
+		isr_prob = MANUAL_POP;
+	}
+
+	// prepare elf execution if user space process
+	if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
+		ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
+
+		if (ret) {
+			// failed to prepare elf file, terminate task and call scheduler again
+			current_running_task = NULL;
+			current_running_task->state = TASK_TERMINATED;
+		}
+	}
+
+	// update registers on the stack (context) for the new task
+	if (current_running_task->state == TASK_CREATED) {
+		change_context(r, isr_prob);
+	}
+	else {
+		resume_context(r, isr_prob);
+	}
+
+	current_running_task->state = TASK_RUNNING;
 #endif
 }
 
@@ -573,7 +601,7 @@ void *syscall_handler(struct interrupt_regs *r) {
 		case 6:
 			return (void *) syscall_write(r->ebx, (void *)r->ecx, r->esi);
 		case 7:
-			syscall_exit(r->ebx);
+			syscall_exit(r);
 			break;
 		case 8:
 			return syscall_sbrk(r->ebx);
