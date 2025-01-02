@@ -1,4 +1,3 @@
-#include "include/process/scheduler.h"
 #include <kernel/shell.h>
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
@@ -27,6 +26,57 @@ void kmalloc_allocate(void) {
     test[test_index] = (uint32_t) kmalloc(10);
     printk("allocated 10 bytes: %x\n", test[test_index]);
     test_index++;
+}
+
+void f2(int aa) {
+	int bb = aa;
+	while (bb >= 0) {
+		bb--;
+	}
+}
+
+int f1(int a, int b, int c, int d) {
+	int aa = 1;
+	while (aa < 10000000) {
+		aa++;
+	}
+
+	f2(aa);
+
+	return a+b+c+d;
+}
+
+void tksf(int argc, char **argv) {
+	(void)argc;
+	(void)argv;
+
+    //while (1) __asm__ __volatile__ ("sti; hlt; cli");
+	while (1) {
+		f1(1, 2, 3, 4);
+		printk("h");
+	}
+}
+
+void start_test_ktask(void) {
+    char **argv = kmalloc(sizeof(char*) * 1);
+
+    if (argv == NULL) {
+		return;
+    }
+
+    argv[0] = kmalloc(sizeof(char) * 10);
+
+    if (argv[0] == NULL) {
+		return;
+    }
+
+    strcpy(argv[0], "ktest");
+	struct task_struct *ts = create_task(tksf, 1, argv, 0);
+
+	if (!ts)
+		return;
+
+	enqueue_task(ts);
 }
 
 void kmalloc_free() {
@@ -218,6 +268,9 @@ void shell_exec_command(char *command) {
 	}
 	else if (strcmp(command, "rand") == 0) {
         printk("%d\n", random() % 100);
+	}
+	else if (strcmp(command, "test") == 0) {
+		start_test_ktask();
 	}
 	else if (strcmp(command, "") == 0) {
 	}

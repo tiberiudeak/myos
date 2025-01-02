@@ -1,6 +1,7 @@
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <arch/i386/pit.h>
+#include <arch/i386/gdt.h>
 #include <arch/i386/isr.h>
 #include <kernel/tty.h>
 #include <kernel/shell.h>
@@ -346,36 +347,71 @@ uint8_t scheduler_init_rr(void) {
  * This function changes the context for a user space task
  * described only by its instruction pointer and stack.
  *
- * @param r "Context" of the previous task that needs to
- *          be updated
+ * @param r		"Context" of the previous task that needs to
+ *				be updated
+ * @param prob	potential problem that needs special handling
+ *				(see header file for more info)
  */
 void change_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
     // change DS and SS to user mode data segment selector
-    *(&r->ds) = 0x23;
+    *(&r->ds) = USER_DS;
 
 	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
 		*(&r->ss) = current_running_task->context->ss;
 		*(&r->useresp) = current_running_task->context->useresp;
 	}
 
-    // clear flags (except for the interrupt bit)
-    // TODO
+    // TODO: clear flags (except for the interrupt bit)
 
     // change CS to user mode code segment selector
-    *(&r->cs) = 0x1B;
+    *(&r->cs) = USER_CS;
 
     // change instruction pointer
     *(&r->eip) = current_running_task->context->eip;
 
-    // TODO: update TSS for ring 0!!!!
+	/*
+	 * TODO: update TSS for ring 0
+	 *
+	 * right now, all tasks running in user space will use the kernel
+	 * stack defined in TSS when entering the kernel (through syscalls,
+	 * hardware interrupts, etc.), which is the same for all. Every kernel
+	 * task however will have its own kernel stack to avoi stack corruption.
+	 * For now, using the same stack for user space processes is alright, as
+	 * they cannot be interrupted while executing kernel code, so the stack
+	 * will maintain its state. This will change in the future, and the TSS
+	 * will have to be updated with the kernel stack of each user space task.
+	 */
 }
 
+/*
+ * @brief Save context of current running task
+ *
+ * When a task is interrupted, its context is pushed on the stack by the
+ * interrupt handler. This function gets the context and saves it in the
+ * task's task_struct, later used to resume its execution.
+ *
+ * @param r		The context saved by the interrupt handler on the stack
+ */
 void save_current_context(struct interrupt_regs *r) {
 		current_running_task->context->flags = r->eflags;
 		current_running_task->context->cs = r->cs;
 		current_running_task->context->eip = r->eip;
 		current_running_task->context->ebp = r->ebp;
-		current_running_task->context->esp = r->useresp;
+
+		/* get the value of esp before the CPU has pushed any registers
+		   on the stack (like EIP, CS, EFLAGS, SS, USERESP) */
+		if (current_running_task->ring == 0) {
+			/* add 0x14 to esp because when esp is stored,
+			   there are already EFLAGS, CS, EIP, int_no and err_code
+			   on the stack (and we want to skip them) */
+			current_running_task->context->esp = r->esp + 0x14;
+		} else if (current_running_task->ring == 3) {
+			/* add 0x20 to esp because when esp is stored,
+			   there are already SS, ESP, EFLAGS, CS, EIP, int_no
+			   and err_code on the stack (and we want to skip them) */
+			current_running_task->context->esp = r->esp + 0x20;
+		}
+
 		current_running_task->context->edi = r->edi;
 		current_running_task->context->esi = r->esi;
 		current_running_task->context->edx = r->edx;
@@ -390,17 +426,22 @@ void save_current_context(struct interrupt_regs *r) {
 		current_running_task->context->useresp = r->useresp;
 }
 
-// start kernel task - work in progress
+/**
+ * @brief Change contex for a kernel space task in the TASK_CREATED state
+ *
+ * -- only called for kernel space tasks without prior context --
+ *
+ * This function changes the context for a kernel space task. The task
+ * is described only by its EIP and ESP in its task_struct. The stack
+ * will be changed later by the interrupt handler (see CHANGE_KSTACK
+ * in the header file)
+ *
+ * @param r		"Context" of the previous task that needs to
+ *				be updated
+ */
 void change_context_kernel(struct interrupt_regs *r) {
-    *(&r->ds) = 0x10;
-    *(&r->ss) = 0x10;
-
-    uint32_t kstack;
-    __asm__ __volatile__ ("mov %%esp, %0" : "=r"(kstack));
-    printk("esp: %x\n", kstack);
-    *(&r->useresp) = kstack;
-
-    *(&r->cs) = 0x8;
+    *(&r->ds) = KERNEL_DS;
+    *(&r->cs) = KERNEL_CS;
     *(&r->eip) = current_running_task->context->eip;
 }
 
@@ -411,8 +452,10 @@ void change_context_kernel(struct interrupt_regs *r) {
  * task with the context of another task (that has become the
  * current running task).
  *
- * @param r "Context" of the previous running task that needs to
- *          be updated
+ * @param r		"Context" of the previous running task that needs to
+ *				be updated
+ * @param prob	potential problem that needs special handling
+ *				(see header file for more info)
  */
 void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
     // restore segments
@@ -430,13 +473,14 @@ void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
     // restore flags
     *(&r->eflags) = current_running_task->context->flags;
 
-    // restore stack
+    // restore kernel stack
     *(&r->ebp) = current_running_task->context->ebp;
 	*(&r->esp) = current_running_task->context->esp;
 
     // restore instruction pointer
     *(&r->eip) = current_running_task->context->eip;
 
+	// restore user space stack info only for user space tasks
 	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
 		*(&r->ss) = current_running_task->context->ss;
 		*(&r->useresp) = current_running_task->context->useresp;
@@ -446,10 +490,12 @@ void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
 /**
  * @brief Round-Robin Scheduler
  *
- * This function puts the current running task in the queue (if the
- * task is not terminated), takes a task from the queue and updates
- * the current running task with the new task. The function also
- * changes the virtual address space if the new task runs in user space.
+ * This function puts the current running task in the specified queue
+ * (if the task is not terminated), takes a task from the running queue
+ * and updates the current running task with the new task. The function
+ * also changes the virtual address space if the new task runs in user space.
+ *
+ * @param queue_type	Queue where to put the current_running_task
  */
 void schedule(QUEUE_TYPE queue_type) {
     // put current running task in the queue if task
@@ -476,7 +522,9 @@ void schedule(QUEUE_TYPE queue_type) {
     }
 }
 
-// display processes in the task queue
+/*
+ * display processes in the task queue - called for ps command
+ */
 void display_running_processes(void) {
 	struct embedded_link *cursor;
 	struct delta_queue_node *dqn;

@@ -39,10 +39,90 @@ typedef enum {
 	SLEEPING_TASK_QUEUE
 } QUEUE_TYPE;
 
+/*
+ * Problems that might appear when switching tasks
+ *
+ * MANUAL_PUSH (ring0 -> ring3)
+ *
+ * the manual push problem appears when the interrupted task was running
+ * in ring 0 and the new scheduled task will run in ring 3. When the running
+ * task in ring 0 is interrupted, the CPU pushes the EFLAGS, CS and EIP
+ * registers on the stack before entering the interrupt handler (because there
+ * is no change in privilege level). After the new task has been scheduled, the
+ * IRET instruction right at the end of the interrupt handler will pop out from
+ * the stack EIP, CS, EFLAGS, ESP and SS (new task runs in user space and in
+ * this case there is a privilege change). The handler will manually make space
+ * on the stack and put the ESP and SS corresponding to the new task.
+ *
+ *
+ * stack at the beginning				stack right before IRET
+ *	  of int handler
+ *
+ * |         ...         |				|         ...         |
+ * |---------------------|				|---------------------|
+ * |        EFLAGS       |				|         SS          |
+ * |---------------------|				|---------------------|
+ * |         CS          |				|       USERESP       |
+ * |---------------------|				|---------------------|
+ * |         EIP         |				|        EFLAGS       |
+ * |---------------------|				|---------------------|
+ * |         ...         |				|         CS          |
+ * |                     |				|---------------------|
+ *                                      |         EIP         |
+ *                                      |---------------------|
+ *                                      |         ...         |
+ *
+ *
+ * MANUAL POP (ring3 -> ring0)
+ *
+ * the manual pop problem appears when the interrupted task was running
+ * in ring 3 and the new scheduled tasj will run in ring 0. When the running
+ * task in ring 3 is interrupted, the CPU pushes the SS, USERESP, EFLAGS,
+ * CS and EIP on the stack before entering the interrupt handler (change in
+ * privilege level). After the new tack has been scheduled, the IRET
+ * instruction right at the end of the interrupt handler will pop out from
+ * the stack EIP, CS and EFLAGS (new task runs in ring 0, so no privilege
+ * change). The handler will manually pop out from the stack the unused
+ * USERESP and SS.
+ *
+ *
+ * stack at the beginning				stack right before IRET
+ *	  of int handler
+ *
+ * |         ...         |				|         ...         |
+ * |---------------------|				|---------------------|
+ * |         SS          |				|       EFLAGS        |
+ * |---------------------|				|---------------------|
+ * |       USERESP       |				|         CS          |
+ * |---------------------|				|---------------------|
+ * |        EFLAGS       |				|         EIP         |
+ * |---------------------|				|---------------------|
+ * |         CS          |				|         ...         |
+ * |---------------------|
+ * |         EIP         |
+ * |---------------------|
+ * |         ...         |
+ *
+ *
+ * CHANGE KSTACK
+ *
+ * the change kstack situation appears when the new scheduled task will run
+ * in ring 0 and has no prior context (first time running). The handler will
+ * change to the kernel stack corresponding to this task before performing
+ * the IRET.
+ *
+ * RESUME_KSTACK
+ *
+ * the resume kstack situation appears when the new scheduled task will run
+ * in ring 0 and has prior context. The handler will restore the kernel stack
+ * state before performing the IRET.
+ */
 typedef enum {
-	NO_PROBLEM,
-	MANUAL_PUSH,
-	MANUAL_POP
+	NO_PROBLEM			= 0x0,
+	MANUAL_PUSH			= 0x1,
+	MANUAL_POP			= 0x2,
+	CHANGE_KSTACK		= 0x4,
+	RESUME_KSTACK		= 0x8
 } TASK_SWITCH_STACK_PROBLEM;
 
 void enqueue_task(struct task_struct *);

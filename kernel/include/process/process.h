@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <mm/vmm.h>
 
+#define KSTACK_SIZE		4096
+
 enum task_state {
     TASK_CREATED,
     TASK_READY,
@@ -12,7 +14,15 @@ enum task_state {
     TASK_TERMINATED
 };
 
-// context of a running process
+/*
+ * context of a running process
+ *
+ * WARNING: do not change the order of the fields
+ * (USERESP should be at offset 0x40 and SS at 0x3c)
+ *
+ * if order is modified, also update isr_func.S and
+ * irq_funcs.S
+ */
 struct proc_context {
     uint32_t gs;
     uint32_t fs;
@@ -39,7 +49,16 @@ struct mapping {
     struct mapping *next;
 };
 
-// task
+/**
+ * task struct
+ *
+ * WARNING: do not change the order of the fields
+ * until the kstack (the context should remain at
+ * offset 0x18 and kstack at 0x1c)
+ *
+ * if order is modified, also update irq_funcs.S and
+ * isr_funcs.S
+ */
 struct task_struct {
     uint32_t task_id;
     enum task_state state;
@@ -48,6 +67,7 @@ struct task_struct {
     char **argv;
     struct page_directory *vas;
     struct proc_context *context;
+	void *kstack;
     void *heap_start;
     void *program_break;
     uint32_t heap_size_blocks;

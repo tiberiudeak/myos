@@ -23,89 +23,103 @@ static uint32_t next_available_task_id = 1;
  * @return The created task
  */
 struct task_struct *create_task(void *exec_address, int argc, char **argv, int userspace) {
-    struct task_struct *task = (struct task_struct*) kmalloc(sizeof(struct task_struct));
+    struct task_struct *task = (struct task_struct *) kmalloc(sizeof(struct task_struct));
+	void *k_stack = NULL;
 #ifdef CONFIG_VERBOSE
     printk("create task: %s\n", argv[0]);
 #endif
 
-    if (task != NULL) {
-        task->state = TASK_CREATED;
-        task->task_id = next_available_task_id++;
-        task->exec_address = exec_address;
-        task->argc = argc;
-		task->run_time = 0;
-		task->sleep_time = 0;
+    if (!task) {
+		goto task_err;
+	}
 
-        if (argv != NULL) {
-            task->argv = (char**) kmalloc(sizeof(char*) * argc);
-
-            if (task->argv == NULL) {
-                kfree(task);
-                return NULL;
-            }
-        }
-
-        for (int i = 0; i < argc; i++) {
-            task->argv[i] = (char*) kmalloc(sizeof(char) * MAX_PARAM_SIZE); // max 10 characters
-
-            if (task->argv[i] == NULL) {
-                // free previous allocated argvs
-                for (int j = 0; j < i; j++) {
-                    kfree(task->argv[j]);
-                }
-
-                kfree(task->argv);
-                kfree(task);
-
-                return NULL;
-            }
-
-            strcpy(task->argv[i], argv[i]);
-        }
-
-
-        task->context = kmalloc(sizeof(struct proc_context));
-
-        if (task->context == NULL) {
-            // free previous allocated memory
-            if (argc > 0) {
-                for (int i = 0; i < argc; i++) {
-                    kfree(task->argv[i]);
-                }
-
-                kfree(task->argv);
-                kfree(task);
-            }
-
-            return NULL;
-        }
-
-        if (userspace) {
-            task->vas = create_address_space();
-			task->ring = 3;
-			task->context->cs = 0x1B;
-			task->context->ds = 0x23;
-			task->context->es = 0x23;
-			task->context->fs = 0x23;
-			task->context->gs = 0x23;
-			task->context->ss = 0x23;
-        }
-        else {
-            task->vas = NULL;
-			task->ring = 0;
-            task->context->eip = (uint32_t)exec_address;
-			task->context->cs = 0x8;
-			task->context->ds = 0x10;
-			task->context->es = 0x10;
-			task->context->fs = 0x10;
-			task->context->gs = 0x10;
-			task->context->ss = 0x10;
-        }
-    }
-    
+	task->state = TASK_CREATED;
+	task->task_id = next_available_task_id++;
+	task->exec_address = exec_address;
+	task->argc = argc;
+	task->run_time = 0;
+	task->sleep_time = 0;
     task->maps = NULL;
 
+	task->context = kmalloc(sizeof(struct proc_context));
+
+	if (!task->context) {
+		goto task_context_err;
+	}
+
+	if (userspace) {
+		task->vas = create_address_space();
+
+		if (!task->vas) {
+			goto task_vas_err;
+		}
+
+		task->ring = 3;
+		task->context->cs = USER_CS;
+		task->context->ds = USER_DS;
+		task->context->es = USER_DS;
+		task->context->fs = USER_DS;
+		task->context->gs = USER_DS;
+		task->context->ss = USER_DS;
+	}
+	else {
+		task->vas = NULL;
+		task->ring = 0;
+		task->context->eip = (uint32_t) exec_address;
+		task->context->cs = KERNEL_CS;
+		task->context->ds = KERNEL_DS;
+		task->context->es = KERNEL_DS;
+		task->context->fs = KERNEL_DS;
+		task->context->gs = KERNEL_DS;
+		task->context->ss = KERNEL_DS;
+
+		k_stack = kmalloc(sizeof(char) * KSTACK_SIZE);
+
+		if (!k_stack) {
+			goto task_kstack_err;
+		}
+
+		task->kstack = k_stack + KSTACK_SIZE;
+	}
+
+	if (argv != NULL) {
+		task->argv = (char **) kmalloc(sizeof(char *) * argc);
+
+		if (!task->argv) {
+			goto task_argv_err;
+		}
+	}
+
+	for (int i = 0; i < argc; i++) {
+		task->argv[i] = (char *) kmalloc(sizeof(char) * MAX_PARAM_SIZE); // max 10 characters
+
+		if (!task->argv[i]) {
+			// free previous allocated argvs
+			for (int j = 0; j < i; j++) {
+				kfree(task->argv[j]);
+			}
+
+			goto task_argvs_err;
+		}
+
+		strcpy(task->argv[i], argv[i]);
+	}
+
     return task;
+
+task_argvs_err:
+	kfree(task->argv);
+task_argv_err:
+	if (k_stack != NULL) {
+		kfree(k_stack);
+	}
+task_vas_err:
+task_kstack_err:
+	kfree(task->context);
+task_context_err:
+	kfree(task);
+task_err:
+	return NULL;
 }
 
 /**

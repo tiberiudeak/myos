@@ -3,7 +3,7 @@
 .extern current_running_task
 
 irq_common_stub:
-    cli
+	cli
 	pusha						# push current state of registers to stack
 	mov %ds, %eax
 	push %eax					# push data segment to stack
@@ -29,14 +29,14 @@ irq_common_stub:
 
 	popa						# restore registers
 
-	# fix problems only for timer interrupt
-	cmpl $0x20, (%esp)
+	# fix potential problems only for timer interrupt
+	cmpl $0x20, (%esp)			# check interrupt number
 	jne irq_common_stub_pre_exit
 	add $8, %esp				# remove error code and interrupt number
 
 irq_manual_push:
-	cmpl $0x1, (irq_prob)			# manual push problem
-	jne irq_manual_pop
+	btl $0x0, (irq_prob)		# check bit 1 (MANUAL_PUSH)
+	jnc irq_manual_pop
 	sub $0x8, %esp				# make place for ESP and SS
 	push %eax					# save EAX
 
@@ -49,34 +49,100 @@ irq_manual_push:
 	mov %eax, 0xc(%esp)			# and put it in the new place
 
 	mov (current_running_task), %eax
-	mov 0x18(%eax), %eax		# get current_running_task context
+	mov 0x18(%eax), %eax		# get current_running_task's context
 	mov 0x40(%eax), %eax		# get USERESP from the context
 	mov %eax, 0x10(%esp)		# and save it onto the stack
 
 	mov (current_running_task), %eax
-	mov 0x18(%eax), %eax		# get current_running_task context
+	mov 0x18(%eax), %eax		# get current_running_task's context
 	mov 0x3c(%eax), %eax		# get SS from the context
 	mov %eax, 0x14(%esp)		# and save it onto the stack
 
 	pop %eax					# restore EAX
-	mov $0x0, (irq_prob)		# reset prob
-	jmp irq_common_stub_exit	# and exit
+	andl $0xfffffffe, (irq_prob)		# reset MANUAL_PUSH bit
+	jmp irq_change_kstack		# and check for other problem
 
 
 irq_manual_pop:
-	cmpl $0x2, (irq_prob)			# manual pop problem
-	jne	irq_common_stub_exit
+	btl $0x1, (irq_prob)		# check bit 2 (MANUAL_POP)
+	jnc	irq_change_kstack
 	push %eax					# save EAX
+
 	mov 0xc(%esp), %eax			# get EFLAGS
-	mov %eax, 0x14(%esp)		# and put it in the place of SS
+	mov %eax, 0x14(%esp)		# and put it in place of SS
+
 	mov 0x8(%esp), %eax			# get CS
-	mov %eax, 0x10(%esp)		# and put it in the place of ESP
+	mov %eax, 0x10(%esp)		# and put it in place of ESP
+
 	mov 0x4(%esp), %eax			# get EIP
 	mov %eax, 0xc(%esp)			# and put it in the place of initial EFLAGS
+
 	pop %eax					# restore EAX
 	add $0x8, %esp				# delete initial (now moved) CS and EIP
-	mov $0x0, (irq_prob)		# reset prob
-	jmp irq_common_stub_exit	# and exit
+	andl $0xfffffffd, (irq_prob)		# reset MANUAL_POP bit
+
+
+irq_change_kstack:
+	btl $0x2, (irq_prob)		# check bit 3 (CHANGE_KSTACK)
+	jnc irq_resume_kstack
+	push %eax					# save EAX
+	push %ebx					# save EBX
+
+	mov (current_running_task), %eax
+	mov 0x1c(%eax), %eax		# get new kernel stack
+	sub $0xc, %eax				# make place for three values
+
+	mov 0x8(%esp), %ebx			# get EIP from current ESP
+	mov %ebx, (%eax)			# and store it on the new stack
+
+	mov 0xc(%esp), %ebx			# get CS from current ESP
+	mov %ebx, 0x4(%eax)			# and store it on the new stack
+
+	mov 0x10(%esp), %ebx		# get EFLAGS from current ESP
+	mov %ebx, 0x8(%eax)			# and store it on the new stack
+
+
+	mov %esp, %ebx				# store old stack
+	mov %eax, %esp				# switch to new stack
+	mov %esp, %ebp
+	mov %ebx, %eax
+	mov (%eax), %ebx			# restore EBX
+	mov 0x4(%eax), %eax			# restore EAX
+
+	andl $0xfffffffb, (irq_prob)		# reset CHANGE_KSTACK bit
+
+irq_resume_kstack:
+	btl $0x3, (irq_prob)		# check bit 4 (RESUME_KSTACK)
+	jnc irq_common_stub_exit
+	push %eax					# save EAX
+	push %ebx					# save EBX
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task's context
+	mov 0x2c(%eax), %eax		# get EBP from the context
+	mov %eax, %ebp				# update EBP
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task's context
+	mov 0x28(%eax), %eax		# get ESP from the context
+	sub $0xc, %eax				# make place for three values
+
+	mov 0x8(%esp), %ebx			# get EIP from current ESP
+	mov %ebx, (%eax)			# and store it on the new stack
+
+	mov 0xc(%esp), %ebx			# get CS from current ESP
+	mov %ebx, 0x4(%eax)			# and store it on the new stack
+
+	mov 0x10(%esp), %ebx		# get EFLAGS from current ESP
+	mov %ebx, 0x8(%eax)			# and store it on the new stack
+
+	mov %esp, %ebx				# store old stack
+	mov %eax, %esp				# switch to new stack
+	mov %ebx, %eax
+	mov (%eax), %ebx			# restore EBX
+	mov 0x4(%eax), %eax			# restore EAX
+	andl $0xfffffff7, (irq_prob)		# reset RESUME_KSTACK bit
+	jmp irq_common_stub_exit
 
 irq_common_stub_pre_exit:
 	add $0x8, %esp				# remove error code and interrupt number

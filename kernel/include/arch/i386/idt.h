@@ -18,7 +18,6 @@
  * RPL: requested privilege level, 2-bit value representing the privilege level
  * 	    required to execute the segment referenced by this selector
  */
-#define KERNEL_CS 0x0008
 #define low_16(address) (uint16_t)((address) & 0xFFFF)
 #define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
 

@@ -1,4 +1,5 @@
 #include <arch/i386/idt.h>
+#include <arch/i386/gdt.h>
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>

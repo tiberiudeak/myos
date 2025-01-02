@@ -4,6 +4,11 @@
 #include <stdint.h>
 
 #define GDT_ENTRIES 6
+#define KERNEL_CS	0x0008
+#define KERNEL_DS	0x0010
+#define USER_CS		0x001b
+#define USER_DS		0x0023
+
 #define low_16(address) (uint16_t)((address) & 0xFFFF)
 #define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
 

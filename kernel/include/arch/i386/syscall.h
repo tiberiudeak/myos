@@ -86,10 +86,18 @@ void syscall_sleep(struct interrupt_regs *r) {
 
 	// update registers on the stack (context) for the new task
 	if (current_running_task->state == TASK_CREATED) {
-		change_context(r, isr_prob);
+		if (current_running_task->ring == 3) {
+			change_context(r, isr_prob);
+		} else if (current_running_task->ring == 0) {
+			change_context_kernel(r);
+			isr_prob |= CHANGE_KSTACK;
+		}
 	}
 	else {
 		resume_context(r, isr_prob);
+		if (current_running_task->ring == 0) {
+			isr_prob |= RESUME_KSTACK;
+		}
 	}
 
 	current_running_task->state = TASK_RUNNING;
@@ -403,10 +411,18 @@ void syscall_exit(struct interrupt_regs *r) {
 
 	// update registers on the stack (context) for the new task
 	if (current_running_task->state == TASK_CREATED) {
-		change_context(r, isr_prob);
+		if (current_running_task->ring == 3) {
+			change_context(r, isr_prob);
+		} else if (current_running_task->ring == 0) {
+			change_context_kernel(r);
+			isr_prob |= CHANGE_KSTACK;
+		}
 	}
 	else {
 		resume_context(r, isr_prob);
+		if (current_running_task->ring == 0) {
+			isr_prob |= RESUME_KSTACK;
+		}
 	}
 
 	current_running_task->state = TASK_RUNNING;

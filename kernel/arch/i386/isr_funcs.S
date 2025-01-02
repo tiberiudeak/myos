@@ -34,19 +34,84 @@ isr_common_stub:
 	jne isr_common_stub_pre_exit
 	add $8, %esp			# remove the error code and interrupt number
 
-	cmpl $0x2, (isr_prob)			# manual pop problem
-	jne	isr_common_stub_exit
+isr_manual_pop:
+	btl $0x1, (isr_prob)		# check bit 2 (MANUAL_POP)
+	jnc	isr_change_kstack
 	push %eax					# save EAX
+
 	mov 0xc(%esp), %eax			# get EFLAGS
 	mov %eax, 0x14(%esp)		# and put it in the place of SS
+
 	mov 0x8(%esp), %eax			# get CS
 	mov %eax, 0x10(%esp)		# and put it in the place of ESP
+
 	mov 0x4(%esp), %eax			# get EIP
 	mov %eax, 0xc(%esp)			# and put it in the place of initial EFLAGS
+
 	pop %eax					# restore EAX
 	add $0x8, %esp				# delete initial (now moved) CS and EIP
-	mov $0x0, (isr_prob)		# reset prob
-	jmp isr_common_stub_exit	# and exit
+	andl $0xfffffffd, (isr_prob)		# reset MANUAL_POP bit
+
+isr_change_kstack:
+	btl $0x2, (isr_prob)		# check bit 3 (CHANGE_KSTACK)
+	jnc isr_resume_kstack
+	push %eax					# save EAX
+	push %ebx					# save EBX
+
+	mov (current_running_task), %eax
+	mov 0x1c(%eax), %eax		# get new kernel stack
+	sub $0xc, %eax				# make place for three values
+
+	mov 0x8(%esp), %ebx			# get EIP from current ESP
+	mov %ebx, (%eax)			# and store it on the new stack
+
+	mov 0xc(%esp), %ebx			# get CS from current ESP
+	mov %ebx, 0x4(%eax)			# and store it on the new stack
+
+	mov 0x10(%esp), %ebx		# get EFLAGS from current ESP
+	mov %ebx, 0x8(%eax)			# and store it on the new stack
+
+	mov %esp, %ebx				# store old stack
+	mov %eax, %esp				# switch to new stack
+	mov %esp, %ebp
+	mov %ebx, %eax
+	mov (%eax), %ebx			# restore EBX
+	mov 0x4(%eax), %eax			# restore EAX
+
+	andl $0xfffffffb, (isr_prob)		# reset CHANGE_KSTACK bit
+
+isr_resume_kstack:
+	btl $0x3, (isr_prob)		# check bit 4 (RESUME_KSTACK)
+	jnc isr_common_stub_exit
+	push %eax					# save EAX
+	push %ebx					# save EBX
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task's context
+	mov 0x2c(%eax), %eax		# get EBP from the context
+	mov %eax, %ebp				# update EBP
+
+	mov (current_running_task), %eax
+	mov 0x18(%eax), %eax		# get current_running_task's context
+	mov 0x28(%eax), %eax		# get ESP from the context
+	sub $0xc, %eax				# make place for three values
+
+	mov 0x8(%esp), %ebx			# get EIP from current ESP
+	mov %ebx, (%eax)			# and store it on the new stack
+
+	mov 0xc(%esp), %ebx			# get CS from current ESP
+	mov %ebx, 0x4(%eax)			# and store it on the new stack
+
+	mov 0x10(%esp), %ebx		# get EFLAGS from current ESP
+	mov %ebx, 0x8(%eax)			# and store it on the new stack
+
+	mov %esp, %ebx				# store old stack
+	mov %eax, %esp				# switch to new stack
+	mov %ebx, %eax
+	mov (%eax), %ebx			# restore EBX
+	mov 0x4(%eax), %eax			# restore EAX
+	andl $0xfffffff7, (isr_prob)		# reset RESUME_TASK bit
+	jmp isr_common_stub_exit
 
 isr_common_stub_pre_exit:
 	add $8, %esp			# remove the error code and interrupt number

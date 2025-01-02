@@ -56,7 +56,6 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 		}
 	}
 
-    // only for the round robin scheduler
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
     if (current_running_task->run_time >= running_time_quantum_ms && scheduler_initialized &&
@@ -101,10 +100,18 @@ rr_sch:
 
         // update registers on the stack (context) for the new task
         if (current_running_task->state == TASK_CREATED) {
-            change_context(r, irq_prob);
+			if (current_running_task->ring == 3) {
+				change_context(r, irq_prob);
+			} else if (current_running_task->ring == 0) {
+				change_context_kernel(r);
+				irq_prob |= CHANGE_KSTACK;
+			}
         }
         else {
             resume_context(r, irq_prob);
+			if (current_running_task->ring == 0) {
+				irq_prob |= RESUME_KSTACK;
+			}
         }
 
         current_running_task->state = TASK_RUNNING;
@@ -112,6 +119,11 @@ rr_sch:
 #endif /* !CONFIG_FCFS_SCH */
 }
 
+/*
+ * @brief Generate "random" number
+ *
+ * @return The generated number
+ */
 uint32_t random(void) {
     return ((uptime * 214013L + 2531011L) >> 16) & 0x7FFF;
 }
