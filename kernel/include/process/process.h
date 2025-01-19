@@ -79,6 +79,7 @@ struct task_struct {
 
 struct task_struct *create_task(void *, int, char**, int);
 void destroy_task(struct task_struct *);
+void ktask_exit(void);
 
 #ifdef CONFIG_FCFS_SCH
     void enter_usermode(uint32_t, uint32_t);

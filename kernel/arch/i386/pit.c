@@ -11,7 +11,6 @@
 
 uint32_t ticks;
 uint32_t uptime;
-uint32_t wait_ticks;
 TASK_SWITCH_STACK_PROBLEM irq_prob;
 
 // data from the scheduler
@@ -20,6 +19,7 @@ extern struct embedded_link task_queue;
 extern struct embedded_link sleep_task_dqueue;
 extern uint8_t scheduler_initialized;
 extern struct task_struct *current_running_task;
+void *kstack_to_free;
 
 /**
  * @brief Timer interrupt handler
@@ -38,14 +38,21 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 
 	ticks++;
 	uptime++;
-	wait_ticks++;
 
 #ifndef CONFIG_FCFS_SCH
+	if (!scheduler_initialized)
+		return;
+
+	if (kstack_to_free != NULL) {
+		kfree(kstack_to_free - KSTACK_SIZE);
+		kstack_to_free = NULL;
+	}
+
 	current_running_task->run_time++;
 	prev_ring = current_running_task->ring;
 
 	// update blocked tasks (from the sleeping queue)
-	if (scheduler_initialized && !list_is_empty(&sleep_task_dqueue)) {
+	if (!list_is_empty(&sleep_task_dqueue)) {
 		dq_decrement_head(&sleep_task_dqueue);
 
 		dqn = list_get_entry(sleep_task_dqueue.next, struct delta_queue_node, list);
@@ -58,8 +65,8 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 
     // if there is at least one task in the queue, this means that a new task was
     // added in the queue (the init task is currently executing, so the queue is empty)
-    if (current_running_task->run_time >= running_time_quantum_ms && scheduler_initialized &&
-			!list_is_empty(&task_queue)) {
+    if ((current_running_task->run_time >= running_time_quantum_ms &&
+			!list_is_empty(&task_queue)) || (current_running_task->state == TASK_TERMINATED)) {
 
         // save current running task's context
         if (current_running_task->state != TASK_TERMINATED) {
@@ -72,6 +79,7 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 			current_running_task->run_time = 0;
         } else {
 			// if task finished execution, free memory
+			kstack_to_free = current_running_task->kstack;
             destroy_task(current_running_task);
             current_running_task = NULL;
 		}
@@ -161,9 +169,9 @@ void PIT_init() {
  * @param millis The number of milliseconds to wait
  */
 void wait_millis(uint16_t millis) {
-	wait_ticks = 0;
+	uint32_t current_ticks = ticks;
 
-	while (wait_ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
+	while (ticks - current_ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 /**

@@ -243,7 +243,14 @@ void init_task_func(int argc, char *argv[]) {
     (void) argv; // remove compilation warning
     (void) argc;
 
-    scheduler_initialized = 1;
+	// change stack to init task kstack
+	// -- done here, as the init task is not started
+	// by the scheduler (but maybe it would be a good idea
+	// to start it from pit like any other task -- TODO)
+	__asm__ __volatile__ ("cli; mov %%eax, %%esp; mov %%esp, %%ebp; sti"
+			::"a"(current_running_task->kstack));
+
+   scheduler_initialized = 1;
 
 #ifdef CONFIG_VERBOSE
     printk("init process started!\n");

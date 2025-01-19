@@ -8,6 +8,7 @@
 #include <string.h>
 
 static uint32_t next_available_task_id = 1;
+extern struct task_struct *current_running_task;
 
 /**
  * @brief Create a task
@@ -147,6 +148,22 @@ void destroy_task(struct task_struct *task) {
     kfree(task->argv);
     kfree(task->context);
     kfree(task);
+}
+
+// function called at the end of a kernel task
+// -- it is mandatory to be called by every kernel task
+// that terminates its execution
+void ktask_exit(void) {
+	/*
+	 * mark current task as terminated
+	 * and wait for scheduler to schedule another task
+	 *
+	 * cannot schedule task now as no IRET instruction is
+	 * called, and thus no task can run after this
+	 */
+	current_running_task->state = TASK_TERMINATED;
+
+	while (1) __asm__ __volatile__ ("sti; hlt; cli");
 }
 
 #ifdef CONFIG_FCFS_SCH
