@@ -1,6 +1,6 @@
 #include <arch/i386/gdt.h>
 #include <kernel/tty.h>
-#include <string.h>
+#include <kernel/string.h>
 
 extern void gdt_flush(uint32_t);
 extern void tss_flush();

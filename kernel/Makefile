@@ -1,18 +1,7 @@
-HOST?=$(DEFAULT_HOST)
-ARCHDIR:=arch/$(HOSTARCH)
-
-# define flags if not already defined
-CFLAGS?=-O2 -g
-CPPFLAGS?=
-LDFLAGS?=-Tkernel.ld --oformat=binary
-ASFLAGS?=
-LIBS?=
-
-# add extra flags if needed
-CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_kernel -I.
-LDFLAGS:=$(LDFLAGS) -L../libc
-LIBS:=$(LIBS) -nostdlib -lk
+# flags
+CFLAGS:=--sysroot=$(SYSROOT) -isystem=$(INCLUDEDIR) -O0 -g -fno-stack-protector -include ../$(HEADER_FILE) -ffreestanding -Wall -Wextra -nostdlib
+LDFLAGS:=-Tkernel.ld --oformat=binary
+ASFLAGS:=
 
 KERNEL_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_SOURCES_S:=$(shell find . -type f -name '*.S')
@@ -26,8 +15,7 @@ $(KERNEL_OBJS)
 
 LINK_LIST=\
 $(LDFLAGS) \
-$(KERNEL_OBJS) \
-$(LIBS)
+$(KERNEL_OBJS)
 
 BINARIES=kernel
 
@@ -40,7 +28,7 @@ kernel: $(OBJS)
 	$(LD) $(LINK_LIST) -o $@
 
 %.o: %.c
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
 
 %.o: %.S
 	$(AS) $(ASFLAGS) $< -o $@
@@ -52,9 +40,10 @@ install: install-headers install-kernel
 
 install-headers:
 	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
+	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)
 
 install-kernel: $(BINARIES)
-	cp $(BINARIES) ../$(PROG_BIN_DIR)
+	mkdir -p ../$(BIN_DIR_SYS)
+	cp $(BINARIES) ../$(BIN_DIR_SYS)
 
 -include $(KERNEL_DEPS)

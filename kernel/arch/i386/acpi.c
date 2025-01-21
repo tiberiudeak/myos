@@ -1,4 +1,4 @@
-#include <string.h>
+#include <kernel/string.h>
 #include <stdint.h>
 #include <kernel/acpi.h>
 #include <kernel/tty.h>

@@ -1,9 +1,8 @@
-#include "include/global_addresses.h"
 #include <kernel/tty.h>
+#include <kernel/global_addresses.h>
 #include <mm/vmm.h>
 #include <mm/pmm.h>
-#include <global_addresses.h>
-#include <string.h>
+#include <kernel/string.h>
 #include <stddef.h>
 
 struct page_directory *current_page_directory = 0;

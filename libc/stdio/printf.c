@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <unistd.h>
-#include <kernel/tty.h>
 
 // printf buffer
 char printf_buffer[PRINTF_BUFFER_SIZE] = {0};

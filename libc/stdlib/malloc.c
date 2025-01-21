@@ -261,6 +261,8 @@ uint8_t expand_last_block(size_t size) {
  * @return Starting virtual address
  */
 void *malloc(size_t size) {
+	struct block_meta *block = NULL;
+
     if (size == 0)
         return NULL;
 
@@ -272,13 +274,15 @@ void *malloc(size_t size) {
 alloc_malloc:
     // find block for the requested size
 #ifdef CONFIG_UVMM_BESTFIT
-    struct block_meta *block = malloc_best_fit(size);
+    block = malloc_best_fit(size);
 #elif CONFIG_UVMM_FIRSTFIT
-    struct block_meta *block = malloc_first_fit(size);
+    block = malloc_first_fit(size);
 #elif CONFIG_UVMM_WORSTFIT
-    struct block_meta *block = malloc_worst_fit(size);
+    block = malloc_worst_fit(size);
 #elif CONFIG_UVMM_NEXTFIT
-    struct block_meta *block = malloc_next_fit(size);
+    block = malloc_next_fit(size);
+#else
+    block = malloc_best_fit(size);
 #endif
 
     if (block != NULL) {

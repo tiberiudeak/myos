@@ -10,14 +10,10 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
-#include <tests/tests.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <fs.h>
-#include <string.h>
-#include <elf.h>
+#include <kernel/fs.h>
+#include <kernel/string.h>
+#include <kernel/elf.h>
 
 extern char kernel_end[];
 

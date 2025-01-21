@@ -7,7 +7,7 @@
 #include <process/process.h>
 #include <process/scheduler.h>
 #include <mm/kmalloc.h>
-#include <elf.h>
+#include <kernel/elf.h>
 
 uint32_t ticks;
 uint32_t uptime;

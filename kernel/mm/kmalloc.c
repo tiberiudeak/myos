@@ -3,8 +3,8 @@
 #include <mm/vmm.h>
 #include <kernel/tty.h>
 
-#include <string.h>
-#include <global_addresses.h>
+#include <kernel/string.h>
+#include <kernel/global_addresses.h>
 
 extern char kernel_end[];           // symbol from the kernel linker script
 struct kblock_meta *metadata_blk_header;

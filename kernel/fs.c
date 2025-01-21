@@ -1,12 +1,11 @@
-#include <fs.h>
-#include <global_addresses.h>
+#include <kernel/fs.h>
+#include <kernel/global_addresses.h>
 #include <disk/disk.h>
 #include <mm/kmalloc.h>
 #include <kernel/tty.h>
 
 #include <stddef.h>
-#include <stdio.h>
-#include <string.h>
+#include <kernel/string.h>
 
 struct superblock *superblock = (struct superblock*)SUPERBLOCK_ADDRESS;
 struct inode_block current_directory;

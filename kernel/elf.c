@@ -5,14 +5,13 @@
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
-#include <global_addresses.h>
-#include <fs.h>
-#include <elf.h>
+#include <kernel/global_addresses.h>
+#include <kernel/fs.h>
+#include <kernel/elf.h>
 
 #include <stddef.h>
-#include <unistd.h>
-#include <string.h>
-#include <fcntl.h>
+#include <kernel/string.h>
+#include <kernel/utils.h>
 
 extern int syscall_open(char *, uint32_t);
 extern int syscall_close(int);

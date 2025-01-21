@@ -15,8 +15,6 @@ extern "C" {
 int printf(const char* __restrict, ...);
 int puts(const char*);
 int fflush(void);
-int putchar(int);
-int putcharc(int, int);
 
 #ifdef __cplusplus
 }

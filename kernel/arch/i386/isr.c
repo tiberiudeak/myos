@@ -1,7 +1,7 @@
 #include <arch/i386/isr.h>
 #include <arch/i386/idt.h>
 #include <arch/i386/syscall.h>
-#include <elf.h>
+#include <kernel/elf.h>
 #include <kernel/tty.h>
 #include <mm/vmm.h>
 #include <process/process.h>

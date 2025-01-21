@@ -1,10 +1,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <string.h>
+#include <kernel/string.h>
 #include <stdarg.h>
 #include <kernel/tty.h>
-#include <global_addresses.h>
+#include <kernel/global_addresses.h>
 
 #ifdef CONFIG_SH_FGC_BLACK
     static const uint8_t default_color = 0;
@@ -118,7 +118,7 @@
 
 #ifdef CONFIG_TTY_VBE
 
-#include <global_addresses.h>
+#include <kernel/global_addresses.h>
 #include <mm/vmm.h>
 
 static uint8_t *font = (uint8_t*)VGA_BIOS_FONT;

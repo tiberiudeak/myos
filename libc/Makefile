@@ -1,19 +1,4 @@
-HOST?=$(DEFAULT_HOST)
-ARCHDIR:=arch/$(HOSTARCH)
-
-# define flags if not already defined
-CFLAGS?=-O2 -g
-CPPFLAGS?=
-LDFLAGS?=
-ASFLAGS?=
-LIBS?=
-
-# add extra flags if needed
-CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=$(CPPFLAGS) -D__is_libc -Iinclude -I../kernel/include
-LDFLAGS:=$(LDFLAGS)
-LIBK_CFLAGS:=$(CFLAGS)
-LIBK_CPPFLAGS:=$(CPPFLAGS) -D__is_libk
+CFLAGS:=--sysroot=$(SYSROOT_USER) -isystem=$(INCLUDEDIR) -O0 -g -fno-stack-protector -ffreestanding -Wall -Wextra -nostdlib
 
 DEPS:=$(shell find . -type f -name '*.d')
 FREEOBJS:=$(shell find . -type f -name '*.c')
@@ -34,7 +19,7 @@ libk.a: $(OBJS)
 	$(AR) rcs $@ $(OBJS)
 
 %.o: %.c
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(LIBK_CFLAGS) $(LIBK_CPPFLAGS)
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
 
 clean:
 	rm -f $(BINARIES) $(OBJS) *.d *.a */*.o */*.d */*.a
@@ -42,11 +27,11 @@ clean:
 install: install-headers install-libs
 
 install-headers:
-	mkdir -p $(DESTDIR)$(INCLUDEDIR)
-	cp -R --preserve=timestamps include/. $(DESTDIR)$(INCLUDEDIR)/.
+	mkdir -p $(DESTDIR_USER)$(INCLUDEDIR)
+	cp -R --preserve=timestamps include/. $(DESTDIR_USER)$(INCLUDEDIR)/.
 
 install-libs: $(BINARIES)
-	mkdir -p $(DESTDIR)$(LIBDIR)
-	cp $(BINARIES) $(DESTDIR)$(LIBDIR)/.
+	mkdir -p $(DESTDIR_USER)$(LIBDIR)
+	cp $(BINARIES) $(DESTDIR_USER)$(LIBDIR)/.
 
 -include $(DEPS)

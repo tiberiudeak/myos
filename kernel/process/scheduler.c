@@ -9,7 +9,7 @@
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
 #include <stddef.h>
-#include <string.h>
+#include <kernel/string.h>
 
 // ready task queue
 struct embedded_link task_queue;

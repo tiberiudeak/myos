@@ -2,7 +2,7 @@
 #include <arch/i386/irq.h>
 #include <arch/i386/pic.h>
 #include <kernel/tty.h>
-#include <string.h>
+#include <kernel/string.h>
 
 struct idt_gate idt_entries[256];
 struct idt_ptr idt_ptr_reg;

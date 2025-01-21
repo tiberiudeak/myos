@@ -5,7 +5,7 @@
 #include <kernel/shell.h>
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
-#include <string.h>
+#include <kernel/string.h>
 
 static uint32_t next_available_task_id = 1;
 extern struct task_struct *current_running_task;

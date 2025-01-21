@@ -17,8 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <math.h>
-#include "kernel/include/fs.h"
+#include "kernel/include/kernel/fs.h"
 
 struct file_pointer_type {
 	char name[60];

@@ -20,40 +20,38 @@ export AS:=$(HOST)-as
 export CC:=$(HOST)-gcc
 export LD:=$(HOST)-ld
 
-export CFLAGS:=-O0 -g -fno-stack-protector -include ../$(HEADER_FILE)
-export CPPFLAGS:=
-
+# separate sysroots for kernel/bootloader and for
+# userspace programs
 export SYSROOT:=$(shell pwd)/sysroot
+export SYSROOT_USER:=$(shell pwd)/sysroot_user
 export DESTDIR:=$(SYSROOT)
+export DESTDIR_USER:=$(SYSROOT_USER)
 
-# set system root directory for the compiler
-# sysroot=<directory> means that the compiler will look
-# for libraries and headers in <directory>
-export CC:=$(CC) --sysroot=$(SYSROOT)
-
-export PREFIX:=/usr
-export INCLUDEDIR:=$(PREFIX)/include
-export LIBDIR:=$(PREFIX)/lib
+# folder in sysroot with header filed
+export INCLUDEDIR:=/include
 
 QEMU:=qemu-system-i386
 QEMUFLAGS:= -drive format=raw,file=myos.bin,if=ide,index=0,media=disk -rtc base=localtime,clock=host,driftfix=none
 QEMUFLAGS_DEBUG:= -drive format=raw,file=myos.bin,if=ide,index=0,media=disk -rtc base=localtime,clock=host,driftfix=none -S -s
-
-# isystem=<directory> means that the compiler will look
-# for system headers in <directory>
-CC:=$(CC) -isystem=$(INCLUDEDIR)
 
 # directories containing the source code for the projects
 BOOT_SRC_DIR:=boot
 KERNEL_SRC_DIR:=kernel
 LIBC_SRC_DIR:=libc
 PROG_SRC_DIR:=programs
-export PROG_BIN_DIR:=bin
 
 # final paths to the binaries
 BOOT_BIN:=$(BOOT_SRC_DIR)/bootloader
 KERNEL_BIN:=$(KERNEL_SRC_DIR)/kernel
 LIBC_AR:=$(LIBC_SRC_DIR)/libc.a
+
+# separate binaries into system binaries (kernel and
+# bootloader (still)) and userspace binaries (programs
+# compiled with the provided libc that will be present
+# in the filesystem)
+export BIN_DIR_SYS:=bin_system
+export BIN_DIR_USER:=bin_user
+BIN_DIR_GLOBAL:=bin
 
 # list of all the binaries
 BINARIES:=\
@@ -63,33 +61,54 @@ $(KERNEL_BIN)
 TARGET:=myos.bin
 INCLUDED_FILES:=files.txt
 
-.PHONY: all kernel clean run menuconfig
+.PHONY: all kernel clean run menuconfig userspace
 
 all: $(TARGET)
 
-$(TARGET): $(BINARIES)
-	# compile programs in the programs folder
+# target to build the os image including
+# kernel is mandatory, userspace not - if you want
+# to include the userspace alco, compile it with
+# make userspace
+$(TARGET): kernel
+	@rm -rf $(BIN_DIR_GLOBAL)
+	@mkdir -p $(BIN_DIR_GLOBAL)
+	@cp $(BIN_DIR_SYS)/* $(BIN_DIR_GLOBAL)
+
+# add userspace if present
+ifneq ($(wildcard $(BIN_DIR_USER)),)
+	cp $(BIN_DIR_USER)/* $(BIN_DIR_GLOBAL)
+endif
+
+	@gcc create_disk_image.c -o create_disk_image -lm
+	@./create_disk_image $(TARGET)
+
+# compile only the userspace - including the provided libc
+# and all programs in the programs folder
+userspace: $(LIBC_AR)
 	@$(MAKE) -C $(PROG_SRC_DIR) install
 
-	gcc create_disk_image.c -o create_disk_image -lm
-	./create_disk_image $(TARGET)
+# compile kernel (and also bootloader for now)
+kernel: $(BINARIES)
 
+# compile bootloader
 $(BOOT_BIN): $(HEADER_FILE)
-	@rm -rf $(PROG_BIN_DIR)
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(BOOT_SRC_DIR) install
 
-$(KERNEL_BIN): $(LIBC_AR) $(HEADER_FILE)
+# compile kernel
+$(KERNEL_BIN): $(HEADER_FILE)
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(KERNEL_SRC_DIR) install
 
+# compile libc
 $(LIBC_AR):
 	@mkdir -p $(SYSROOT)
 
 	@$(MAKE) -C $(LIBC_SRC_DIR) install
 
+# generate config header file
 $(HEADER_FILE): .config
 	@./generate_config_header.sh
 
@@ -97,9 +116,11 @@ $(HEADER_FILE): .config
 	gcc -o menu my_ncurses_menu.c -lncurses
 	./menu
 
+# run in normal mode
 run: $(TARGET)
 	$(QEMU) $(QEMUFLAGS)
 
+# run in debug mode
 gdb-debug: $(TARGET)
 	$(QEMU) $(QEMUFLAGS_DEBUG)
 
@@ -137,4 +158,4 @@ clean:
 		$(MAKE) -C $$PROJECT clean; \
 	done
 
-	rm -rf $(TARGET) create_disk_image $(HEADER_FILE) menu $(PROG_BIN_DIR)
+	rm -rf $(TARGET) create_disk_image $(HEADER_FILE) menu $(BIN_DIR_USER) $(BIN_DIR_SYS) $(BIN_DIR_GLOBAL)

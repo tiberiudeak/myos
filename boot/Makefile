@@ -1,18 +1,9 @@
-HOST?=$(DEFAULT_HOST)
 ARCHDIR:=arch/$(HOSTARCH)
 
 # define flags if not already defined
-CFLAGS?=-O2 -g
-CPPFLAGS?=
+CFLAGS:=--sysroot=$(SYSROOT) -isystem=$(INCLUDEDIR) -O0 -g -fno-stack-protector -include ../$(HEADER_FILE) -ffreestanding -Wall -Wextra -nostdlib
 LDFLAGS?=-Tboot.ld --oformat=binary
 ASFLAGS?=-I$(ARCHDIR)
-LIBS?=
-
-# add extra flags if needed
-CFLAGS:=$(CFLAGS) -ffreestanding -Wall -Wextra
-CPPFLAGS:=
-LDFLAGS:=$(LDFLAGS)
-LIBS:=$(LIBS)
 
 # check if CONFIG_TTY_VBE is enabled and if so add it as a symbol
 # TODO: find a better solution, for now there are only three configurations that
@@ -62,6 +53,6 @@ install: install-headers install-boot
 install-headers: ;
 
 install-boot: $(BINARIES)
-	mkdir -p ../$(PROG_BIN_DIR)
-	cp $(BINARIES) ../$(PROG_BIN_DIR)
+	mkdir -p ../$(BIN_DIR_SYS)
+	cp $(BINARIES) ../$(BIN_DIR_SYS)
 

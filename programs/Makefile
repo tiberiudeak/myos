@@ -1,22 +1,12 @@
-
-HOST?=$(DEFAULT_HOST)
-ARCHDIR:=arch/$(HOSTARCH)
-
 # define flags if not already defined
-CFLAGS:=-O0 -g
+CFLAGS:=--sysroot=$(SYSROOT_USER) -isystem=$(INCLUDEDIR) -O0 -g -ffreestanding -Wall -fPIE
 CPPFLAGS:=
 # link with my libc
-LDFLAGS:=-L../sysroot/usr/lib/
-ASFLAGS:=
-LIBS:=
+LDFLAGS:=-L$(SYSROOT_USER)
 
 # add extra flags if needed
-CFLAGS:=$(CFLAGS) -ffreestanding -Wall -fPIE
-CPPFLAGS:=$(CPPFLAGS)
 LDFLAGS:=$(LDFLAGS)
 LIBS:=$(LIBS) -nostdlib -lk
-
-BIN_DIR:=../bin
 
 EXEC_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_DEPS:=$(shell find . -type f -name '*.d')
@@ -37,12 +27,12 @@ $(BINARIES): %: %.o
 	$(LD) $(LDFLAGS) $< -o $@ $(LIBS)
 
 %.o: %.c
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS) $(CPPFLAGS)
+	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
 
 install: $(BINARIES)
-	mkdir -p $(BIN_DIR)
-	cp $(BINARIES) $(BIN_DIR)
+	mkdir -p ../$(BIN_DIR_USER)
+	cp $(BINARIES) ../$(BIN_DIR_USER)
 
 clean:
-	rm -f $(BINARIES) $(OBJS) *.d */*.d */*/*.d
+	rm -rf $(BINARIES) $(OBJS) *.d */*.d */*/*.d
 

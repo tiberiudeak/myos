@@ -2,8 +2,7 @@
 #include <mm/pmm.h>
 #include <kernel/tty.h>
 #include <stddef.h>
-#include <math.h>
-#include <string.h>
+#include <kernel/string.h>
 
 static uint32_t *bitmap;
 static uint32_t bitmap_size;
@@ -11,6 +10,10 @@ static uint32_t max_blocks;
 static uint32_t used_blocks;
 
 //atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
+
+int ceil(int a, int b) {
+	return (a + b - 1) / b;
+}
 
 /**
  * @brief Print the memory map created by INT 0x15 E820

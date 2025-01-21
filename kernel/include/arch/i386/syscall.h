@@ -14,14 +14,13 @@
 #include <mm/kmalloc.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
-#include <global_addresses.h>
+#include <kernel/global_addresses.h>
 
-#include <fs.h>
-#include <elf.h>
-#include <string.h>
+#include <kernel/fs.h>
+#include <kernel/elf.h>
+#include <kernel/string.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <fcntl.h>
+#include <kernel/utils.h>
 
 #define MAX_SYSCALLS	9
 TASK_SWITCH_STACK_PROBLEM isr_prob;

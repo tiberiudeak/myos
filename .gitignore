@@ -4,6 +4,7 @@ compile_commands.json
 dependency_graph
 .cache
 sysroot
+sysroot_user
 bin
 intel
 
