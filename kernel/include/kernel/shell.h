@@ -3,17 +3,17 @@
 
 #include <stdint.h>
 
-#define MAX_COMMAND_LENGTH		256
-#define MAX_PARAMS              100
-#define MAX_PARAM_SIZE          100
+#define MAX_COMMAND_LENGTH 256
+#define MAX_PARAMS		   100
+#define MAX_PARAM_SIZE	   100
 
 #ifdef CONFIG_SH_HISTORY
-#define MAX_HISTORY_SIZE        CONFIG_SH_HISTORY_MAX_SIZE
+#define MAX_HISTORY_SIZE CONFIG_SH_HISTORY_MAX_SIZE
 
 struct sh_circular_buffer {
-    char commands[MAX_HISTORY_SIZE][MAX_COMMAND_LENGTH];
-    int start;
-    int count;
+	char commands[MAX_HISTORY_SIZE][MAX_COMMAND_LENGTH];
+	int start;
+	int count;
 };
 
 void history_add_command(const char *);

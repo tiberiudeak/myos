@@ -18,8 +18,8 @@
  * RPL: requested privilege level, 2-bit value representing the privilege level
  * 	    required to execute the segment referenced by this selector
  */
-#define low_16(address) (uint16_t)((address) & 0xFFFF)
-#define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
+#define low_16(address)	 (uint16_t) ((address) & 0xFFFF)
+#define high_16(address) (uint16_t) (((address) >> 16) & 0xFFFF)
 
 /**
  * The IDT consists of 256 descriptor entries, each corresponding to
@@ -66,20 +66,20 @@ struct idt_ptr {
  * Gate Type: 4-bit value representing the type of the gate; there
  * 		  are 5 types of gates: task, 16-bit interrupt, 16-bit
  * 		  trap, 32-bit interrupt, 32-bit trap
-*/
+ */
 typedef enum {
-	IDT_FLAGS_TASK_GATE 		= 0x05,
-	IDT_FLAGS_16BIT_INT 		= 0x06,
-	IDT_FLAGS_16BIT_TRAP 		= 0x07,
-	IDT_FLAGS_32BIT_INT 		= 0x0E,
-	IDT_FLAGS_32BIT_TRAP 		= 0x0F,
+	IDT_FLAGS_TASK_GATE		= 0x05,
+	IDT_FLAGS_16BIT_INT		= 0x06,
+	IDT_FLAGS_16BIT_TRAP	= 0x07,
+	IDT_FLAGS_32BIT_INT		= 0x0E,
+	IDT_FLAGS_32BIT_TRAP	= 0x0F,
 
-	IDT_FLAGS_RING0 			= 0x00,
-	IDT_FLAGS_RING1 			= 0x20,
-	IDT_FLAGS_RING2 			= 0x40,
-	IDT_FLAGS_RING3 			= 0x60,
+	IDT_FLAGS_RING0			= 0x00,
+	IDT_FLAGS_RING1			= 0x20,
+	IDT_FLAGS_RING2			= 0x40,
+	IDT_FLAGS_RING3			= 0x60,
 
-	IDT_FLAGS_PRESENT 			= 0x80
+	IDT_FLAGS_PRESENT		= 0x80
 } IDT_FLAGS;
 
 void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags);

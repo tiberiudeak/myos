@@ -3,14 +3,14 @@
 
 #include <stdint.h>
 
-#define GDT_ENTRIES 6
-#define KERNEL_CS	0x0008
-#define KERNEL_DS	0x0010
-#define USER_CS		0x001b
-#define USER_DS		0x0023
+#define GDT_ENTRIES		 6
+#define KERNEL_CS		 0x0008
+#define KERNEL_DS		 0x0010
+#define USER_CS			 0x001b
+#define USER_DS			 0x0023
 
-#define low_16(address) (uint16_t)((address) & 0xFFFF)
-#define high_16(address) (uint16_t)(((address) >> 16) & 0xFFFF)
+#define low_16(address)	 (uint16_t) ((address) & 0xFFFF)
+#define high_16(address) (uint16_t) (((address) >> 16) & 0xFFFF)
 
 /**
  * GDT Descriptor structure. For more details, see the comments
@@ -83,28 +83,28 @@ struct tss_entry {
  * E: Executable bit, 1 for code selectors, 0 for data selectors
  * DC: Direction bit / Conforming bit
  *    - for data selectors, 0 segment grows up, 1 segment grows down
- *    - for code selectors, 0 code in this segment ca only be executed from the ring
- *      set in DPL, 1 code in this segment can be executed from ring DPL and below
- * RW: Readable bit / Writable bit
+ *    - for code selectors, 0 code in this segment ca only be executed from the
+ * ring set in DPL, 1 code in this segment can be executed from ring DPL and
+ * below RW: Readable bit / Writable bit
  *   - for data selectors, 1 segment is writeable, 0 write is not allowed
  *   - for code selectors, 1 segment is readable, 0 read is not allowed
  * A: Accessed bit, set by the CPU when the segment is accessed
  */
 typedef enum {
-	GDT_ACCESS_CODE_READABLE 		= 0x02,
-	GDT_ACCESS_CODE_WRITEABLE 		= 0x02,
-	GDT_ACCESS_CODE_CONFORMING 		= 0x04,
+	GDT_ACCESS_CODE_READABLE	= 0x02,
+	GDT_ACCESS_CODE_WRITEABLE	= 0x02,
+	GDT_ACCESS_CODE_CONFORMING	= 0x04,
 
-	GDT_ACCESS_DATA_SEGMENT 		= 0x10,
-	GDT_ACCESS_CODE_SEGMENT 		= 0x18,
-	GDT_ACCESS_TSS 					= 0x09,
+	GDT_ACCESS_DATA_SEGMENT		= 0x10,
+	GDT_ACCESS_CODE_SEGMENT		= 0x18,
+	GDT_ACCESS_TSS				= 0x09,
 
-	GDT_ACCESS_RING0 				= 0x00,
-	GDT_ACCESS_RING1 				= 0x20,
-	GDT_ACCESS_RING2 				= 0x40,
-	GDT_ACCESS_RING3 				= 0x60,
+	GDT_ACCESS_RING0			= 0x00,
+	GDT_ACCESS_RING1			= 0x20,
+	GDT_ACCESS_RING2			= 0x40,
+	GDT_ACCESS_RING3			= 0x60,
 
-	GDT_ACCESS_PRESENT 				= 0x80,
+	GDT_ACCESS_PRESENT			= 0x80,
 } GDT_ACCESS;
 
 /**
@@ -120,15 +120,16 @@ typedef enum {
  * L: Long mode, 1 for 64-bit mode, 0 for other
  */
 typedef enum {
-	GDT_FLAGS_16_BIT 				= 0x00,
-	GDT_FLAGS_32_BIT 				= 0x40,
-	GDT_FLAGS_64_BIT 				= 0x20,
-	GDT_FLAGS_GRANULARITY_BYTE 		= 0x00,
-	GDT_FLAGS_GRANULARITY_4KB 		= 0x80
+	GDT_FLAGS_16_BIT			= 0x00,
+	GDT_FLAGS_32_BIT			= 0x40,
+	GDT_FLAGS_64_BIT			= 0x20,
+	GDT_FLAGS_GRANULARITY_BYTE	= 0x00,
+	GDT_FLAGS_GRANULARITY_4KB	= 0x80
 } GDT_FLAGS;
 
 void init_gdt();
-void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags);
+void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access,
+				  uint8_t flags);
 void gdt_flush(uint32_t gdt_ptr);
 void write_tss(int num, uint16_t ss0, uint32_t esp0);
 

@@ -3,51 +3,47 @@
 
 #include <ncurses.h>
 
-#define ARRAY_SIZE(a)   (sizeof(a) / sizeof(a[0]))
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof(a[0]))
 
 // lower text for navigation information - need to be increased if
 // lines are added to the navigation_info string
-#define MAIN_MENU_Y     6
-#define MAIN_MENU_X     2
+#define MAIN_MENU_Y	  6
+#define MAIN_MENU_X	  2
 
-#define SEC_MENU_X      2
-#define SEC_MENU_Y      2
+#define SEC_MENU_X	  2
+#define SEC_MENU_Y	  2
 
-typedef enum {
-    INT, BOOL
-} type;
+typedef enum { INT, BOOL } type;
 
 struct Config {
-    char *symbol;
-    char *prompt;
-    char *help_message;
-    int default_val;
-    type type;
-    char *deps;
+	char *symbol;
+	char *prompt;
+	char *help_message;
+	int default_val;
+	type type;
+	char *deps;
 };
 
 struct Choice {
-    char *prompt;
-    char *help_message;
-    struct Config *configs;
-    int n_configs;
+	char *prompt;
+	char *help_message;
+	struct Config *configs;
+	int n_configs;
 };
 
 struct Menu {
-    char *prompt;
-    char *help;
-    struct Choice *choices;
-    struct Config *configs;
-    int n_choices;
-    int n_configs;
+	char *prompt;
+	char *help;
+	struct Choice *choices;
+	struct Config *configs;
+	int n_choices;
+	int n_configs;
 };
 
-// ==============================General Setup configurations=====================================
+// ==============================General Setup
+// configurations=====================================
 struct Config general_setup_configs[] = {
-    {
-        "CONFIG_TTY_VBE_WIDTH",
-        "Graphics Mode Width",
-        "Screen Width\n\n\
+	{"CONFIG_TTY_VBE_WIDTH", "Graphics Mode Width", "Screen Width\n\n\
         This configuration allows you to set the horizontal resolution of your display in pixels.\n\
         You can choose from the following available resolutions (first column is the width):\n\n\
          320 x 200\n\
@@ -69,15 +65,9 @@ struct Config general_setup_configs[] = {
         1280 x 720\n\
         1920 x 1080\n\n\n\
         This configuration is only available in Graphics Mode!",
-        1920,
-        INT,
-        "CONFIG_TTY_VBE"
-    },
+	 1920, INT, "CONFIG_TTY_VBE"},
 
-    {
-        "CONFIG_TTY_VBE_HEIGHT",
-        "Graphics Mode Height",
-        "Screen Height\n\n\
+	{"CONFIG_TTY_VBE_HEIGHT", "Graphics Mode Height", "Screen Height\n\n\
         This configuration allows you to set the vertical resolution of your display in pixels.\n\
         You can choose from the following available resolutions (second column is the height):\n\n\
          320 x 200\n\
@@ -99,55 +89,33 @@ struct Config general_setup_configs[] = {
         1280 x 720\n\
         1920 x 1080\n\n\n\
         This configuration is only available in Graphics Mode!",
-        1080,
-        INT,
-        "CONFIG_TTY_VBE"
-    },
+	 1080, INT, "CONFIG_TTY_VBE"},
 
-    {
-        "CONFIG_VERBOSE",
-        "Verbose",
-        "Verbose Configuration\n\n\
+	{"CONFIG_VERBOSE", "Verbose", "Verbose Configuration\n\n\
         This configuration enables the display of detailed kernel messages during the boot\n\
         process and operation of the operating system. When enabled, the kernel will output\n\
         a set of messages that provide insights into the system's activities, initialization\n\
         sequences and potential issues.",
-        0,
-        BOOL,
-        NULL
-    },
+	 0, BOOL, NULL},
 
-    {
-        "CONFIG_RTC",
-        "Real time clock",
-        "Real Time Clock\n\n\
+	{"CONFIG_RTC", "Real time clock", "Real Time Clock\n\n\
         This configuration enables the Real-Time Clock (RTC) functionality in the operating\n\
         system. When enabled, the system can maintain and provide accurate timekeeping, which\n\
         is crucial for various time-dependent process and functionalities. Additionally, it\n\
         introduces the 'datetime' command, offering convenient way for users to access the\n\
         current date and time from the command line.",
-        1,
-        BOOL,
-        NULL
-    }
+	 1, BOOL, NULL}
 #ifdef STEP_BY_STEP
-    ,{
-        "CONFIG_DONE",
-        "Done",
-        "Select when done with the configurations in the current menu in order to have access\n\
+	,
+	{"CONFIG_DONE", "Done",
+	 "Select when done with the configurations in the current menu in order to have access\n\
         to the next menu",
-        0,
-        BOOL,
-        NULL
-    }
+	 0, BOOL, NULL}
 #endif
 };
 
-struct Config video_mode_configs[] = {
-    {
-        "CONFIG_TTY_VGA",
-        "VGA Text Mode",
-        "VGA Text Mode\n\n\
+struct Config video_mode_configs[] = {{"CONFIG_TTY_VGA", "VGA Text Mode",
+									   "VGA Text Mode\n\n\
         This mode uses the classic VGA (Video Graphics Aray) text mode, which provides\n\
         a simple and efficient way to display text on the screen. It is characterized\n\
         by its fixed 80x25 resolution, meaning the screen is divided into 80 columns\n\
@@ -164,14 +132,10 @@ struct Config video_mode_configs[] = {
         - Command-line interfaces\n\
         - Low-resource environments\n\
         - Debugging and recovery modes",
-        1,
-        BOOL,
-        NULL},
+									   1, BOOL, NULL},
 
-    {
-        "CONFIG_TTY_VBE",
-        "Graphics Mode",
-        "Graphics Mode (VESA BIOS Extension)\n\n\
+									  {"CONFIG_TTY_VBE", "Graphics Mode",
+									   "Graphics Mode (VESA BIOS Extension)\n\n\
         This mode leverages the VESA (Video Electronics Standards Association) BIOS\n\
         Extension to provide higher resolutions and color depth for graphical interfaces.\n\n\
         Features:\n\
@@ -184,33 +148,21 @@ struct Config video_mode_configs[] = {
         Use Cases:\n\
         - Graphical user interfaces\n\
         - Any scenario requiring high-resolution graphics and extensive color palettes",
-        0,
-        BOOL,
-        NULL
-    }
-};
+									   0, BOOL, NULL}};
 
 struct Choice general_setup_choices[] = {
-    {
-        "Video Mode",
-        "Video Mode Configuration\n\n\
+	{"Video Mode", "Video Mode Configuration\n\n\
         The video mode confguration allows you to select the display mode for the operating\n\
         system's graphical output. This setting determines how information is presented on\n\
         the screen.",
-        video_mode_configs,
-        ARRAY_SIZE(video_mode_configs)
-    }
-};
+	 video_mode_configs, ARRAY_SIZE(video_mode_configs)}};
 // ===============================================================================================
 
-
-
-// ==============================Memory Manager configurations====================================
+// ==============================Memory Manager
+// configurations====================================
 struct Config memory_manager_configs[] = {
-    {
-        "CONFIG_READ_AFTER_FREE_PROT",
-        "Read after free protection",
-        "Read After Free Protection\n\n\
+	{"CONFIG_READ_AFTER_FREE_PROT", "Read after free protection",
+	 "Read After Free Protection\n\n\
         Read After Free Protection provides an additional layer of security and stability for\n\
         memory management within the operating system. When this feature is enabled, the memory\n\
         blocks that are freed by the system are overwritten with zeros. This practice helps to\n\
@@ -220,28 +172,19 @@ struct Config memory_manager_configs[] = {
         Enabling this protection introduces a slight performance overhead due to the additional\n\
         step of zeroing out memory blocks. However, the trade-off is generally favorable given the\n\
         increased security and stability.",
-        1,
-        BOOL,
-        NULL
-    }
+	 1, BOOL, NULL}
 #ifdef STEP_BY_STEP
-    ,{
-        "CONFIG_DONE",
-        "Done",
-        "Select when done with the configurations in the current menu in order to have access\n\
+	,
+	{"CONFIG_DONE", "Done",
+	 "Select when done with the configurations in the current menu in order to have access\n\
         to the next menu",
-        0,
-        BOOL,
-        NULL
-    }
+	 0, BOOL, NULL}
 #endif
 };
 
 struct Config mem_alloc_alg_configs[] = {
-    {
-        "CONFIG_UVMM_BESTFIT",
-        "Best Fit",
-        "Best Fit Memory Allocation Algorithm\n\n\
+	{"CONFIG_UVMM_BESTFIT", "Best Fit",
+	 "Best Fit Memory Allocation Algorithm\n\n\
         Best Fit Memory Allocation is a memory management technique that allocates the smallest\n\
         free partition that is adequate to accommodate the requested memory. This approach aims\n\
         to minimize wasted memory by fitting the allocation as well as possible into the\n\
@@ -265,15 +208,10 @@ struct Config mem_alloc_alg_configs[] = {
         - Applications with Variable Memory Requests: Useful in applications where the size of\n\
         memory requests varies significantly and efficient memory usage is more critical than the\n\
         speed of allocation.",
-        1,
-        BOOL,
-        NULL
-    },
+	 1, BOOL, NULL},
 
-    {
-        "CONFIG_UVMM_FIRSTFIT",
-        "First Fit",
-        "First Fit Memory Allocation Algorithm\n\n\
+	{"CONFIG_UVMM_FIRSTFIT", "First Fit",
+	 "First Fit Memory Allocation Algorithm\n\n\
         First Fit Memory Allocation is a memory management technique that allocates the first\n\
         free partition that is large enough to accommodate the requested memory. This approach\n\
         aims to minimize allocation time by quickly finding a suitable block.\n\n\
@@ -297,15 +235,10 @@ struct Config mem_alloc_alg_configs[] = {
         critical than memory efficiency.\n\
         - Low-Latency Applications: Ideal for applications where quick response times are essential\n\
         and memory fragmentation is less of a concern.",
-        0,
-        BOOL,
-        NULL
-    },
+	 0, BOOL, NULL},
 
-    {
-        "CONFIG_UVMM_NEXTFIT",
-        "Next Fit",
-        "Next Fit Memory Allocation Algorithm\n\n\
+	{"CONFIG_UVMM_NEXTFIT", "Next Fit",
+	 "Next Fit Memory Allocation Algorithm\n\n\
         Next Fit Memory Allocation is a variant of the First Fit algorithm. In this approach,\n\
         the memory manager continues searching for a free block starting from the last allocated\n\
         block, rather than from the beginning of the memory each time.\n\n\
@@ -330,15 +263,10 @@ struct Config mem_alloc_alg_configs[] = {
         Use Cases:\n\n\
         - Systems with Moderate Allocation Requests: Suitable for systems where allocations are\n\
         moderately frequent and the focus is on balancing speed and memory utilization.",
-        0,
-        BOOL,
-        NULL
-    },
+	 0, BOOL, NULL},
 
-    {
-        "CONFIG_UVMM_WORSTFIT",
-        "Worst Fit",
-        "Worst Fit Memory Allocation Algorithm\n\n\
+	{"CONFIG_UVMM_WORSTFIT", "Worst Fit",
+	 "Worst Fit Memory Allocation Algorithm\n\n\
         Worst Fit Memory Allocation is an approach that selects the largest available block of\n\
         memory for allocation.\n\n\
         How it works:\n\n\
@@ -359,16 +287,10 @@ struct Config mem_alloc_alg_configs[] = {
         Use Cases:\n\n\
         Systems with Large Allocation Requests: Ideal for systems where large allocations are\n\
         frequent and minimizing fragmentation is critical.",
-        0,
-        BOOL,
-        NULL
-    }
-};
+	 0, BOOL, NULL}};
 
 struct Choice memory_manager_choices[] = {
-    {
-        "Memory Allocation Algorithm",
-        "Memory Allocation Algorithms\n\n\
+	{"Memory Allocation Algorithm", "Memory Allocation Algorithms\n\n\
         The Memory Allocation Algorithms menu allows you to configure how the operating system\n\
         manages memory allocation for processes and applications. Memory allocation is a crucial\n\
         aspect of system performance and stability, and different algorithms can have significant\n\
@@ -388,19 +310,14 @@ struct Choice memory_manager_choices[] = {
                         memory usage to ensure stability.\n\
         - General-Purpose Systems: Balance between complexity and performance to provide reliable\n\
                         and efficient memory management.",
-        mem_alloc_alg_configs,
-        ARRAY_SIZE(mem_alloc_alg_configs)}
-};
+	 mem_alloc_alg_configs, ARRAY_SIZE(mem_alloc_alg_configs)}};
 // ===============================================================================================
 
-
-
-// ==============================Scheduler configurations=========================================
+// ==============================Scheduler
+// configurations=========================================
 struct Config scheduler_configs[] = {
-    {
-        "CONFIG_RR_TIME_QUANTUM",
-        "Round-Robin Time Quantum",
-        "Round Robin Time Quantum\n\n\
+	{"CONFIG_RR_TIME_QUANTUM", "Round-Robin Time Quantum",
+	 "Round Robin Time Quantum\n\n\
         The Round Robin Time Quantum configuration sets the length of time, in milliseconds,\n\
         that each process is allowed to run before the CPU switches to the next process in the\n\
         ready queue. This value is crucial in the Round Robin scheduling algorithm, determining\n\
@@ -443,28 +360,19 @@ struct Config scheduler_configs[] = {
         ensure high responsiveness and quick user feedback. Batch Systems: Larger time quantum\n\
         (e.g., 100-200 milliseconds) to minimize overhead and allow longer processes to run more\n\
         efficiently.",
-        20,
-        INT,
-        "CONFIG_ROUND_ROBIN"
-    }
+	 20, INT, "CONFIG_ROUND_ROBIN"}
 #ifdef STEP_BY_STEP
-    ,{
-        "CONFIG_DONE",
-        "Done",
-        "Select when done with the configurations in the current menu in order to have access\n\
+	,
+	{"CONFIG_DONE", "Done",
+	 "Select when done with the configurations in the current menu in order to have access\n\
         to the next menu",
-        0,
-        BOOL,
-        NULL
-    }
+	 0, BOOL, NULL}
 #endif
 };
 
 struct Config scheduler_alg_configs[] = {
-    {
-        "CONFIG_ROUND_ROBIN",
-        "Round-Robin (RR)",
-        "Round Robin Scheduling Algorithm\n\n\
+	{"CONFIG_ROUND_ROBIN", "Round-Robin (RR)",
+	 "Round Robin Scheduling Algorithm\n\n\
         The Round Robin (RR) scheduling algorithm is a widely used and straightforward approach\n\
         for managing the execution of processes in a time-sharing operating system. In Round\n\
         Robin scheduling, each process is assigned a fixed time slice, or quantum, during which\n\
@@ -501,15 +409,10 @@ struct Config scheduler_alg_configs[] = {
         By selecting the Round Robin scheduling algorithm, you ensure that your operating system\n\
         can handle multiple processes efficiently and fairly, providing a balanced approach to CPU\n\
         time allocation that can enhance the responsiveness and usability of the system.",
-        1,
-        BOOL,
-        NULL
-    },
+	 1, BOOL, NULL},
 
-    {
-        "CONFIG_FCFS_SCH",
-        "First Come First Served (FCFS)",
-        "First Come First Served Scheduling Algorithm\n\n\
+	{"CONFIG_FCFS_SCH", "First Come First Served (FCFS)",
+	 "First Come First Served Scheduling Algorithm\n\n\
         The First Come First Served (FCFS) scheduling algorithm is the simplest and most\n\
         straightforward process scheduling approach used in this operating system. In FCFS\n\
         scheduling, processes are executed in the order they arrive in the ready queue. The\n\
@@ -546,446 +449,160 @@ struct Config scheduler_alg_configs[] = {
         all scenarios, its simplicity and fairness can be advantageous in specific use cases,\n\
         providing a clear and easy-to-understand method for managing process execution in your\n\
         operating system.",
-        0,
-        BOOL,
-        NULL
-    }
-};
+	 0, BOOL, NULL}};
 
 struct Choice scheduler_choices[] = {
-    {
-        "Scheduling Algorithm",
-        "Scheduling Algorithm\n\n\
+	{"Scheduling Algorithm", "Scheduling Algorithm\n\n\
         The Scheduling Algorithm configuration menu allows you to choose the algorithm used by\n\
         the operating system's scheduler to manage the execution of processes. The scheduler is a\n\
         critical component of the operating system that decides which process runs at any given\n\
         time, ensuring efficient CPU utilization and responsive system performance. Each scheduling\n\
         algorithm has its own characteristics, advantages, and disadvantages, making them suitable\n\
         for different types of workloads and system requirements.",
-        scheduler_alg_configs,
-        ARRAY_SIZE(scheduler_alg_configs)
-    }
-};
+	 scheduler_alg_configs, ARRAY_SIZE(scheduler_alg_configs)}};
 // ===============================================================================================
 
-
-
-// ==============================Shell configurations=============================================
+// ==============================Shell
+// configurations=============================================
 struct Config shell_configs[] = {
-    {
-        "CONFIG_SH_HISTORY",
-        "Shell History",
-        "Shell History\n\n\
+	{"CONFIG_SH_HISTORY", "Shell History", "Shell History\n\n\
         The Shell History Configuration setting allows you to manage how command history is\n\
         handled in your operating system's terminal. This feature enhances your productivity by\n\
         keeping track of previously executed commands, enabling you to easily recall them.\n\n\
         Enabling this configuration will introduce the 'history' command.",
-        0,
-        BOOL,
-        NULL
-    },
+	 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_HISTORY_MAX_SIZE",
-        "History Size",
-        "History Size\n\n\
+	{"CONFIG_SH_HISTORY_MAX_SIZE", "History Size", "History Size\n\n\
         The History Size Configuration setting allows you to specify the maximum number of commands\n\
         to be stored in the shell's history buffer. This determines how many previous commands are\n\
         available for recall",
-        20,
-        INT,
-        "CONFIG_SH_HISTORY"
-    }
+	 20, INT, "CONFIG_SH_HISTORY"}
 #ifdef STEP_BY_STEP
-    ,{
-        "CONFIG_DONE",
-        "Done",
-        "Select when done with the configurations in the current menu in order to have access\n\
+	,
+	{"CONFIG_DONE", "Done",
+	 "Select when done with the configurations in the current menu in order to have access\n\
         to the next menu",
-        0,
-        BOOL,
-        NULL
-    }
+	 0, BOOL, NULL}
 #endif
 };
 
 struct Config shell_fgc_configs[] = {
-    {
-        "CONFIG_SH_FGC_BLACK",
-        "Black",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_BLACK", "Black", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_BLUE",
-        "Blue",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_BLUE", "Blue", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_GREEN",
-        "Green",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_GREEN", "Green", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_CYAN",
-        "Cyan",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_CYAN", "Cyan", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_RED",
-        "Red",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_RED", "Red", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_MAGENTA",
-        "Magenta",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_MAGENTA", "Magenta", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_BROWN",
-        "Brown",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_BROWN", "Brown", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_GREY",
-        "Light Grey",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_GREY", "Light Grey", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_DARK_GREY",
-        "Dark Grey",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_DARK_GREY", "Dark Grey", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_BLUE",
-        "Light Blue",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_BLUE", "Light Blue", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_GREEN",
-        "Light Green",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_GREEN", "Light Green", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_CYAN",
-        "Light Cyan",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_CYAN", "Light Cyan", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_RED",
-        "Light Red",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_RED", "Light Red", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_MAGENTA",
-        "Light Magenta",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_MAGENTA", "Light Magenta", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_LIGHT_BROWN",
-        "Light Brown",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_FGC_LIGHT_BROWN", "Light Brown", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_FGC_WHITE",
-        "White",
-        "",
-        1,
-        BOOL,
-        NULL
-    }
-};
+	{"CONFIG_SH_FGC_WHITE", "White", "", 1, BOOL, NULL}};
 
 struct Config shell_bgc_configs[] = {
-    {
-        "CONFIG_SH_BGC_BLACK",
-        "Black",
-        "",
-        1,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_BLACK", "Black", "", 1, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_BLUE",
-        "Blue",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_BLUE", "Blue", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_GREEN",
-        "Green",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_GREEN", "Green", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_CYAN",
-        "Cyan",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_CYAN", "Cyan", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_RED",
-        "Red",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_RED", "Red", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_MAGENTA",
-        "Magenta",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_MAGENTA", "Magenta", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_BROWN",
-        "Brown",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_BROWN", "Brown", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_GREY",
-        "Light Grey",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_GREY", "Light Grey", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_DARK_GREY",
-        "Dark Grey",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_DARK_GREY", "Dark Grey", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_BLUE",
-        "Light Blue",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_BLUE", "Light Blue", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_GREEN",
-        "Light Green",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_GREEN", "Light Green", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_CYAN",
-        "Light Cyan",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_CYAN", "Light Cyan", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_RED",
-        "Light Red",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_RED", "Light Red", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_MAGENTA",
-        "Light Magenta",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_MAGENTA", "Light Magenta", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_LIGHT_BROWN",
-        "Light Brown",
-        "",
-        0,
-        BOOL,
-        NULL
-    },
+	{"CONFIG_SH_BGC_LIGHT_BROWN", "Light Brown", "", 0, BOOL, NULL},
 
-    {
-        "CONFIG_SH_BGC_WHITE",
-        "White",
-        "",
-        0,
-        BOOL,
-        NULL
-    }
-};
+	{"CONFIG_SH_BGC_WHITE", "White", "", 0, BOOL, NULL}};
 
 struct Choice shell_choices[] = {
-    {
-        "Terminal Background Color",
-        "Terminal Background Color\n\n\
+	{"Terminal Background Color", "Terminal Background Color\n\n\
         The Terminal Background Color configuration allows you to set the default background\n\
         color for the terminal in your operating system.",
-        shell_bgc_configs,
-        ARRAY_SIZE(shell_bgc_configs)
-    },
+	 shell_bgc_configs, ARRAY_SIZE(shell_bgc_configs)},
 
-    {
-        "Terminal Text Color",
-        "Terminal Text Color\n\n\
+	{"Terminal Text Color", "Terminal Text Color\n\n\
         The Terminal Text Color configuration allows you to set the default text color for the\n\
         terminal in your operating system.",
-        shell_fgc_configs,
-        ARRAY_SIZE(shell_fgc_configs)
-    }
-};
+	 shell_fgc_configs, ARRAY_SIZE(shell_fgc_configs)}};
 // ===============================================================================================
 
-char navigation_info[] = "Use the arrow keys navigate the menu. Enter selects menus/submenus (-->).\n\
+char navigation_info[] =
+	"Use the arrow keys navigate the menu. Enter selects menus/submenus (-->).\n\
   Pressing 'Y' includes/enables, 'N' excludes/disables features. Press 'q' to exit\n\
   Legend: (*) enabled, ( ) excluded";
 
 struct Menu main_menu[] = {
-    {
-        "General Setup",
-        "General Setup Menu\n\n\
+	{"General Setup", "General Setup Menu\n\n\
         The General Setup Menu allows you to configure basic and essential settings\n\
         for your operating system. This includes fundamental options that define the\n\
         overall behavior and properties of the system.",
-        general_setup_choices,
-        general_setup_configs,
-        ARRAY_SIZE(general_setup_choices),
-        ARRAY_SIZE(general_setup_configs)
-    },
+	 general_setup_choices, general_setup_configs,
+	 ARRAY_SIZE(general_setup_choices), ARRAY_SIZE(general_setup_configs)},
 
-    {
-        "Memory Manager",
-        "Memory Manager Menu\n\n\
+	{"Memory Manager", "Memory Manager Menu\n\n\
         The Memory Manager is a critical component of the operating system responsible\n\
         for handling all aspects of memory allocation, management and protection. This menu\n\
         allows you to configure various settings that determine how memory is managed to\n\
         ensure efficient and secure operation of the system.",
-        memory_manager_choices,
-        memory_manager_configs,
-        ARRAY_SIZE(memory_manager_choices),
-        ARRAY_SIZE(memory_manager_configs)
-    },
+	 memory_manager_choices, memory_manager_configs,
+	 ARRAY_SIZE(memory_manager_choices), ARRAY_SIZE(memory_manager_configs)},
 
-    {
-        "Scheduler",
-        "Scheduler Configurations\n\n\
+	{"Scheduler", "Scheduler Configurations\n\n\
         Another crucial part of the operating system is the scheduler, managing the execution\n\
         of processes by determining which process runs at any given time. This menu allows you\n\
         to configure various aspects of the scheduling algorithm, ensuring efficient CPU\n\
         utilization and responsive multitasking.",
-        scheduler_choices,
-        scheduler_configs,
-        ARRAY_SIZE(scheduler_choices),
-        ARRAY_SIZE(scheduler_configs)
-    },
+	 scheduler_choices, scheduler_configs, ARRAY_SIZE(scheduler_choices),
+	 ARRAY_SIZE(scheduler_configs)},
 
-    {
-        "Shell",
-        "Shell Configurations\n\n\
+	{"Shell", "Shell Configurations\n\n\
         The shell is the command-line interface of the operating system, allowing you to\n\
         interact with the system through commands. This menu provides options to configure\n\
         aspects of the shell environment, enhancing usability, functionality and customization.",
-        shell_choices,
-        shell_configs,
-        ARRAY_SIZE(shell_choices),
-        ARRAY_SIZE(shell_configs)
-    },
+	 shell_choices, shell_configs, ARRAY_SIZE(shell_choices),
+	 ARRAY_SIZE(shell_configs)},
 
-    {
-        "Exit",
-        "Exit\n\n\
+	{"Exit", "Exit\n\n\
         This is the exit. Exiting this menu will automatically save the configurations!",
-        NULL,
-        NULL,
-        0,
-        0
-    },
+	 NULL, NULL, 0, 0},
 };
 
 #ifdef STEP_BY_STEP
@@ -995,12 +612,13 @@ char *main_menu_title = "myOS x86_32 Kernel Configuration";
 #endif
 
 void draw_window(WINDOW *win, int width, const char *title);
-void display_message(WINDOW *win, const char *message, int x, int y, char *title);
-void display_menu(WINDOW *menu_win, int highlight, struct Menu *choices, int n_choices, int x, int y);
+void display_message(WINDOW *win, const char *message, int x, int y,
+					 char *title);
+void display_menu(WINDOW *menu_win, int highlight, struct Menu *choices,
+				  int n_choices, int x, int y);
 void handle_general_setup_submenu(WINDOW *win, WINDOW *win2);
 void display_submenu(WINDOW *win, struct Menu menu, WINDOW *win2);
 void print_enabled_configurations(void);
 int check_dependencies(struct Config config);
 
 #endif
-

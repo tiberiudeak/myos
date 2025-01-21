@@ -7,8 +7,7 @@
 #include <stddef.h>
 
 #ifndef offsetof
-#define offsetof(type, member) \
-	((size_t) &(((type *) 0)->member))
+#define offsetof(type, member) ((size_t) &(((type *) 0)->member))
 #endif
 
 /**
@@ -18,8 +17,8 @@
  * @param type		type of the container (struct)
  * @param member	name of the member in the structure
  */
-#define get_container(ptr, type, member) \
-	((type *)((void *)(ptr) - offsetof(type, member)))
+#define get_container(ptr, type, member)                 \
+	((type *) ((void *) (ptr) - offsetof(type, member)))
 
 /*
  * get structure this link is embedded in
@@ -28,8 +27,7 @@
  * @param type		type of the struct
  * @param member	name of embedded_link within the struct
  */
-#define list_get_entry(ptr, type, member) \
-	get_container(ptr, type, member)
+#define list_get_entry(ptr, type, member) get_container(ptr, type, member)
 
 /*
  * iterate through a list
@@ -37,7 +35,7 @@
  * @param cursor	pointer to an embedded_link struct
  * @param list_h	list to iterate through
  */
-#define list_iterate(cursor, list_h) \
+#define list_iterate(cursor, list_h)                                         \
 	for (cursor = (list_h)->next; cursor != (list_h); cursor = cursor->next)
 
 /*
@@ -47,10 +45,9 @@
  * @param tmp_storage	embdedded_link ptr as temporary storage
  * @param list_h		list to iterate through
  */
-#define list_iterate_safe(cursor, tmp_storage, list_h) \
-	for (cursor = (list_h)->next, tmp_storage = cursor->next; \
-			cursor != (list_h); \
-			cursor = tmp_storage, tmp_storage = cursor->next)
+#define list_iterate_safe(cursor, tmp_storage, list_h)                         \
+	for (cursor = (list_h)->next, tmp_storage = cursor->next;                  \
+		 cursor != (list_h); cursor = tmp_storage, tmp_storage = cursor->next)
 
 /*
  * node/sentinel of a linked list
@@ -68,9 +65,8 @@ void list_init(struct embedded_link *);
 void list_add_front(struct embedded_link *, struct embedded_link *);
 void list_add_end(struct embedded_link *, struct embedded_link *);
 void list_add_before(struct embedded_link *, struct embedded_link *,
-		struct embedded_link *);
+					 struct embedded_link *);
 void list_delete(struct embedded_link *, struct embedded_link *);
 int list_is_empty(struct embedded_link *);
 
 #endif /* LIST_H */
-

@@ -1,8 +1,8 @@
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/pic.h>
-#include <kernel/tty.h>
 #include <kernel/string.h>
+#include <kernel/tty.h>
 
 struct idt_gate idt_entries[256];
 struct idt_ptr idt_ptr_reg;
@@ -42,7 +42,7 @@ void init_idt() {
 	printk("Initializing IDT");
 #endif
 	idt_ptr_reg.limit = (sizeof(struct idt_gate) * 256) - 1;
-	idt_ptr_reg.base = (uint32_t)&idt_entries;
+	idt_ptr_reg.base = (uint32_t) &idt_entries;
 
 	memset(&idt_entries, 0, sizeof(struct idt_gate) * 256);
 
@@ -51,7 +51,7 @@ void init_idt() {
 	add_isrs_to_idt();
 	add_irqs_to_idt();
 
-	__asm__ __volatile__("lidt %0" : : "m" (idt_ptr_reg));
+	__asm__ __volatile__("lidt %0" : : "m"(idt_ptr_reg));
 	__asm__ __volatile__("sti");
 
 #ifdef CONFIG_VERBOSE

@@ -1,35 +1,36 @@
 #ifndef ARCH_I386_RTC_H
 #define ARCH_I386_RTC_H 1
 
-#include <stdint.h>
 #include <arch/i386/isr.h>
 
-#define CMOS_ADDRESS_PORT	0x70
-#define CMOS_DATA_PORT		0x71
+#include <stdint.h>
+
+#define CMOS_ADDRESS_PORT 0x70
+#define CMOS_DATA_PORT	  0x71
 
 struct rtc_datetime {
 	uint8_t seconds;
 	uint8_t minutes;
 	uint8_t hour;
-	uint8_t	day;
+	uint8_t day;
 	uint8_t month;
 	uint16_t year;
-} __attribute__ ((packed));
+} __attribute__((packed));
 
 typedef enum {
-	CMOS_RTC_REG_SECONDS			= 0x00,
-	CMOS_RTC_REG_SECONDS_ALARM		= 0x01,
-	CMOS_RTC_REG_MINUTES			= 0x02,
-	CMOS_RTC_REG_MINUTES_ALARM		= 0x03,
-	CMOS_RTC_REG_HOURS				= 0x04,
-	CMOS_RTC_REG_HOURS_ALARM		= 0x05,
-	CMOS_RTC_REG_WEEK_DAY			= 0x06,
-	CMOS_RTC_REG_MONTH_DAY			= 0x07,
-	CMOS_RTC_REG_MONTH				= 0x08,
-	CMOS_RTC_REG_YEAR				= 0x09,
-	CMOS_RTC_REG_STATUS_A			= 0x0A,
-	CMOS_RTC_REG_STATUS_B			= 0x0B,
-	CMOS_RTC_REG_STATUS_C			= 0x0C
+	CMOS_RTC_REG_SECONDS		= 0x00,
+	CMOS_RTC_REG_SECONDS_ALARM	= 0x01,
+	CMOS_RTC_REG_MINUTES		= 0x02,
+	CMOS_RTC_REG_MINUTES_ALARM	= 0x03,
+	CMOS_RTC_REG_HOURS			= 0x04,
+	CMOS_RTC_REG_HOURS_ALARM	= 0x05,
+	CMOS_RTC_REG_WEEK_DAY		= 0x06,
+	CMOS_RTC_REG_MONTH_DAY		= 0x07,
+	CMOS_RTC_REG_MONTH			= 0x08,
+	CMOS_RTC_REG_YEAR			= 0x09,
+	CMOS_RTC_REG_STATUS_A		= 0x0A,
+	CMOS_RTC_REG_STATUS_B		= 0x0B,
+	CMOS_RTC_REG_STATUS_C		= 0x0C
 } CMOS_RTC_REGISTERS;
 
 /**
@@ -44,9 +45,7 @@ typedef enum {
  * ST: stage divider
  * U: 1 = update in progress, 0 = time/date available
  */
-typedef enum {
-	CMOS_RTC_REG_A_UPDATE		= 0x80
-} CMOS_RTC_REG_A;
+typedef enum { CMOS_RTC_REG_A_UPDATE = 0x80 } CMOS_RTC_REG_A;
 
 /**
  * CMOS RTC Status Register B Layout
@@ -66,14 +65,14 @@ typedef enum {
  * CU: 1 = clock update disabled, 0 = update count normally
  */
 typedef enum {
-	CMOS_RTC_REG_B_DS			= 0x01,
-	CMOS_RTC_REG_B_24MODE		= 0x02,
-	CMOS_RTC_REG_B_BINARY		= 0x04,
-	CMOS_RTC_REG_B_SWF			= 0x08,
-	CMOS_RTC_REG_B_UEI			= 0x10,
-	CMOS_RTC_REG_B_AI			= 0x20,
-	CMOS_RTC_REG_B_PI			= 0x40,
-	CMOS_RTC_REG_B_CU			= 0x80
+	CMOS_RTC_REG_B_DS		= 0x01,
+	CMOS_RTC_REG_B_24MODE	= 0x02,
+	CMOS_RTC_REG_B_BINARY	= 0x04,
+	CMOS_RTC_REG_B_SWF		= 0x08,
+	CMOS_RTC_REG_B_UEI		= 0x10,
+	CMOS_RTC_REG_B_AI		= 0x20,
+	CMOS_RTC_REG_B_PI		= 0x40,
+	CMOS_RTC_REG_B_CU		= 0x80
 } CMOS_RTC_REG_B;
 
 #ifdef CONFIG_RTC

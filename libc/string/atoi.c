@@ -13,21 +13,20 @@ int atoi(char *str, int *error) {
 	if (str[i] == '-') {
 		sign = -1;
 		++i;
-	}
-	else if (str[i] == '+') {
+	} else if (str[i] == '+') {
 		++i;
 	}
 
 	for (; str[i] != '\0'; ++i) {
 		// check if char is not a number
 		if (str[i] < '0' || str[i] > '9') {
-            *error = 1;
-            return sign * res;
+			*error = 1;
+			return sign * res;
 		}
 
 		res = res * 10 + str[i] - '0';
 	}
 
-    *error = 0;
+	*error = 0;
 	return sign * res;
 }

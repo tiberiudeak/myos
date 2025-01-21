@@ -1,7 +1,7 @@
+#include <malloc.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
-#include <malloc.h>
 
 struct block_meta *metadata_blk_header = NULL;
 
@@ -14,16 +14,16 @@ struct block_meta *last_block = NULL;
  * requests INITIAL_REQ_SIZE bytes, that will be later managed internally.
  */
 void malloc_init(void) {
-    metadata_blk_header = sbrk(INITIAL_REQ_SIZE);
+	metadata_blk_header = sbrk(INITIAL_REQ_SIZE);
 
-    if (metadata_blk_header == (void*) -1) {
-        printf("sbrk error\n");
-        return;
-    }
+	if (metadata_blk_header == (void *) -1) {
+		printf("sbrk error\n");
+		return;
+	}
 
-    metadata_blk_header->size = ALIGN(INITIAL_REQ_SIZE) - METADATA_BLK_SIZE;
-    metadata_blk_header->status = STATUS_FREE;
-    metadata_blk_header->next = NULL;
+	metadata_blk_header->size = ALIGN(INITIAL_REQ_SIZE) - METADATA_BLK_SIZE;
+	metadata_blk_header->status = STATUS_FREE;
+	metadata_blk_header->next = NULL;
 }
 
 /**
@@ -37,22 +37,22 @@ void malloc_init(void) {
  * @return Block address that fits the requested size
  */
 void *malloc_best_fit(size_t size) {
-    struct block_meta *current = metadata_blk_header;
-    struct block_meta *best_fit = NULL;
-    size_t min = 0xFFFFFFFF;
+	struct block_meta *current = metadata_blk_header;
+	struct block_meta *best_fit = NULL;
+	size_t min = 0xFFFFFFFF;
 
-    while (current != NULL) {
-        if (size <= current->size && current->status == STATUS_FREE) {
-            if (current->size < min) {
-                min = current->size;
-                best_fit = current;
-            }
-        }
+	while (current != NULL) {
+		if (size <= current->size && current->status == STATUS_FREE) {
+			if (current->size < min) {
+				min = current->size;
+				best_fit = current;
+			}
+		}
 
-        current = current->next;
-    }
+		current = current->next;
+	}
 
-    return best_fit;
+	return best_fit;
 }
 
 #ifdef CONFIG_UVMM_FIRSTFIT
@@ -65,19 +65,19 @@ void *malloc_best_fit(size_t size) {
  * @param size The requested size
  *
  * @return Block address that fits the requested size
-*/
+ */
 void *malloc_first_fit(size_t size) {
-    struct block_meta *current = metadata_blk_header;
+	struct block_meta *current = metadata_blk_header;
 
-    while (current != NULL) {
-        if (size <= current->size && current->status == STATUS_FREE) {
-            return current;
-        }
+	while (current != NULL) {
+		if (size <= current->size && current->status == STATUS_FREE) {
+			return current;
+		}
 
-        current = current->next;
-    }
+		current = current->next;
+	}
 
-    return NULL;
+	return NULL;
 }
 #endif
 
@@ -91,24 +91,24 @@ void *malloc_first_fit(size_t size) {
  * @param size The requested size
  *
  * @return Block address that fits the requested size
-*/
+ */
 void *malloc_worst_fit(size_t size) {
-    struct block_meta *current = metadata_blk_header;
-    struct block_meta *worst_fit = NULL;
-    size_t max = 0;
+	struct block_meta *current = metadata_blk_header;
+	struct block_meta *worst_fit = NULL;
+	size_t max = 0;
 
-    while (current != NULL) {
-        if (size <= current->size && current->status == STATUS_FREE) {
-            if (current->size > max) {
-                max = current->size;
-                worst_fit = current;
-            }
-        }
+	while (current != NULL) {
+		if (size <= current->size && current->status == STATUS_FREE) {
+			if (current->size > max) {
+				max = current->size;
+				worst_fit = current;
+			}
+		}
 
-        current = current->next;
-    }
+		current = current->next;
+	}
 
-    return worst_fit;
+	return worst_fit;
 }
 #endif
 
@@ -124,30 +124,30 @@ void *malloc_worst_fit(size_t size) {
  * @param size The requested size
  *
  * @return Block address that fits the requested size
-*/
+ */
 void *malloc_next_fit(size_t size) {
-    struct block_meta *current = last_block;
+	struct block_meta *current = last_block;
 
-    while (current != NULL) {
-        if (size <= current->size && current->status == STATUS_FREE) {
-            return current;
-        }
+	while (current != NULL) {
+		if (size <= current->size && current->status == STATUS_FREE) {
+			return current;
+		}
 
-        current = current->next;
-    }
+		current = current->next;
+	}
 
-    current = metadata_blk_header;
+	current = metadata_blk_header;
 
-    while (current != last_block) {
-        if (size <= current->size && current->status == STATUS_FREE) {
-            last_block = current;
-            return current;
-        }
+	while (current != last_block) {
+		if (size <= current->size && current->status == STATUS_FREE) {
+			last_block = current;
+			return current;
+		}
 
-        current = current->next;
-    }
+		current = current->next;
+	}
 
-    return NULL;
+	return NULL;
 }
 #endif
 
@@ -158,21 +158,21 @@ void *malloc_next_fit(size_t size) {
  * prints their size and status.
  */
 void print_malloc_list(void) {
-    struct block_meta *tmp = metadata_blk_header;
+	struct block_meta *tmp = metadata_blk_header;
 
-    while (tmp != NULL) {
-        printf("size: %d, status %d\n", tmp->size, tmp->status);
-        tmp = tmp->next;
-    }
+	while (tmp != NULL) {
+		printf("size: %d, status %d\n", tmp->size, tmp->status);
+		tmp = tmp->next;
+	}
 }
 
 /**
- * @brief Split given block in two - one block that has the given size and another
- *          one that will have the remaining size
+ * @brief Split given block in two - one block that has the given size and
+ * another one that will have the remaining size
  *
- * This function splits the given block in two. The first block will have the given
- * size and the second one will have the remaining size (after the given size is
- * substracted from the initial size of the block).
+ * This function splits the given block in two. The first block will have the
+ * given size and the second one will have the remaining size (after the given
+ * size is substracted from the initial size of the block).
  *
  * @param block The block to be split
  * @param size  The size of the first block
@@ -180,17 +180,18 @@ void print_malloc_list(void) {
  * @return Address of data in the first block
  */
 void *malloc_split_block(struct block_meta *block, size_t size) {
-    struct block_meta *new_block = (void*) block + METADATA_BLK_SIZE + ALIGN(size);
+	struct block_meta *new_block =
+		(void *) block + METADATA_BLK_SIZE + ALIGN(size);
 
-    new_block->size = block->size - ALIGN(size) - METADATA_BLK_SIZE;
-    new_block->status = STATUS_FREE;
-    new_block->next = block->next;
+	new_block->size = block->size - ALIGN(size) - METADATA_BLK_SIZE;
+	new_block->status = STATUS_FREE;
+	new_block->next = block->next;
 
-    block->size = ALIGN(size);
-    block->status = STATUS_ALLOC;
-    block->next = new_block;
+	block->size = ALIGN(size);
+	block->status = STATUS_ALLOC;
+	block->next = new_block;
 
-    return (void*) block + METADATA_BLK_SIZE;
+	return (void *) block + METADATA_BLK_SIZE;
 }
 
 /**
@@ -205,47 +206,46 @@ void *malloc_split_block(struct block_meta *block, size_t size) {
  * @return 0 if successfully expanded memory, -1 otherwise
  */
 uint8_t expand_last_block(size_t size) {
-    struct block_meta *current = metadata_blk_header;
+	struct block_meta *current = metadata_blk_header;
 
-    while (current->next != NULL) {
-        current = current->next;
-    }
+	while (current->next != NULL) {
+		current = current->next;
+	}
 
-    if (current == NULL) {
-        return -1;
-    }
+	if (current == NULL) {
+		return -1;
+	}
 
-    if (current->status == STATUS_FREE) {
-        // expand last block
-        size_t needed_size = ALIGN(size) - current->size;
-        void *addr = sbrk(needed_size);
+	if (current->status == STATUS_FREE) {
+		// expand last block
+		size_t needed_size = ALIGN(size) - current->size;
+		void *addr = sbrk(needed_size);
 
-        if (addr == (void*) -1) {
-            printf("sbrk error\n");
-            return -1;
-        }
+		if (addr == (void *) -1) {
+			printf("sbrk error\n");
+			return -1;
+		}
 
-        current->size += ALIGN(needed_size);
-    }
-    else {
-        // add new block with new free memory
-        size_t needed_size = ALIGN(size) + METADATA_BLK_SIZE;
-        void *addr = sbrk(needed_size);
+		current->size += ALIGN(needed_size);
+	} else {
+		// add new block with new free memory
+		size_t needed_size = ALIGN(size) + METADATA_BLK_SIZE;
+		void *addr = sbrk(needed_size);
 
-        if (addr == (void*) -1) {
-            printf("sbrk error!\n");
-            return -1;
-        }
+		if (addr == (void *) -1) {
+			printf("sbrk error!\n");
+			return -1;
+		}
 
-        struct block_meta *new_block = (struct block_meta *) addr;
-        new_block->size = ALIGN(size);
-        new_block->status = STATUS_FREE;
-        new_block->next = NULL;
+		struct block_meta *new_block = (struct block_meta *) addr;
+		new_block->size = ALIGN(size);
+		new_block->status = STATUS_FREE;
+		new_block->next = NULL;
 
-        current->next = new_block;
-    }
+		current->next = new_block;
+	}
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -263,48 +263,50 @@ uint8_t expand_last_block(size_t size) {
 void *malloc(size_t size) {
 	struct block_meta *block = NULL;
 
-    if (size == 0)
-        return NULL;
+	if (size == 0) {
+		return NULL;
+	}
 
-    // init malloc structure
-    if (metadata_blk_header == NULL) {
-        malloc_init();
-    }
+	// init malloc structure
+	if (metadata_blk_header == NULL) {
+		malloc_init();
+	}
 
 alloc_malloc:
-    // find block for the requested size
+	// find block for the requested size
 #ifdef CONFIG_UVMM_BESTFIT
-    block = malloc_best_fit(size);
+	block = malloc_best_fit(size);
 #elif CONFIG_UVMM_FIRSTFIT
-    block = malloc_first_fit(size);
+	block = malloc_first_fit(size);
 #elif CONFIG_UVMM_WORSTFIT
-    block = malloc_worst_fit(size);
+	block = malloc_worst_fit(size);
 #elif CONFIG_UVMM_NEXTFIT
-    block = malloc_next_fit(size);
+	block = malloc_next_fit(size);
 #else
-    block = malloc_best_fit(size);
+	block = malloc_best_fit(size);
 #endif
 
-    if (block != NULL) {
-        // split block if possible and return address
-        // split block if at least 8 more bytes can be allocated
-        if (block->size - size >= METADATA_BLK_SIZE + ALIGN(1)) {
-            return malloc_split_block(block, size);
-        }
+	if (block != NULL) {
+		// split block if possible and return address
+		// split block if at least 8 more bytes can be allocated
+		if (block->size - size >= METADATA_BLK_SIZE + ALIGN(1)) {
+			return malloc_split_block(block, size);
+		}
 
-        //block cannot be split
-        block->status = STATUS_ALLOC;
-        return (void*) block + METADATA_BLK_SIZE;
-    }
+		// block cannot be split
+		block->status = STATUS_ALLOC;
+		return (void *) block + METADATA_BLK_SIZE;
+	}
 
-    // no best fit block found, increase program break with sbrk
-    int ret = expand_last_block(size);
+	// no best fit block found, increase program break with sbrk
+	int ret = expand_last_block(size);
 
-    // if last block expanded successfully, try to allocate again
-    if (ret == 0)
-        goto alloc_malloc;
+	// if last block expanded successfully, try to allocate again
+	if (ret == 0) {
+		goto alloc_malloc;
+	}
 
-    return NULL;
+	return NULL;
 }
 
 /**
@@ -318,41 +320,42 @@ alloc_malloc:
  * @param ptr   The virtual address
  */
 void free(void *ptr) {
-    if (ptr == NULL)
-        return;
+	if (ptr == NULL) {
+		return;
+	}
 
-    struct block_meta *current = metadata_blk_header;
-    struct block_meta *prev = NULL;
+	struct block_meta *current = metadata_blk_header;
+	struct block_meta *prev = NULL;
 
-    while (current != NULL) {
-        if ((void*) current + METADATA_BLK_SIZE == ptr) {
-            current->status = STATUS_FREE;
+	while (current != NULL) {
+		if ((void *) current + METADATA_BLK_SIZE == ptr) {
+			current->status = STATUS_FREE;
 
-            // coalesce blocks if possible
-            if (prev != NULL && prev->status == STATUS_FREE &&
-                current->next != NULL && current->next->status == STATUS_FREE) {
-                prev->size += current->size + current->next->size + 2 * METADATA_BLK_SIZE;
-                prev->next = current->next->next;
-                return;
-            }
+			// coalesce blocks if possible
+			if (prev != NULL && prev->status == STATUS_FREE &&
+				current->next != NULL && current->next->status == STATUS_FREE) {
+				prev->size +=
+					current->size + current->next->size + 2 * METADATA_BLK_SIZE;
+				prev->next = current->next->next;
+				return;
+			}
 
-            if (prev != NULL && prev->status == STATUS_FREE) {
-                prev->size += current->size + METADATA_BLK_SIZE;
-                prev->next = current->next;
-                return;
-            }
+			if (prev != NULL && prev->status == STATUS_FREE) {
+				prev->size += current->size + METADATA_BLK_SIZE;
+				prev->next = current->next;
+				return;
+			}
 
-            if (current->next != NULL && current->next->status == STATUS_FREE) {
-                current->size += current->next->size + METADATA_BLK_SIZE;
-                current->next = current->next->next;
-                return;
-            }
+			if (current->next != NULL && current->next->status == STATUS_FREE) {
+				current->size += current->next->size + METADATA_BLK_SIZE;
+				current->next = current->next->next;
+				return;
+			}
 
-            return;
-        }
+			return;
+		}
 
-        prev = current;
-        current = (struct block_meta *) current->next;
-    }
+		prev = current;
+		current = (struct block_meta *) current->next;
+	}
 }
-

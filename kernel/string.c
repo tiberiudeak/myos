@@ -13,126 +13,124 @@ int atoi(char *str, int *error) {
 	if (str[i] == '-') {
 		sign = -1;
 		++i;
-	}
-	else if (str[i] == '+') {
+	} else if (str[i] == '+') {
 		++i;
 	}
 
 	for (; str[i] != '\0'; ++i) {
 		// check if char is not a number
 		if (str[i] < '0' || str[i] > '9') {
-            *error = 1;
-            return sign * res;
+			*error = 1;
+			return sign * res;
 		}
 
 		res = res * 10 + str[i] - '0';
 	}
 
-    *error = 0;
+	*error = 0;
 	return sign * res;
 }
 
 // convert integer to string
 void intToStr(int x, char *str, int d) {
-    int i = 0;
-    if (x == 0) {
-        str[i++] = '0';
-        str[i] = '\0';
-        return;
-    }
+	int i = 0;
+	if (x == 0) {
+		str[i++] = '0';
+		str[i] = '\0';
+		return;
+	}
 
-    while (x) {
-        int rem = x % 10;
-        str[i++] = rem + '0';
-        x = x / 10;
-    }
+	while (x) {
+		int rem = x % 10;
+		str[i++] = rem + '0';
+		x = x / 10;
+	}
 
-    while (i < d) {
-        str[i++] = '0';
-    }
+	while (i < d) {
+		str[i++] = '0';
+	}
 
-    str[i] = '\0';
+	str[i] = '\0';
 
-    int start = 0;
-    int end = i - 1;
-    while (start < end) {
-        char temp = str[start];
-        str[start] = str[end];
-        str[end] = temp;
-        start++;
-        end--;
-    }
+	int start = 0;
+	int end = i - 1;
+	while (start < end) {
+		char temp = str[start];
+		str[start] = str[end];
+		str[end] = temp;
+		start++;
+		end--;
+	}
 }
 
 // pow function
 float pow(float x, int y) {
-    float res = 1.0;
-    for (int i = 0; i < y; i++) {
-        res *= x;
-    }
-    return res;
+	float res = 1.0;
+	for (int i = 0; i < y; i++) {
+		res *= x;
+	}
+	return res;
 }
 
 char *ftoa(float n, char *str, int afterpoint) {
-    int isNegative = 0;
+	int isNegative = 0;
 
-    if (n < 0) {
-        isNegative = 1;
-        n = -n;
-    }
+	if (n < 0) {
+		isNegative = 1;
+		n = -n;
+	}
 
-    int exponent = 0;
-    int mantissa = 0;
+	int exponent = 0;
+	int mantissa = 0;
 
-    // extract exponent: 8 bits from 23 to 30
-    exponent = (*(int *)&n >> 23) & 0xFF;
+	// extract exponent: 8 bits from 23 to 30
+	exponent = (*(int *) &n >> 23) & 0xFF;
 
-    // extract mantissa: 23 bits from 0 to 22
-    mantissa = *(int *)&n & 0x7FFFFF;
+	// extract mantissa: 23 bits from 0 to 22
+	mantissa = *(int *) &n & 0x7FFFFF;
 
-    // convert exponent to decimal
-    int exp = exponent - 127;
+	// convert exponent to decimal
+	int exp = exponent - 127;
 
-    // convert mantissa to decimal
-    float dec = 0.0;
-    for (int i = 0; i < 23; i++) {
-        if (mantissa & (1 << (22 - i))) {
-            dec += 1.0 / (1 << (i + 1));
-        }
-    }
+	// convert mantissa to decimal
+	float dec = 0.0;
+	for (int i = 0; i < 23; i++) {
+		if (mantissa & (1 << (22 - i))) {
+			dec += 1.0 / (1 << (i + 1));
+		}
+	}
 
-    // calculate the final number
-    float result = (1 + dec) * pow(2, exp);
+	// calculate the final number
+	float result = (1 + dec) * pow(2, exp);
 
-    // convert the number to string
-    intToStr((int)result, str, 0);
+	// convert the number to string
+	intToStr((int) result, str, 0);
 
-    // add the decimal point
-    if (afterpoint != 0) {
-        int len = strlen(str);
-       str[len] = '.';
-       str[len + 1] = '\0';
+	// add the decimal point
+	if (afterpoint != 0) {
+		int len = strlen(str);
+		str[len] = '.';
+		str[len + 1] = '\0';
 
-        // convert the decimal part to string
-        float decimal = result - (int)result;
-        for (int i = 0; i < afterpoint; i++) {
-            decimal *= 10;
-            str[len + 1 + i] = '0' + (int)decimal;
-            decimal -= (int)decimal;
-        }
-        str[len + 1 + afterpoint] = '\0';
-    }
+		// convert the decimal part to string
+		float decimal = result - (int) result;
+		for (int i = 0; i < afterpoint; i++) {
+			decimal *= 10;
+			str[len + 1 + i] = '0' + (int) decimal;
+			decimal -= (int) decimal;
+		}
+		str[len + 1 + afterpoint] = '\0';
+	}
 
-    if (isNegative) {
-        for (int i = strlen(str); i >= 0; i--) {
-            str[i + 1] = str[i];
-        }
-        str[0] = '-';
-    }
+	if (isNegative) {
+		for (int i = strlen(str); i >= 0; i--) {
+			str[i + 1] = str[i];
+		}
+		str[0] = '-';
+	}
 
-    return str;
+	return str;
 }
-
 
 /**
  * @brief Convert integer to string
@@ -142,7 +140,8 @@ char *ftoa(float n, char *str, int afterpoint) {
  * have a minus sign. For any other base, the number is considered unsigned.
  *
  * @param n		Number to be converted to string
- * @param str	Array in memory where to store the resulting null-terminated string
+ * @param str	Array in memory where to store the resulting null-terminated
+ * string
  * @param base	Numerical base to represent the number (10 = decimal, 16 = hexa)
  *
  * @return pointer to the resulting string, same as parameter str
@@ -168,8 +167,7 @@ char *itoa(int n, char *str, int base) {
 		str[i] = '\0';
 		reverse(str);
 		return str;
-	}
-	else if (base == 16) {
+	} else if (base == 16) {
 		unsigned int un = n;
 
 		do {
@@ -187,8 +185,7 @@ char *itoa(int n, char *str, int base) {
 
 		reverse(str);
 		return str;
-	}
-	else {
+	} else {
 		// unsupported base
 		return NULL;
 	}
@@ -205,8 +202,7 @@ int memcmp(const void *ptr1, const void *ptr2, size_t n) {
 	for (size_t i = 0; i < n; i++) {
 		if (temp1[i] > temp2[i]) {
 			return 1;
-		}
-		else if (temp1[i] < temp2[i]) {
+		} else if (temp1[i] < temp2[i]) {
 			return -1;
 		}
 	}
@@ -233,8 +229,7 @@ void *memmove(void *dest, const void *src, size_t n) {
 		while (n--) {
 			*d++ = *s++;
 		}
-	}
-	else {
+	} else {
 		size_t i = 0;
 
 		while (i < n) {
@@ -247,7 +242,6 @@ void *memmove(void *dest, const void *src, size_t n) {
 }
 // #pragma GCC push_options
 // #pragma GCC optimize ("01")
-
 
 void *memset(void *dest, int cons, size_t n) {
 	char *d = dest;
@@ -287,21 +281,21 @@ char *strcat(char *dest, const char *src) {
 }
 
 char *strchr(const char *str, int c) {
-  char *temp = (char *)str;
+	char *temp = (char *) str;
 
-  while (*temp != '\0') {
-    if (*temp == c) {
-      return temp;
-    }
+	while (*temp != '\0') {
+		if (*temp == c) {
+			return temp;
+		}
 
-    temp++;
-  }
+		temp++;
+	}
 
-  if (c == '\0') {
-    return temp;
-  }
+	if (c == '\0') {
+		return temp;
+	}
 
-  return NULL;
+	return NULL;
 }
 
 int strcmp(const char *s1, const char *s2) {
@@ -355,14 +349,14 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 		n--;
 	}
 
-    if (n == 0) {
-        return 0;
-    }
+	if (n == 0) {
+		return 0;
+	}
 
 	return *s1 - *s2;
 }
 
-char * strncpy(char *dest, const char *src, size_t n) {
+char *strncpy(char *dest, const char *src, size_t n) {
 	char *temp = dest;
 	size_t i;
 
@@ -378,64 +372,64 @@ char * strncpy(char *dest, const char *src, size_t n) {
 }
 
 char *strrchr(const char *str, int c) {
-  char *temp = (char *)str;
-  char *addr = NULL;
+	char *temp = (char *) str;
+	char *addr = NULL;
 
-  while (*temp != '\0') {
-    if (*temp == c) {
-      addr = temp;
-    }
+	while (*temp != '\0') {
+		if (*temp == c) {
+			addr = temp;
+		}
 
-    temp++;
-  }
+		temp++;
+	}
 
-  if (c == '\0') {
-    return temp;
-  }
+	if (c == '\0') {
+		return temp;
+	}
 
-  return addr;
+	return addr;
 }
 
 char *strrstr(const char *str1, const char *str2) {
-  char *addr = NULL;
+	char *addr = NULL;
 
-  while (*str1 != '\0') {
-    if (*str1 == *str2) {
-      char *temp1 = (char *)str1;
-      char *temp2 = (char *)str2;
+	while (*str1 != '\0') {
+		if (*str1 == *str2) {
+			char *temp1 = (char *) str1;
+			char *temp2 = (char *) str2;
 
-      while (*temp1 == *temp2 && *temp1 != '\0') {
-        temp1++;
-        temp2++;
-      }
+			while (*temp1 == *temp2 && *temp1 != '\0') {
+				temp1++;
+				temp2++;
+			}
 
-      if (*temp2 == '\0') {
-        addr = (char *)str1;
-      }
-    }
-    str1++;
-  }
+			if (*temp2 == '\0') {
+				addr = (char *) str1;
+			}
+		}
+		str1++;
+	}
 
-  return addr;
+	return addr;
 }
 
 char *strstr(const char *str1, const char *str2) {
-  while (*str1 != '\0') {
-    if (*str1 == *str2) {
-      char *temp1 = (char *)str1;
-      char *temp2 = (char *)str2;
+	while (*str1 != '\0') {
+		if (*str1 == *str2) {
+			char *temp1 = (char *) str1;
+			char *temp2 = (char *) str2;
 
-      while (*temp1 == *temp2 && *temp1 != '\0') {
-        temp1++;
-        temp2++;
-      }
+			while (*temp1 == *temp2 && *temp1 != '\0') {
+				temp1++;
+				temp2++;
+			}
 
-      if (*temp2 == '\0') {
-        return (char *)str1;
-      }
-    }
-    str1++;
-  }
+			if (*temp2 == '\0') {
+				return (char *) str1;
+			}
+		}
+		str1++;
+	}
 
-  return NULL;
+	return NULL;
 }

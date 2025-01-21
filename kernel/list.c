@@ -17,7 +17,7 @@ inline void list_init(struct embedded_link *l) {
  * @param new_node	node to be added
  */
 inline void list_add_front(struct embedded_link *list_h,
-				struct embedded_link *new_node) {
+						   struct embedded_link *new_node) {
 	new_node->next = list_h->next;
 	new_node->prev = list_h;
 	list_h->next->prev = new_node;
@@ -31,7 +31,7 @@ inline void list_add_front(struct embedded_link *list_h,
  * @param new_node	node to be added
  */
 inline void list_add_end(struct embedded_link *list_h,
-				struct embedded_link *new_node) {
+						 struct embedded_link *new_node) {
 	new_node->next = list_h;
 	new_node->prev = list_h->prev;
 	list_h->prev->next = new_node;
@@ -45,9 +45,8 @@ inline void list_add_end(struct embedded_link *list_h,
  * @param before	add new_node before this element
  * @param new_node	new node to be added
  */
-void list_add_before(struct embedded_link *list_h,
-		struct embedded_link *before, struct embedded_link *new_node) {
-
+void list_add_before(struct embedded_link *list_h, struct embedded_link *before,
+					 struct embedded_link *new_node) {
 	if (before->prev == list_h) {
 		list_add_front(list_h, new_node);
 	} else {
@@ -64,12 +63,11 @@ void list_add_before(struct embedded_link *list_h,
  * @param list_h	head of list
  * @param node		node to be deleted
  */
-void list_delete(struct embedded_link *list_h,
-				struct embedded_link *node) {
-
+void list_delete(struct embedded_link *list_h, struct embedded_link *node) {
 	// cannot delete list head
-	if (list_h == node)
+	if (list_h == node) {
 		return;
+	}
 
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
@@ -86,4 +84,3 @@ void list_delete(struct embedded_link *list_h,
 inline int list_is_empty(struct embedded_link *list_h) {
 	return list_h->next == list_h;
 }
-

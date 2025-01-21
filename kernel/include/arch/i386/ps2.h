@@ -5,20 +5,20 @@
 
 #include <stdint.h>
 
-#define PS2_DATA_PORT				0x60
-#define PS2_COMMAND_PORT			0x64
+#define PS2_DATA_PORT			0x60
+#define PS2_COMMAND_PORT		0x64
 
-#define PS2_DISABLE_FIRST_PORT		0xAD
-#define PS2_ENABLE_FIRST_PORT		0xAE
+#define PS2_DISABLE_FIRST_PORT	0xAD
+#define PS2_ENABLE_FIRST_PORT	0xAE
 
-#define PS2_DISABLE_SECOND_PORT		0xA7
-#define PS2_ENABLE_SECOND_PORT		0xA8
+#define PS2_DISABLE_SECOND_PORT 0xA7
+#define PS2_ENABLE_SECOND_PORT	0xA8
 
-#define PS2_READ_CCB				0x20
-#define PS2_WRITE_CCB				0x60
-#define PS2_TEST_CONTROLLER			0xAA
-#define PS2_TEST_FIRST_PORT			0xAB
-#define PS2_TEST_SECOND_PORT		0xA9
+#define PS2_READ_CCB			0x20
+#define PS2_WRITE_CCB			0x60
+#define PS2_TEST_CONTROLLER		0xAA
+#define PS2_TEST_FIRST_PORT		0xAB
+#define PS2_TEST_SECOND_PORT	0xA9
 
 /**
  * Status Register
@@ -58,11 +58,11 @@
  * FTP: first port translation; 1 = enabled, 0 = disabled
  */
 typedef enum {
-	PS2_CCB_FPI				= 0x01,
-	PS2_CCB_SPI				= 0x02,
-	PS2_CCB_FPC				= 0x10,
-	PS2_CCB_SPC				= 0x20,
-	PS2_CCB_FPT				= 0x40
+	PS2_CCB_FPI = 0x01,
+	PS2_CCB_SPI = 0x02,
+	PS2_CCB_FPC = 0x10,
+	PS2_CCB_SPC = 0x20,
+	PS2_CCB_FPT = 0x40
 } PS2_CCB;
 
 /**
@@ -81,7 +81,7 @@ typedef enum {
  * OB2: output buffer full with byte from second port (IRQ12)
  * FPC: first port clock (output)
  * FPD: first port data (output)
-*/
+ */
 
 int PS2_init(void);
 void PS2_disable_devices(void);

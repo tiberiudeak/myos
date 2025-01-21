@@ -1,6 +1,6 @@
 #include <string.h>
 
-char * strncpy(char *dest, const char *src, size_t n) {
+char *strncpy(char *dest, const char *src, size_t n) {
 	char *temp = dest;
 	size_t i;
 

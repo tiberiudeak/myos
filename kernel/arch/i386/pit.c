@@ -1,13 +1,13 @@
+#include <arch/i386/irq.h>
 #include <arch/i386/isr.h>
 #include <arch/i386/pit.h>
-#include <arch/i386/irq.h>
+#include <kernel/elf.h>
 #include <kernel/io.h>
 #include <kernel/list.h>
 #include <kernel/tty.h>
+#include <mm/kmalloc.h>
 #include <process/process.h>
 #include <process/scheduler.h>
-#include <mm/kmalloc.h>
-#include <kernel/elf.h>
 
 uint32_t ticks;
 uint32_t uptime;
@@ -33,15 +33,16 @@ void *kstack_to_free;
 void PIT_IRQ0_handler(struct interrupt_regs *r) {
 	struct delta_queue_node *dqn;
 	struct task_struct *ts;
-    uint8_t ret = 0;
+	uint8_t ret = 0;
 	int prev_ring;
 
 	ticks++;
 	uptime++;
 
 #ifndef CONFIG_FCFS_SCH
-	if (!scheduler_initialized)
+	if (!scheduler_initialized) {
 		return;
+	}
 
 	if (kstack_to_free != NULL) {
 		kfree(kstack_to_free - KSTACK_SIZE);
@@ -55,7 +56,8 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 	if (!list_is_empty(&sleep_task_dqueue)) {
 		dq_decrement_head(&sleep_task_dqueue);
 
-		dqn = list_get_entry(sleep_task_dqueue.next, struct delta_queue_node, list);
+		dqn = list_get_entry(sleep_task_dqueue.next, struct delta_queue_node,
+							 list);
 
 		if (dqn->delta_time_ms <= 0) {
 			ts = dq_dequeue(&sleep_task_dqueue);
@@ -63,30 +65,31 @@ void PIT_IRQ0_handler(struct interrupt_regs *r) {
 		}
 	}
 
-    // if there is at least one task in the queue, this means that a new task was
-    // added in the queue (the init task is currently executing, so the queue is empty)
-    if ((current_running_task->run_time >= running_time_quantum_ms &&
-			!list_is_empty(&task_queue)) || (current_running_task->state == TASK_TERMINATED)) {
-
-        // save current running task's context
-        if (current_running_task->state != TASK_TERMINATED) {
+	// if there is at least one task in the queue, this means that a new task
+	// was added in the queue (the init task is currently executing, so the
+	// queue is empty)
+	if ((current_running_task->run_time >= running_time_quantum_ms &&
+		 !list_is_empty(&task_queue)) ||
+		(current_running_task->state == TASK_TERMINATED)) {
+		// save current running task's context
+		if (current_running_task->state != TASK_TERMINATED) {
 			save_current_context(r);
 
-            // change task state from RUNNING to READY
-            current_running_task->state = TASK_READY;
+			// change task state from RUNNING to READY
+			current_running_task->state = TASK_READY;
 
 			// reset run time
 			current_running_task->run_time = 0;
-        } else {
+		} else {
 			// if task finished execution, free memory
 			kstack_to_free = current_running_task->kstack;
-            destroy_task(current_running_task);
-            current_running_task = NULL;
+			destroy_task(current_running_task);
+			current_running_task = NULL;
 		}
 
-rr_sch:
-        // call scheduler
-        schedule(RUNNING_TASK_QUEUE);
+	rr_sch:
+		// call scheduler
+		schedule(RUNNING_TASK_QUEUE);
 
 		if (prev_ring == 0 && current_running_task->ring == 3) {
 			irq_prob = MANUAL_PUSH;
@@ -94,36 +97,38 @@ rr_sch:
 			irq_prob = MANUAL_POP;
 		}
 
-        // prepare elf execution if user space process
-        if (current_running_task->vas != NULL && current_running_task->state == TASK_CREATED) {
-            ret = prepare_elf_execution(current_running_task->argc, current_running_task->argv);
+		// prepare elf execution if user space process
+		if (current_running_task->vas != NULL &&
+			current_running_task->state == TASK_CREATED) {
+			ret = prepare_elf_execution(current_running_task->argc,
+										current_running_task->argv);
 
-            if (ret) {
-                // failed to prepare elf file, terminate task and call scheduler again
-                current_running_task = NULL;
-                current_running_task->state = TASK_TERMINATED;
-                goto rr_sch;
-            }
-        }
+			if (ret) {
+				// failed to prepare elf file, terminate task and call scheduler
+				// again
+				current_running_task = NULL;
+				current_running_task->state = TASK_TERMINATED;
+				goto rr_sch;
+			}
+		}
 
-        // update registers on the stack (context) for the new task
-        if (current_running_task->state == TASK_CREATED) {
+		// update registers on the stack (context) for the new task
+		if (current_running_task->state == TASK_CREATED) {
 			if (current_running_task->ring == 3) {
 				change_context(r, irq_prob);
 			} else if (current_running_task->ring == 0) {
 				change_context_kernel(r);
 				irq_prob |= CHANGE_KSTACK;
 			}
-        }
-        else {
-            resume_context(r, irq_prob);
+		} else {
+			resume_context(r, irq_prob);
 			if (current_running_task->ring == 0) {
 				irq_prob |= RESUME_KSTACK;
 			}
-        }
+		}
 
-        current_running_task->state = TASK_RUNNING;
-    }
+		current_running_task->state = TASK_RUNNING;
+	}
 #endif /* !CONFIG_FCFS_SCH */
 }
 
@@ -133,7 +138,7 @@ rr_sch:
  * @return The generated number
  */
 uint32_t random(void) {
-    return ((uptime * 214013L + 2531011L) >> 16) & 0x7FFF;
+	return ((uptime * 214013L + 2531011L) >> 16) & 0x7FFF;
 }
 
 /**
@@ -143,7 +148,6 @@ uint32_t random(void) {
  * of one millisecond, then configures the PIT and install the handler for IRQ0.
  */
 void PIT_init() {
-
 	uint32_t divisor = PIT_FREQ / 1000;
 
 	port_byte_out(COMMAND_PORT, PIT_CW_RL_LSB_MSB | PIT_CW_MODE3);
@@ -152,11 +156,10 @@ void PIT_init() {
 	port_byte_out(CH0_DATA_PORT, divisor & 0xFF);
 	port_byte_out(CH0_DATA_PORT, (divisor >> 8) & 0xFF);
 
-
 	ticks = 0;
 	uptime = 0;
 
-    void (*timer_handler)(struct interrupt_regs *r) = PIT_IRQ0_handler;
+	void (*timer_handler)(struct interrupt_regs *r) = PIT_IRQ0_handler;
 	irq_install_handler(0, timer_handler);
 }
 
@@ -171,7 +174,9 @@ void PIT_init() {
 void wait_millis(uint16_t millis) {
 	uint32_t current_ticks = ticks;
 
-	while (ticks - current_ticks < millis) __asm__ __volatile__ ("sti; hlt; cli");
+	while (ticks - current_ticks < millis) {
+		__asm__ __volatile__("sti; hlt; cli");
+	}
 }
 
 /**

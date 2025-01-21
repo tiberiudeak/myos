@@ -4,24 +4,24 @@
 #include <stdint.h>
 
 typedef enum {
-	READ_WITH_RETRY				= 0x20,
-	WRITE_WITH_RETRY			= 0x30
+	READ_WITH_RETRY		= 0x20,
+	WRITE_WITH_RETRY	= 0x30
 } ATA_PIO_COMMANDS;
 
-#define ATA_PIO_PR_BASE			0x1F0
-#define ATA_PIO_PR_CTRL_BASE	0x3F7
+#define ATA_PIO_PR_BASE		  0x1F0
+#define ATA_PIO_PR_CTRL_BASE  0x3F7
 
-#define ATA_PIO_SEC_BASE		0x170
-#define ATA_PIO_SEC_CTRL_BASE	0x376
+#define ATA_PIO_SEC_BASE	  0x170
+#define ATA_PIO_SEC_CTRL_BASE 0x376
 
-#define ATA_PIO_PR_DR			(ATA_PIO_PR_BASE + 0)	// data reg
-#define ATA_PIO_PR_ER			(ATA_PIO_PR_BASE + 1)	// error reg
-#define ATA_PIO_PR_SCR			(ATA_PIO_PR_BASE + 2)	// sector count reg
-#define ATA_PIO_PR_SNR			(ATA_PIO_PR_BASE + 3)	// sector number reg
-#define ATA_PIO_PR_CLR			(ATA_PIO_PR_BASE + 4)	// cylinder low reg
-#define ATA_PIO_PR_CHR			(ATA_PIO_PR_BASE + 5)	// cylinder high
-#define ATA_PIO_PR_DHR			(ATA_PIO_PR_BASE + 6)	// drive/head reg
-#define ATA_PIO_PR_SR			(ATA_PIO_PR_BASE + 7)	// status/command reg
+#define ATA_PIO_PR_DR		  (ATA_PIO_PR_BASE + 0) // data reg
+#define ATA_PIO_PR_ER		  (ATA_PIO_PR_BASE + 1) // error reg
+#define ATA_PIO_PR_SCR		  (ATA_PIO_PR_BASE + 2) // sector count reg
+#define ATA_PIO_PR_SNR		  (ATA_PIO_PR_BASE + 3) // sector number reg
+#define ATA_PIO_PR_CLR		  (ATA_PIO_PR_BASE + 4) // cylinder low reg
+#define ATA_PIO_PR_CHR		  (ATA_PIO_PR_BASE + 5) // cylinder high
+#define ATA_PIO_PR_DHR		  (ATA_PIO_PR_BASE + 6) // drive/head reg
+#define ATA_PIO_PR_SR		  (ATA_PIO_PR_BASE + 7) // status/command reg
 
 /**
  * Error Register Layout
@@ -58,9 +58,7 @@ typedef enum {
  * RDY: bit is clear when drive is spun down or after an error
  * BSY: the drive is preparing to send/receive data
  */
-typedef enum {
-	ATA_PIO_SR_BSY			= 0x80
-} ATA_PIO_STATUS_REG;
+typedef enum { ATA_PIO_SR_BSY = 0x80 } ATA_PIO_STATUS_REG;
 
 uint8_t read_sectors(uint32_t, uint32_t, uint32_t);
 uint8_t write_sectors(uint32_t, uint32_t, uint32_t);

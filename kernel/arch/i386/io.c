@@ -1,5 +1,6 @@
-#include <stdint.h>
 #include <kernel/io.h>
+
+#include <stdint.h>
 
 #define UNUSED_PORT 0x80
 
@@ -15,7 +16,7 @@
  */
 uint8_t port_byte_in(uint16_t port) {
 	uint8_t result;
-	__asm__("in %%dx, %%al" : "=a" (result) : "d" (port));
+	__asm__("in %%dx, %%al" : "=a"(result) : "d"(port));
 
 	return result;
 }
@@ -29,7 +30,7 @@ uint8_t port_byte_in(uint16_t port) {
  * @param port  The 16-bit I/O port number to which to write the byte.
  */
 void port_byte_out(uint16_t port, uint8_t data) {
-	__asm__("out %%al, %%dx" : : "a" (data), "d" (port));
+	__asm__("out %%al, %%dx" : : "a"(data), "d"(port));
 }
 
 /**
@@ -44,7 +45,7 @@ void port_byte_out(uint16_t port, uint8_t data) {
  */
 uint16_t port_word_in(uint16_t port) {
 	uint16_t result;
-	__asm__("in %%dx, %%ax" : "=a" (result) : "d" (port));
+	__asm__("in %%dx, %%ax" : "=a"(result) : "d"(port));
 
 	return result;
 }
@@ -58,7 +59,7 @@ uint16_t port_word_in(uint16_t port) {
  * @param port  The 16-bit I/O port number to which to write the word.
  */
 void port_word_out(uint16_t port, uint16_t data) {
-	__asm__("out %%ax, %%dx" : : "a" (data), "d" (port));
+	__asm__("out %%ax, %%dx" : : "a"(data), "d"(port));
 }
 
 /**

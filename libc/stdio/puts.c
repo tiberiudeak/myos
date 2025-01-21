@@ -8,6 +8,6 @@
  *
  * @param str  The string to be written.
  */
-int puts(const char* str) {
+int puts(const char *str) {
 	return printf("%s\n", str);
 }

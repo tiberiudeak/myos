@@ -11,8 +11,7 @@ int memcmp(const void *ptr1, const void *ptr2, size_t n) {
 	for (size_t i = 0; i < n; i++) {
 		if (temp1[i] > temp2[i]) {
 			return 1;
-		}
-		else if (temp1[i] < temp2[i]) {
+		} else if (temp1[i] < temp2[i]) {
 			return -1;
 		}
 	}

@@ -10,5 +10,5 @@
  * @param millis Number of milliseconds to wait
  */
 void sleep(uint16_t millis) {
-	__asm__ __volatile__ ("int $0x80" : : "a"(2), "b"(millis));
+	__asm__ __volatile__("int $0x80" : : "a"(2), "b"(millis));
 }

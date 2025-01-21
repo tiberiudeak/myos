@@ -8,7 +8,8 @@
  * have a minus sign. For any other base, the number is considered unsigned.
  *
  * @param n		Number to be converted to string
- * @param str	Array in memory where to store the resulting null-terminated string
+ * @param str	Array in memory where to store the resulting null-terminated
+ * string
  * @param base	Numerical base to represent the number (10 = decimal, 16 = hexa)
  *
  * @return pointer to the resulting string, same as parameter str
@@ -34,8 +35,7 @@ char *itoa(int n, char *str, int base) {
 		str[i] = '\0';
 		reverse(str);
 		return str;
-	}
-	else if (base == 16) {
+	} else if (base == 16) {
 		unsigned int un = n;
 
 		do {
@@ -53,8 +53,7 @@ char *itoa(int n, char *str, int base) {
 
 		reverse(str);
 		return str;
-	}
-	else {
+	} else {
 		// unsupported base
 		return NULL;
 	}

@@ -1,5 +1,6 @@
 #include <arch/i386/pic.h>
 #include <kernel/io.h>
+
 #include <stdint.h>
 
 /**
@@ -133,7 +134,8 @@ static uint16_t __PIC_get_irq_reg(uint8_t ocw3) {
 	port_byte_out(PIC1_COMMAND_PORT, ocw3);
 	port_byte_out(PIC2_COMMAND_PORT, ocw3);
 
-	return (port_byte_in(PIC2_COMMAND_PORT << 8) | port_byte_in(PIC1_COMMAND_PORT));
+	return (port_byte_in(PIC2_COMMAND_PORT << 8) |
+			port_byte_in(PIC1_COMMAND_PORT));
 }
 
 /**

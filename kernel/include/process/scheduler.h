@@ -1,15 +1,16 @@
 #ifndef _SCH_H
 #define _SCH_H 1
 
-#include <process/process.h>
 #include <arch/i386/isr.h>
 #include <kernel/list.h>
+#include <process/process.h>
+
 #include <stdint.h>
 
 // node in the task queue
 struct task_node {
-    struct task_struct *task;
-    struct embedded_link list;
+	struct task_struct *task;
+	struct embedded_link list;
 };
 
 /*
@@ -34,10 +35,7 @@ struct delta_queue_node {
 	struct embedded_link list;
 };
 
-typedef enum {
-	RUNNING_TASK_QUEUE,
-	SLEEPING_TASK_QUEUE
-} QUEUE_TYPE;
+typedef enum { RUNNING_TASK_QUEUE, SLEEPING_TASK_QUEUE } QUEUE_TYPE;
 
 /*
  * Problems that might appear when switching tasks
@@ -118,11 +116,11 @@ typedef enum {
  * state before performing the IRET.
  */
 typedef enum {
-	NO_PROBLEM			= 0x0,
-	MANUAL_PUSH			= 0x1,
-	MANUAL_POP			= 0x2,
-	CHANGE_KSTACK		= 0x4,
-	RESUME_KSTACK		= 0x8
+	NO_PROBLEM = 0x0,
+	MANUAL_PUSH = 0x1,
+	MANUAL_POP = 0x2,
+	CHANGE_KSTACK = 0x4,
+	RESUME_KSTACK = 0x8
 } TASK_SWITCH_STACK_PROBLEM;
 
 void enqueue_task(struct task_struct *);
@@ -148,4 +146,3 @@ void dq_enqueue(struct embedded_link *, struct task_struct *);
 #endif
 
 #endif /* !_SCH_H */
-

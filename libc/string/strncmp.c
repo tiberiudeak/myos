@@ -7,9 +7,9 @@ int strncmp(const char *s1, const char *s2, size_t n) {
 		n--;
 	}
 
-    if (n == 0) {
-        return 0;
-    }
+	if (n == 0) {
+		return 0;
+	}
 
 	return *s1 - *s2;
 }

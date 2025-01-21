@@ -1,10 +1,10 @@
-#include <arch/i386/idt.h>
 #include <arch/i386/gdt.h>
+#include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
 
-void *irq_routines[16] = { 0 };
+void *irq_routines[16] = {0};
 
 /**
  * @brief Install a new handler for the given IRQ.
@@ -57,20 +57,36 @@ void irq_handler(struct interrupt_regs *r) {
  * Interrupt Descriptor Table (IDT).
  */
 void add_irqs_to_idt() {
-	set_idt_gate(32, (uint32_t)irq0, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(33, (uint32_t)irq1, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(34, (uint32_t)irq2, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(35, (uint32_t)irq3, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(36, (uint32_t)irq4, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(37, (uint32_t)irq5, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(38, (uint32_t)irq6, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(39, (uint32_t)irq7, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(40, (uint32_t)irq8, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(41, (uint32_t)irq9, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(42, (uint32_t)irq10, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(43, (uint32_t)irq11, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(44, (uint32_t)irq12, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(45, (uint32_t)irq13, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(46, (uint32_t)irq14, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
-	set_idt_gate(47, (uint32_t)irq15, KERNEL_CS, IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(32, (uint32_t) irq0, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(33, (uint32_t) irq1, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(34, (uint32_t) irq2, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(35, (uint32_t) irq3, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(36, (uint32_t) irq4, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(37, (uint32_t) irq5, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(38, (uint32_t) irq6, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(39, (uint32_t) irq7, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(40, (uint32_t) irq8, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(41, (uint32_t) irq9, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(42, (uint32_t) irq10, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(43, (uint32_t) irq11, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(44, (uint32_t) irq12, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(45, (uint32_t) irq13, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(46, (uint32_t) irq14, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
+	set_idt_gate(47, (uint32_t) irq15, KERNEL_CS,
+				 IDT_FLAGS_32BIT_INT | IDT_FLAGS_RING0 | IDT_FLAGS_PRESENT);
 }

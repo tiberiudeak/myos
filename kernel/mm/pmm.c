@@ -1,15 +1,16 @@
 /* Physical memory manager */
-#include <mm/pmm.h>
-#include <kernel/tty.h>
-#include <stddef.h>
 #include <kernel/string.h>
+#include <kernel/tty.h>
+#include <mm/pmm.h>
+
+#include <stddef.h>
 
 static uint32_t *bitmap;
 static uint32_t bitmap_size;
 static uint32_t max_blocks;
 static uint32_t used_blocks;
 
-//atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
+// atomic_flag pmm_lock = ATOMIC_FLAG_INIT;
 
 int ceil(int a, int b) {
 	return (a + b - 1) / b;
@@ -22,15 +23,16 @@ int ceil(int a, int b) {
  * by the bootloader that starts at address 0x1004.
  */
 void print_mem_map() {
-	uint32_t *nr_entries = (uint32_t*) MEM_MAP_NR_ENTRIES_ADDRESS;
+	uint32_t *nr_entries = (uint32_t *) MEM_MAP_NR_ENTRIES_ADDRESS;
 	int offset = 0;
 
 	for (size_t i = 0; i < *nr_entries; i++) {
-		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
+		struct mem_map_entry *mem_map_entry =
+			(struct mem_map_entry *) MEM_MAP_ADDRESS + offset;
 
 		printk("E820: mem [%llx-%llx] %s\n", mem_map_entry->base_addr,
-			mem_map_entry->base_addr + mem_map_entry->region_length - 1,
-			mem_map_entry->region_type == 1 ? "usable" : "reserved");
+			   mem_map_entry->base_addr + mem_map_entry->region_length - 1,
+			   mem_map_entry->region_type == 1 ? "usable" : "reserved");
 
 		offset += 1;
 	}
@@ -45,7 +47,8 @@ void print_mem_map() {
  * 						obtained by dividing the address to the BLOCK_SIZE
  */
 void __set_block(uint32_t block_index) {
-	// first get the 32-bit chunk of indices in the bitmap where the given index is
+	// first get the 32-bit chunk of indices in the bitmap where the given index
+	// is
 	uint32_t indices_chunk = block_index / 32;
 
 	// get the offset of the index in the chunk
@@ -64,7 +67,8 @@ void __set_block(uint32_t block_index) {
  * 						obtained by dividing the address to the BLOCK_SIZE
  */
 void __unset_block(uint32_t block_index) {
-	// first get the 32-bit chunk of indices in the bitmap where the given index is
+	// first get the 32-bit chunk of indices in the bitmap where the given index
+	// is
 	uint32_t indices_chunk = block_index / 32;
 
 	// get the offset of the index in the chunk
@@ -77,15 +81,16 @@ void __unset_block(uint32_t block_index) {
 /**
  * @brief Get bit at block_index in the bitmap
  *
- * This function returns the state of the bit describing the block at block_index
- * index in the bitmap.
+ * This function returns the state of the bit describing the block at
+ * block_index index in the bitmap.
  *
  * @param block_index 	The index of the block to be freed. The index is
  * 						obtained by dividing the address to the BLOCK_SIZE
  * @return 0 if the bit is unset, 1 otherwise
  */
 uint8_t __get_bit(uint32_t block_index) {
-	// first get the 32-bit chunk of indices in the bitmap where the given index is
+	// first get the 32-bit chunk of indices in the bitmap where the given index
+	// is
 	uint32_t indices_chunk = block_index / 32;
 
 	// get the offset of the index in the chunk
@@ -137,19 +142,21 @@ void __mark_region_reserved(uint32_t base_addr, uint32_t size) {
 /**
  * @brief Mark regions from the memory map as free or reserved in the bitmap
  *
- * This function goes through the memory map created by E820 two times, the first
- * time marking the free blocks and the second time the reserved ones. This ensures
- * that overlapping parts in the map will be reserved.
+ * This function goes through the memory map created by E820 two times, the
+ * first time marking the free blocks and the second time the reserved ones.
+ * This ensures that overlapping parts in the map will be reserved.
  */
 void mark_e820_regions() {
-	uint32_t *nr_entries = (uint32_t*) MEM_MAP_NR_ENTRIES_ADDRESS;
+	uint32_t *nr_entries = (uint32_t *) MEM_MAP_NR_ENTRIES_ADDRESS;
 	int offset = 0;
 
-	for(size_t i = 0; i < *nr_entries; i++) {
-		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
+	for (size_t i = 0; i < *nr_entries; i++) {
+		struct mem_map_entry *mem_map_entry =
+			(struct mem_map_entry *) MEM_MAP_ADDRESS + offset;
 
 		if (mem_map_entry->region_type == 1) {
-			__mark_region_free(mem_map_entry->base_addr, mem_map_entry->region_length);
+			__mark_region_free(mem_map_entry->base_addr,
+							   mem_map_entry->region_length);
 		}
 
 		offset++;
@@ -157,11 +164,13 @@ void mark_e820_regions() {
 
 	offset = 0;
 
-	for(size_t i = 0; i < *nr_entries; i++) {
-		struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + offset;
+	for (size_t i = 0; i < *nr_entries; i++) {
+		struct mem_map_entry *mem_map_entry =
+			(struct mem_map_entry *) MEM_MAP_ADDRESS + offset;
 
 		if (mem_map_entry->region_type != 1) {
-			__mark_region_reserved(mem_map_entry->base_addr, mem_map_entry->region_length);
+			__mark_region_reserved(mem_map_entry->base_addr,
+								   mem_map_entry->region_length);
 		}
 
 		offset++;
@@ -186,18 +195,17 @@ uint8_t pmm_self_test() {
 	printk("Allocating one block (4K)");
 #endif
 	// request one block (4K)
-	uint32_t *a = (uint32_t*) allocate_blocks(1);
+	uint32_t *a = (uint32_t *) allocate_blocks(1);
 
 	if ((test_free_blocks == 0 && a != NULL) ||
-         (test_free_blocks > 0 && a == NULL) ||
-         (a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) ||
-         (a != NULL && used_blocks - test_used_blocks != 1)) {
+		(test_free_blocks > 0 && a == NULL) ||
+		(a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) ||
+		(a != NULL && used_blocks - test_used_blocks != 1)) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\t\tFAILED\n");
 #endif
-        return 1;
-	}
-	else {
+		return 1;
+	} else {
 #ifdef CONFIG_VERBOSE
 		printkc(2, "\t\t\tOK\n");
 #endif
@@ -208,18 +216,17 @@ uint8_t pmm_self_test() {
 #ifdef CONFIG_VERBOSE
 	printk("Allocating two more blocks (8K)");
 #endif
-	uint32_t *b = (uint32_t*) allocate_blocks(2);
+	uint32_t *b = (uint32_t *) allocate_blocks(2);
 
 	if ((test_free_blocks < 2 && b != NULL) ||
-            (test_free_blocks > 2 && b == NULL) ||
-            (b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) ||
-            (b != NULL && used_blocks - test_used_blocks != 2)) {
+		(test_free_blocks > 2 && b == NULL) ||
+		(b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) ||
+		(b != NULL && used_blocks - test_used_blocks != 2)) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\t\tFAILED\n");
 #endif
-        return 1;
-	}
-	else {
+		return 1;
+	} else {
 #ifdef CONFIG_VERBOSE
 		printkc(2, "\t\tOK\n");
 #endif
@@ -233,19 +240,17 @@ uint8_t pmm_self_test() {
 	free_blocks(a, 1);
 
 	if (((max_blocks - used_blocks) - test_free_blocks != 1) ||
-            (test_used_blocks - used_blocks != 1)) {
+		(test_used_blocks - used_blocks != 1)) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\t\t\tFAILED\n");
 #endif
-        return 1;
-	}
-	else if (*a != 0x01010101) {
+		return 1;
+	} else if (*a != 0x01010101) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\t\t\t\t\tFAILED\n");
 #endif
-        return 1;
-	}
-	else {
+		return 1;
+	} else {
 #ifdef CONFIG_VERBOSE
 		printkc(2, "\t\t\t\t\tOK\n");
 #endif
@@ -259,19 +264,17 @@ uint8_t pmm_self_test() {
 	free_blocks(b, 2);
 
 	if (((max_blocks - used_blocks) - test_free_blocks != 2) ||
-            (test_used_blocks - used_blocks != 2)) {
+		(test_used_blocks - used_blocks != 2)) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\tFAILED\n");
 #endif
-        return 1;
-	}
-	else if (*b != 0x01010101) {
+		return 1;
+	} else if (*b != 0x01010101) {
 #ifdef CONFIG_VERBOSE
 		printkc(4, "\tFAILED\n");
 #endif
-        return 1;
-	}
-	else {
+		return 1;
+	} else {
 #ifdef CONFIG_VERBOSE
 		printkc(2, "\tOK\n");
 #endif
@@ -279,7 +282,7 @@ uint8_t pmm_self_test() {
 		test_used_blocks -= 2;
 	}
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -299,12 +302,14 @@ uint8_t initialize_memory(void) {
 	uint64_t base_address;
 	uint64_t end_address;
 
-	struct mem_map_entry *mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS;
-	uint32_t *nr_entries = (uint32_t*) MEM_MAP_NR_ENTRIES_ADDRESS;
+	struct mem_map_entry *mem_map_entry =
+		(struct mem_map_entry *) MEM_MAP_ADDRESS;
+	uint32_t *nr_entries = (uint32_t *) MEM_MAP_NR_ENTRIES_ADDRESS;
 
 	base_address = mem_map_entry->base_addr;
 
-	mem_map_entry = (struct mem_map_entry*) MEM_MAP_ADDRESS + (*nr_entries - 1);
+	mem_map_entry =
+		(struct mem_map_entry *) MEM_MAP_ADDRESS + (*nr_entries - 1);
 	end_address = mem_map_entry->base_addr + mem_map_entry->region_length - 1;
 
 	uint32_t total_ram_size = end_address - base_address;
@@ -320,7 +325,7 @@ uint8_t initialize_memory(void) {
 	printk("bitmap size in bytes: %d\n", bitmap_size);
 #endif
 
-	bitmap = (uint32_t*) BITMAP_ADDRESS;
+	bitmap = (uint32_t *) BITMAP_ADDRESS;
 	max_blocks = total_ram_size / BLOCK_SIZE;
 	used_blocks = max_blocks;
 
@@ -351,8 +356,9 @@ uint8_t initialize_memory(void) {
  *
  * @param req_num_blocks Required number of blocks
  *
- * @return 	starting block of the found region. The function returns 0 if no such
- * 			region has been found (0 is safe to return, as block 0 is always reserved)
+ * @return 	starting block of the found region. The function returns 0 if no
+ * such region has been found (0 is safe to return, as block 0 is always
+ * reserved)
  */
 uint32_t __find_first_fit(uint32_t req_num_blocks) {
 	uint32_t current_number_of_free_blocks = 0;
@@ -367,8 +373,7 @@ uint32_t __find_first_fit(uint32_t req_num_blocks) {
 			if (current_number_of_free_blocks >= req_num_blocks) {
 				return starting_block;
 			}
-		}
-		else {
+		} else {
 			current_number_of_free_blocks = 0;
 			starting_block = i + 1;
 		}
@@ -410,7 +415,7 @@ void *allocate_blocks(uint32_t num_blocks) {
 		used_blocks++;
 	}
 
-	return (void*)(first_fit_block_copy * BLOCK_SIZE);
+	return (void *) (first_fit_block_copy * BLOCK_SIZE);
 }
 
 /**
@@ -422,7 +427,7 @@ void *allocate_blocks(uint32_t num_blocks) {
  * @param num_blocks	Number of blocks to free
  */
 void free_blocks(void *address, uint32_t num_blocks) {
-	uint32_t block_index = (uint32_t)address / BLOCK_SIZE;
+	uint32_t block_index = (uint32_t) address / BLOCK_SIZE;
 
 	// override entire block with 1
 	memset(address, 1, BLOCK_SIZE * num_blocks);

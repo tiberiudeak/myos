@@ -1,15 +1,16 @@
-#include <process/process.h>
-#include <process/scheduler.h>
-#include <arch/i386/pit.h>
 #include <arch/i386/gdt.h>
 #include <arch/i386/isr.h>
-#include <kernel/tty.h>
-#include <kernel/shell.h>
+#include <arch/i386/pit.h>
 #include <kernel/list.h>
+#include <kernel/shell.h>
+#include <kernel/string.h>
+#include <kernel/tty.h>
 #include <mm/kmalloc.h>
 #include <mm/vmm.h>
+#include <process/process.h>
+#include <process/scheduler.h>
+
 #include <stddef.h>
-#include <kernel/string.h>
 
 // ready task queue
 struct embedded_link task_queue;
@@ -17,7 +18,6 @@ struct embedded_link task_queue;
 struct embedded_link sleep_task_dqueue;
 struct task_struct *current_running_task;
 uint8_t scheduler_initialized = 0;
-
 
 #ifdef CONFIG_RR_TIME_QUANTUM
 const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
@@ -33,13 +33,13 @@ const uint32_t running_time_quantum_ms = CONFIG_RR_TIME_QUANTUM;
 void enqueue_task(struct task_struct *task) {
 	struct task_node *new_node;
 
-    new_node = kmalloc(sizeof(struct task_node));
+	new_node = kmalloc(sizeof(struct task_node));
 
-    if (new_node != NULL) {
-        new_node->task = task;
+	if (new_node != NULL) {
+		new_node->task = task;
 
 		list_add_end(&task_queue, &new_node->list);
-    }
+	}
 }
 
 /**
@@ -54,8 +54,8 @@ struct task_struct *dequeue_task(void) {
 	struct task_node *first_node;
 	struct task_struct *task;
 
-    if (list_is_empty(&task_queue)) {
-        return NULL;
+	if (list_is_empty(&task_queue)) {
+		return NULL;
 	}
 
 	first_node = list_get_entry(task_queue.next, struct task_node, list);
@@ -64,7 +64,7 @@ struct task_struct *dequeue_task(void) {
 	list_delete(&task_queue, task_queue.next);
 	kfree(first_node);
 
-    return task;
+	return task;
 }
 
 #ifdef CONFIG_FCFS_SCH
@@ -78,7 +78,7 @@ struct task_struct *dequeue_task(void) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t scheduler_init(void) {
-    return init_task_queue();
+	return init_task_queue();
 }
 
 /**
@@ -92,9 +92,9 @@ uint8_t scheduler_init(void) {
 uint8_t init_task_queue(void) {
 	list_init(&task_queue);
 
-    scheduler_initialized = 1;
+	scheduler_initialized = 1;
 
-    return 0;
+	return 0;
 }
 
 /**
@@ -107,33 +107,33 @@ uint8_t init_task_queue(void) {
  *
  */
 void simple_task_scheduler(void) {
-    while (1) {
-        if (list_is_empty(&task_queue)) {
-            // sleep a bit 
-            wait_millis(100);
+	while (1) {
+		if (list_is_empty(&task_queue)) {
+			// sleep a bit
+			wait_millis(100);
 
-            continue;
-        }
+			continue;
+		}
 
-        struct task_struct *task = dequeue_task();
-        current_running_task = task;
+		struct task_struct *task = dequeue_task();
+		current_running_task = task;
 
-        void (*program)(int argc, char *argv[]);
-        program = (void (*)(int, char**)) task->exec_address;
+		void (*program)(int argc, char *argv[]);
+		program = (void (*)(int, char **)) task->exec_address;
 
-        // change virtual address space
-        if (task->vas != NULL) {
-            set_page_directory(task->vas);
-        }
+		// change virtual address space
+		if (task->vas != NULL) {
+			set_page_directory(task->vas);
+		}
 
-        // execute task
-        program(task->argc, task->argv);
+		// execute task
+		program(task->argc, task->argv);
 
-        // following code is executed only if the program could not be executed for
-        // some reason (file not present, not an ELF file, etc...)
-        destroy_task(task);
-        shell_cleanup();
-    }
+		// following code is executed only if the program could not be executed
+		// for some reason (file not present, not an ELF file, etc...)
+		destroy_task(task);
+		shell_cleanup();
+	}
 }
 #else
 
@@ -158,11 +158,12 @@ void dq_decrement_head(struct embedded_link *delta_queue_h) {
  * @param delta_queue_h		head of delta queue
  */
 struct task_struct *dq_dequeue(struct embedded_link *delta_queue_h) {
-	if (list_is_empty(delta_queue_h))
+	if (list_is_empty(delta_queue_h)) {
 		return NULL;
+	}
 
-	struct delta_queue_node *dqn = get_container(delta_queue_h->next,
-					struct delta_queue_node, list);
+	struct delta_queue_node *dqn =
+		get_container(delta_queue_h->next, struct delta_queue_node, list);
 	struct task_struct *ts = dqn->task;
 	list_delete(delta_queue_h, delta_queue_h->next);
 	kfree(dqn);
@@ -182,8 +183,9 @@ void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
 	struct embedded_link *cursor;
 	int wakeup_time = ts->sleep_time;
 
-	if (!new_dqn)
+	if (!new_dqn) {
 		return;
+	}
 
 	new_dqn->task = ts;
 	new_dqn->delta_time_ms = ts->sleep_time;
@@ -221,14 +223,14 @@ void dq_enqueue(struct embedded_link *delta_queue_h, struct task_struct *ts) {
  * @return The queue size
  */
 uint32_t queue_size(struct embedded_link *list_h) {
-    uint32_t count = 0;
+	uint32_t count = 0;
 	struct embedded_link *cursor;
 
 	list_iterate(cursor, list_h) {
 		count++;
 	}
 
-    return count;
+	return count;
 }
 
 /**
@@ -240,22 +242,24 @@ uint32_t queue_size(struct embedded_link *list_h) {
  * @param argv Arguments
  */
 void init_task_func(int argc, char *argv[]) {
-    (void) argv; // remove compilation warning
-    (void) argc;
+	(void) argv; // remove compilation warning
+	(void) argc;
 
 	// change stack to init task kstack
 	// -- done here, as the init task is not started
 	// by the scheduler (but maybe it would be a good idea
 	// to start it from pit like any other task -- TODO)
-	__asm__ __volatile__ ("cli; mov %%eax, %%esp; mov %%esp, %%ebp; sti"
-			::"a"(current_running_task->kstack));
+	__asm__ __volatile__("cli; mov %%eax, %%esp; mov %%esp, %%ebp; sti" ::"a"(
+		current_running_task->kstack));
 
-   scheduler_initialized = 1;
+	scheduler_initialized = 1;
 
 #ifdef CONFIG_VERBOSE
-    printk("init process started!\n");
+	printk("init process started!\n");
 #endif
-    while (1) __asm__ __volatile__ ("sti; hlt; cli");
+	while (1) {
+		__asm__ __volatile__("sti; hlt; cli");
+	}
 }
 
 /**
@@ -274,35 +278,35 @@ uint8_t init_queues_rr(void) {
 	// init delta queue
 	list_init(&sleep_task_dqueue);
 
-    char **argv = kmalloc(sizeof(char*) * 1);
+	char **argv = kmalloc(sizeof(char *) * 1);
 
-    if (argv == NULL) {
-        goto argv_err;
-    }
+	if (argv == NULL) {
+		goto argv_err;
+	}
 
-    argv[0] = kmalloc(sizeof(char) * 10);
+	argv[0] = kmalloc(sizeof(char) * 10);
 
-    if (argv[0] == NULL) {
+	if (argv[0] == NULL) {
 		goto argv0_err;
-    }
+	}
 
-    strcpy(argv[0], "init");
+	strcpy(argv[0], "init");
 
-    // create init task and add it to the queue
-    void (*init)(int, char**) = init_task_func;
-    struct task_struct *init_task = create_task(init, 1, argv, 0);
+	// create init task and add it to the queue
+	void (*init)(int, char **) = init_task_func;
+	struct task_struct *init_task = create_task(init, 1, argv, 0);
 
-    if (init_task == NULL) {
-        printk("init task is NULL!\n");
+	if (init_task == NULL) {
+		printk("init task is NULL!\n");
 		goto null_init_task_err;
-    }
+	}
 
-    enqueue_task(init_task);
+	enqueue_task(init_task);
 
-    kfree(argv[0]);
-    kfree(argv);
+	kfree(argv[0]);
+	kfree(argv);
 
-    return 0;
+	return 0;
 
 null_init_task_err:
 	kfree(argv[0]);
@@ -320,16 +324,16 @@ argv_err:
  * the current running task and starts its execution.
  */
 void start_init_task(void) {
-    // take init task from the queue
-    struct task_struct *task = dequeue_task();
+	// take init task from the queue
+	struct task_struct *task = dequeue_task();
 
-    // update current running task
-    current_running_task = task;
+	// update current running task
+	current_running_task = task;
 
-    // start execution of init
-    void (*program)(int argc, char *argv[]);
-    program = (void (*)(int, char**)) task->exec_address;
-    program(task->argc, task->argv);
+	// start execution of init
+	void (*program)(int argc, char *argv[]);
+	program = (void (*)(int, char **)) task->exec_address;
+	program(task->argc, task->argv);
 }
 
 /**
@@ -342,7 +346,7 @@ void start_init_task(void) {
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t scheduler_init_rr(void) {
-    return init_queues_rr();
+	return init_queues_rr();
 }
 
 /**
@@ -360,21 +364,21 @@ uint8_t scheduler_init_rr(void) {
  *				(see header file for more info)
  */
 void change_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
-    // change DS and SS to user mode data segment selector
-    *(&r->ds) = USER_DS;
+	// change DS and SS to user mode data segment selector
+	*(&r->ds) = USER_DS;
 
 	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
 		*(&r->ss) = current_running_task->context->ss;
 		*(&r->useresp) = current_running_task->context->useresp;
 	}
 
-    // TODO: clear flags (except for the interrupt bit)
+	// TODO: clear flags (except for the interrupt bit)
 
-    // change CS to user mode code segment selector
-    *(&r->cs) = USER_CS;
+	// change CS to user mode code segment selector
+	*(&r->cs) = USER_CS;
 
-    // change instruction pointer
-    *(&r->eip) = current_running_task->context->eip;
+	// change instruction pointer
+	*(&r->eip) = current_running_task->context->eip;
 
 	/*
 	 * TODO: update TSS for ring 0
@@ -400,37 +404,37 @@ void change_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
  * @param r		The context saved by the interrupt handler on the stack
  */
 void save_current_context(struct interrupt_regs *r) {
-		current_running_task->context->flags = r->eflags;
-		current_running_task->context->cs = r->cs;
-		current_running_task->context->eip = r->eip;
-		current_running_task->context->ebp = r->ebp;
+	current_running_task->context->flags = r->eflags;
+	current_running_task->context->cs = r->cs;
+	current_running_task->context->eip = r->eip;
+	current_running_task->context->ebp = r->ebp;
 
-		/* get the value of esp before the CPU has pushed any registers
-		   on the stack (like EIP, CS, EFLAGS, SS, USERESP) */
-		if (current_running_task->ring == 0) {
-			/* add 0x14 to esp because when esp is stored,
-			   there are already EFLAGS, CS, EIP, int_no and err_code
-			   on the stack (and we want to skip them) */
-			current_running_task->context->esp = r->esp + 0x14;
-		} else if (current_running_task->ring == 3) {
-			/* add 0x20 to esp because when esp is stored,
-			   there are already SS, ESP, EFLAGS, CS, EIP, int_no
-			   and err_code on the stack (and we want to skip them) */
-			current_running_task->context->esp = r->esp + 0x20;
-		}
+	/* get the value of esp before the CPU has pushed any registers
+	   on the stack (like EIP, CS, EFLAGS, SS, USERESP) */
+	if (current_running_task->ring == 0) {
+		/* add 0x14 to esp because when esp is stored,
+		   there are already EFLAGS, CS, EIP, int_no and err_code
+		   on the stack (and we want to skip them) */
+		current_running_task->context->esp = r->esp + 0x14;
+	} else if (current_running_task->ring == 3) {
+		/* add 0x20 to esp because when esp is stored,
+		   there are already SS, ESP, EFLAGS, CS, EIP, int_no
+		   and err_code on the stack (and we want to skip them) */
+		current_running_task->context->esp = r->esp + 0x20;
+	}
 
-		current_running_task->context->edi = r->edi;
-		current_running_task->context->esi = r->esi;
-		current_running_task->context->edx = r->edx;
-		current_running_task->context->ecx = r->ecx;
-		current_running_task->context->ebx = r->ebx;
-		current_running_task->context->eax = r->eax;
-		current_running_task->context->ds = r->ds;
-		current_running_task->context->es = r->ds;
-		current_running_task->context->fs = r->ds;
-		current_running_task->context->gs = r->ds;
-		current_running_task->context->ss = r->ss;
-		current_running_task->context->useresp = r->useresp;
+	current_running_task->context->edi = r->edi;
+	current_running_task->context->esi = r->esi;
+	current_running_task->context->edx = r->edx;
+	current_running_task->context->ecx = r->ecx;
+	current_running_task->context->ebx = r->ebx;
+	current_running_task->context->eax = r->eax;
+	current_running_task->context->ds = r->ds;
+	current_running_task->context->es = r->ds;
+	current_running_task->context->fs = r->ds;
+	current_running_task->context->gs = r->ds;
+	current_running_task->context->ss = r->ss;
+	current_running_task->context->useresp = r->useresp;
 }
 
 /**
@@ -447,9 +451,9 @@ void save_current_context(struct interrupt_regs *r) {
  *				be updated
  */
 void change_context_kernel(struct interrupt_regs *r) {
-    *(&r->ds) = KERNEL_DS;
-    *(&r->cs) = KERNEL_CS;
-    *(&r->eip) = current_running_task->context->eip;
+	*(&r->ds) = KERNEL_DS;
+	*(&r->cs) = KERNEL_CS;
+	*(&r->eip) = current_running_task->context->eip;
 }
 
 /**
@@ -465,27 +469,27 @@ void change_context_kernel(struct interrupt_regs *r) {
  *				(see header file for more info)
  */
 void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
-    // restore segments
-    *(&r->ds) = current_running_task->context->ds;
-    *(&r->cs) = current_running_task->context->cs;
+	// restore segments
+	*(&r->ds) = current_running_task->context->ds;
+	*(&r->cs) = current_running_task->context->cs;
 
-    // restore general registers
-    *(&r->eax) = current_running_task->context->eax;
-    *(&r->ebx) = current_running_task->context->ebx;
-    *(&r->ecx) = current_running_task->context->ecx;
-    *(&r->edx) = current_running_task->context->edx;
-    *(&r->edi) = current_running_task->context->edi;
-    *(&r->esi) = current_running_task->context->esi;
+	// restore general registers
+	*(&r->eax) = current_running_task->context->eax;
+	*(&r->ebx) = current_running_task->context->ebx;
+	*(&r->ecx) = current_running_task->context->ecx;
+	*(&r->edx) = current_running_task->context->edx;
+	*(&r->edi) = current_running_task->context->edi;
+	*(&r->esi) = current_running_task->context->esi;
 
-    // restore flags
-    *(&r->eflags) = current_running_task->context->flags;
+	// restore flags
+	*(&r->eflags) = current_running_task->context->flags;
 
-    // restore kernel stack
-    *(&r->ebp) = current_running_task->context->ebp;
+	// restore kernel stack
+	*(&r->ebp) = current_running_task->context->ebp;
 	*(&r->esp) = current_running_task->context->esp;
 
-    // restore instruction pointer
-    *(&r->eip) = current_running_task->context->eip;
+	// restore instruction pointer
+	*(&r->eip) = current_running_task->context->eip;
 
 	// restore user space stack info only for user space tasks
 	if (prob == NO_PROBLEM && current_running_task->ring == 3) {
@@ -505,28 +509,26 @@ void resume_context(struct interrupt_regs *r, TASK_SWITCH_STACK_PROBLEM prob) {
  * @param queue_type	Queue where to put the current_running_task
  */
 void schedule(QUEUE_TYPE queue_type) {
-    // put current running task in the queue if task
-    // if not terminated
-    if (current_running_task != NULL) {
+	// put current running task in the queue if task
+	// if not terminated
+	if (current_running_task != NULL) {
 		if (queue_type == RUNNING_TASK_QUEUE) {
 			enqueue_task(current_running_task);
 		} else {
 			dq_enqueue(&sleep_task_dqueue, current_running_task);
 		}
-    }
+	}
 
-    // take task from the running queue and update current running task
-    struct task_struct *task = dequeue_task();
-    current_running_task = task;
+	// take task from the running queue and update current running task
+	struct task_struct *task = dequeue_task();
+	current_running_task = task;
 
-
-    // change virtual address space for user tasks
-    if (task->vas != NULL) {
-        set_page_directory(task->vas);
-    }
-    else {
-        set_kernel_page_directory();
-    }
+	// change virtual address space for user tasks
+	if (task->vas != NULL) {
+		set_page_directory(task->vas);
+	} else {
+		set_kernel_page_directory();
+	}
 }
 
 /*
@@ -537,23 +539,21 @@ void display_running_processes(void) {
 	struct delta_queue_node *dqn;
 	struct task_node *tn;
 
-    printk("id: %d %s (running)\n", current_running_task->task_id,
-            current_running_task->argv[0]);
+	printk("id: %d %s (running)\n", current_running_task->task_id,
+		   current_running_task->argv[0]);
 
 	list_iterate(cursor, &task_queue) {
 		tn = list_get_entry(cursor, struct task_node, list);
 
-        printk("id: %d %s\n", tn->task->task_id,
-                tn->task->argv[0]);
+		printk("id: %d %s\n", tn->task->task_id, tn->task->argv[0]);
 	}
 
 	list_iterate(cursor, &sleep_task_dqueue) {
 		dqn = list_get_entry(cursor, struct delta_queue_node, list);
 
 		printk("id: %d %s (blocked for %dms)\n", dqn->task->task_id,
-				dqn->task->argv[0], dqn->delta_time_ms);
+			   dqn->task->argv[0], dqn->delta_time_ms);
 	}
 }
 
 #endif
-

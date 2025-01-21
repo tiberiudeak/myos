@@ -1,6 +1,6 @@
 #include <arch/i386/gdt.h>
-#include <kernel/tty.h>
 #include <kernel/string.h>
+#include <kernel/tty.h>
 
 extern void gdt_flush(uint32_t);
 extern void tss_flush();
@@ -28,42 +28,38 @@ void init_gdt() {
 	printk("Initializing GDT");
 #endif
 	gdt_ptr.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
-	gdt_ptr.base = (uint32_t)&gdt_entries;
+	gdt_ptr.base = (uint32_t) &gdt_entries;
 
 	// Null segment
 	gdt_set_gate(0, 0, 0, 0, 0);
 
 	// Kernel code segment
-	gdt_set_gate(1,
-	             0,
-				 0xFFFFFFFF,
-				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE,
+	gdt_set_gate(1, 0, 0xFFFFFFFF,
+				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 |
+					 GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE,
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 	// Kernel data segment
-	gdt_set_gate(2,
-	             0,
-				 0xFFFFFFFF,
-				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_CODE_WRITEABLE,
+	gdt_set_gate(2, 0, 0xFFFFFFFF,
+				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING0 |
+					 GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_CODE_WRITEABLE,
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 
 	// User code segment
-	gdt_set_gate(3,
-	             0,
-				 0xFFFFFFFF,
-				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE,
+	gdt_set_gate(3, 0, 0xFFFFFFFF,
+				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 |
+					 GDT_ACCESS_CODE_SEGMENT | GDT_ACCESS_CODE_READABLE,
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 
 	// User data segment
-	gdt_set_gate(4,
-	             0,
-				 0xFFFFFFFF,
-				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_CODE_WRITEABLE,
+	gdt_set_gate(4, 0, 0xFFFFFFFF,
+				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 |
+					 GDT_ACCESS_DATA_SEGMENT | GDT_ACCESS_CODE_WRITEABLE,
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 
 	// Task State Segment (TSS)
 	write_tss(5, 0x10, 0x90000);
 
-	gdt_flush((uint32_t)&gdt_ptr);
+	gdt_flush((uint32_t) &gdt_ptr);
 	tss_flush();
 
 #ifdef CONFIG_VERBOSE
@@ -82,7 +78,8 @@ void init_gdt() {
  * @param access The access byte of the GDT gate.
  * @param flags  The flags byte of the GDT gate.
  */
-void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_t flags) {
+void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access,
+				  uint8_t flags) {
 	gdt_entries[num].base_low = (base & 0xFFFF);
 	gdt_entries[num].base_middle = (base >> 16) & 0xFF;
 	gdt_entries[num].base_high = (base >> 24) & 0xFF;
@@ -106,21 +103,19 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access, uint8_
  * @param esp0 The stack pointer for privilege level 0
  */
 void write_tss(int num, uint16_t ss0, uint32_t esp0) {
-	uint32_t base = (uint32_t)&tss_entry;
+	uint32_t base = (uint32_t) &tss_entry;
 	uint32_t limit = base + sizeof(tss_entry);
 
-	gdt_set_gate(num,
-				base,
-				limit,
-				GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_TSS,
-				0X00);
+	gdt_set_gate(num, base, limit,
+				 GDT_ACCESS_PRESENT | GDT_ACCESS_RING3 | GDT_ACCESS_TSS, 0X00);
 
 	memset(&tss_entry, 0, sizeof(tss_entry));
 
-	tss_entry.ss0 = ss0;	// set the kernel stack segment
-	tss_entry.esp0 = esp0;	// set the kernel stack pointer
+	tss_entry.ss0 = ss0;   // set the kernel stack segment
+	tss_entry.esp0 = esp0; // set the kernel stack pointer
 
-	tss_entry.cs = 0x08 | 0x03;	// set the code segment ored with 3 (for ring 3)
+	tss_entry.cs = 0x08 | 0x03; // set the code segment ored with 3 (for ring 3)
 	// set other segments to the data segment ored with 3
-	tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs = 0x10 | 0x03;
+	tss_entry.ss = tss_entry.ds = tss_entry.es = tss_entry.fs = tss_entry.gs =
+		0x10 | 0x03;
 }

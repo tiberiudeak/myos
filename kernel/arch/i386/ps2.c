@@ -31,8 +31,7 @@ int PS2_init() {
 #ifdef CONFIG_VERBOSE
 		printk("\tPS/2 self test passed\n");
 #endif
-	}
-	else {
+	} else {
 #ifdef CONFIG_VERBOSE
 		printk("\tPS/2 self test failed\n");
 #endif
@@ -102,7 +101,7 @@ void __wait_for_response() {
  *
  * This function waits until the input buffer of the PS/2 Controller
  * is empty (it is empty then bit 1 of the status register is clear)
-*/
+ */
 void __wait_to_send_second_byte() {
 	uint8_t status_reg = __PS2_get_status_reg();
 
@@ -137,7 +136,6 @@ void PS2_disable_devices() {
  * @param port2 1 if port2 should be enabled, 0 otherwise
  */
 void PS2_enable_devices(int port1, int port2) {
-
 	if (port1 || port2) {
 		uint8_t ccb = PS2_get_ccb();
 

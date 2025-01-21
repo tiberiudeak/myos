@@ -5,19 +5,19 @@
 
 #include <stdint.h>
 
-#define PIC1 				0x20		// master PIC
-#define PIC2 				0xA0		// slave PIC
+#define PIC1			  0x20 // master PIC
+#define PIC2			  0xA0 // slave PIC
 
-#define PIC1_COMMAND_PORT	PIC1
-#define PIC1_DATA_PORT		(PIC1 + 1)
+#define PIC1_COMMAND_PORT PIC1
+#define PIC1_DATA_PORT	  (PIC1 + 1)
 
-#define PIC2_COMMAND_PORT	PIC2
-#define PIC2_DATA_PORT		(PIC2 + 1)
+#define PIC2_COMMAND_PORT PIC2
+#define PIC2_DATA_PORT	  (PIC2 + 1)
 
-#define PIC_EOI				0x20		// end of interrupt
+#define PIC_EOI			  0x20 // end of interrupt
 
-#define PIC_READ_IRR		0x0a
-#define PIC_READ_ISR		0x0b
+#define PIC_READ_IRR	  0x0a
+#define PIC_READ_ISR	  0x0b
 
 /**
  * PIC Initialization Command Word 1
@@ -36,14 +36,14 @@
  *
  */
 typedef enum {
-	PIC_ICW1_ICW4				= 0x01,
-	PIC_ICW1_SINGLE_MODE		= 0x02,
-	PIC_ICW1_CASCADE_MODE		= 0x00,
-	PIC_ICW1_INTERVAL4			= 0x04,
-	PIC_ICW1_INTERVAL8			= 0x00,
-	PIC_ICW1_LEVEL_MODE			= 0x08,
-	PIC_ICW1_EDGE_MODE			= 0x00,
-	PIC_ICW1_INITIALIZE			= 0x10
+	PIC_ICW1_ICW4			= 0x01,
+	PIC_ICW1_SINGLE_MODE	= 0x02,
+	PIC_ICW1_CASCADE_MODE	= 0x00,
+	PIC_ICW1_INTERVAL4		= 0x04,
+	PIC_ICW1_INTERVAL8		= 0x00,
+	PIC_ICW1_LEVEL_MODE		= 0x08,
+	PIC_ICW1_EDGE_MODE		= 0x00,
+	PIC_ICW1_INITIALIZE		= 0x10
 } PIC_ICW1;
 
 /**
