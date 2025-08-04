@@ -179,9 +179,10 @@ char *itoa(int n, char *str, int base) {
 			str[i++] = '0';
 		}
 
-		str[i] = 'x';
-		str[i + 1] = '0';
-		str[i + 2] = '\0';
+		// str[i] = 'x';
+		// str[i + 1] = '0';
+		// str[i + 2] = '\0';
+		str[i] = '\0';
 
 		reverse(str);
 		return str;
