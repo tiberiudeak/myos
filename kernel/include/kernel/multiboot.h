@@ -1,0 +1,6 @@
+#ifndef MULTIBOOT_H
+#define MULTIBOOT_H 1
+
+#define MULTIBOOT_BOOTLOADER_MAGIC	0x2BADB002
+
+#endif

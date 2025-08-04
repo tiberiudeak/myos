@@ -9,6 +9,7 @@
 #include <kernel/shell.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
+#include <kernel/multiboot.h>
 #include <mm/kmalloc.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
@@ -27,8 +28,15 @@ void halt_processor(void) {
 	}
 }
 
-void kmain() {
-	terminal_initialize(); // clear screen
+void kmain(unsigned long magic, unsigned long addr) {
+	terminal_initialize();
+
+	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
+		printk("Invalid magic number: 0x%x\n", magic);
+		return;
+	}
+
+	while(1);
 #ifdef CONFIG_VERBOSE
 	char *a = "kernel";
 	printk("Booting, ");

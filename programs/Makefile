@@ -1,38 +1,25 @@
-# define flags if not already defined
-CFLAGS:=--sysroot=$(SYSROOT_USER) -isystem=$(INCLUDEDIR) -O0 -g -ffreestanding -Wall -fPIE
-CPPFLAGS:=
-# link with my libc
-LDFLAGS:=-L$(SYSROOT_USER)
-
-# add extra flags if needed
-LDFLAGS:=$(LDFLAGS)
-LIBS:=$(LIBS) -nostdlib -lk
+CFLAGS:=-O0 -g -Wall -fPIE -I../libc/include -ffreestanding -std=gnu99
+LDFLAGS:=-nostdlib -lk -L../libc
 
 EXEC_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_DEPS:=$(shell find . -type f -name '*.d')
 
 EXEC_OBJS:=$(EXEC_SOURCES_C:.c=.o)
 
-OBJS=\
-$(EXEC_OBJS)
+OBJS=$(EXEC_OBJS)
 
 BINARIES:=$(foreach obj,$(OBJS),$(basename $(obj)))
 
-.PHONY: all clean install
+.PHONY: all clean
 .SUFFIXES: .o .c
 
 all: $(BINARIES)
 
 $(BINARIES): %: %.o
-	$(LD) $(LDFLAGS) $< -o $@ $(LIBS)
+	$(LD) $< -o $@ $(LDFLAGS)
 
 %.o: %.c
-	$(CC) -MD -c $< -o $@ -std=gnu11 $(CFLAGS)
-
-install: $(BINARIES)
-	mkdir -p ../$(BIN_DIR_USER)
-	cp $(BINARIES) ../$(BIN_DIR_USER)
+	$(CC) -MD -c $< -o $@ $(CFLAGS)
 
 clean:
 	rm -rf $(BINARIES) $(OBJS) *.d */*.d */*/*.d
-
