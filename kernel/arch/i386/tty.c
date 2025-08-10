@@ -1,125 +1,22 @@
 #include <kernel/global_addresses.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
+#include <kernel/io.h>
+#include <mm/vmm.h>
 
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef CONFIG_SH_FGC_BLACK
-static const uint8_t default_color = 0;
-#elif CONFIG_SH_FGC_BLUE
-static const uint8_t default_color = 1;
-#elif CONFIG_SH_FGC_GREEN
-static const uint8_t default_color = 2;
-#elif CONFIG_SH_FGC_CYAN
-static const uint8_t default_color = 3;
-#elif CONFIG_SH_FGC_RED
-static const uint8_t default_color = 4;
-#elif CONFIG_SH_FGC_MAGENTA
-static const uint8_t default_color = 5;
-#elif CONFIG_SH_FGC_BROWN
-static const uint8_t default_color = 6;
-#elif CONFIG_SH_FGC_LIGHT_GREY
-static const uint8_t default_color = 7;
-#elif CONFIG_SH_FGC_DARK_GREY
-static const uint8_t default_color = 8;
-#elif CONFIG_SH_FGC_LIGHT_BLUE
-static const uint8_t default_color = 9;
-#elif CONFIG_SH_FGC_LIGHT_GREEN
-static const uint8_t default_color = 10;
-#elif CONFIG_SH_FGC_LIGHT_CYAN
-static const uint8_t default_color = 11;
-#elif CONFIG_SH_FGC_LIGHT_RED
-static const uint8_t default_color = 12;
-#elif CONFIG_SH_FGC_LIGHT_MAGENTA
-static const uint8_t default_color = 13;
-#elif CONFIG_SH_FGC_LIGHT_BROWN
-static const uint8_t default_color = 14;
-#else
-static const uint8_t default_color = 15;
-#endif
-
-#ifdef CONFIG_TTY_VBE
-
-#ifdef CONFIG_SH_BGC_BLUE
-static const uint32_t background_color = VBE_COLOR_BLUE;
-#elif CONFIG_SH_BGC_GREEN
-static const uint32_t background_color = VBE_COLOR_GREEN;
-#elif CONFIG_SH_BGC_CYAN
-static const uint32_t background_color = VBE_COLOR_CYAN;
-#elif CONFIG_SH_BGC_RED
-static const uint32_t background_color = VBE_COLOR_RED;
-#elif CONFIG_SH_BGC_MAGENTA
-static const uint32_t background_color = VBE_COLOR_MAGENTA;
-#elif CONFIG_SH_BGC_BROWN
-static const uint32_t background_color = VBE_COLOR_BROWN;
-#elif CONFIG_SH_BGC_LIGHT_GREY
-static const uint32_t background_color = VBE_COLOR_LIGHT_GREY;
-#elif CONFIG_SH_BGC_DARK_GREY
-static const uint32_t background_color = VBE_COLOR_DARK_GREY;
-#elif CONFIG_SH_BGC_LIGHT_BLUE
-static const uint32_t background_color = VBE_COLOR_LIGHT_BLUE;
-#elif CONFIG_SH_BGC_LIGHT_GREEN
-static const uint32_t background_color = VBE_COLOR_LIGHT_GREEN;
-#elif CONFIG_SH_BGC_LIGHT_CYAN
-static const uint32_t background_color = VBE_COLOR_LIGHT_CYAN;
-#elif CONFIG_SH_BGC_LIGHT_RED
-static const uint32_t background_color = VBE_COLOR_LIGHT_RED;
-#elif CONFIG_SH_BGC_LIGHT_MAGENTA
-static const uint32_t background_color = VBE_COLOR_LIGHT_MAGENTA;
-#elif CONFIG_SH_BGC_LIGHT_BROWN
-static const uint32_t background_color = VBE_COLOR_LIGHT_BROWN;
-#elif CONFIG_SH_BGC_WHITE
-static const uint32_t background_color = VBE_COLOR_WHITE;
-#else
-static const uint32_t background_color = VBE_COLOR_BLACK;
-#endif
-
-#else
 #include "vga.h"
 
-#ifdef CONFIG_SH_BGC_BLUE
-static const uint8_t background_color = VGA_COLOR_BLUE;
-#elif CONFIG_SH_BGC_GREEN
-static const uint8_t background_color = VGA_COLOR_GREEN;
-#elif CONFIG_SH_BGC_CYAN
-static const uint8_t background_color = VGA_COLOR_CYAN;
-#elif CONFIG_SH_BGC_RED
-static const uint8_t background_color = VGA_COLOR_RED;
-#elif CONFIG_SH_BGC_MAGENTA
-static const uint8_t background_color = VGA_COLOR_MAGENTA;
-#elif CONFIG_SH_BGC_BROWN
-static const uint8_t background_color = VGA_COLOR_BROWN;
-#elif CONFIG_SH_BGC_LIGHT_GREY
-static const uint8_t background_color = VGA_COLOR_LIGHT_GREY;
-#elif CONFIG_SH_BGC_DARK_GREY
-static const uint8_t background_color = VGA_COLOR_DARK_GREY;
-#elif CONFIG_SH_BGC_LIGHT_BLUE
-static const uint8_t background_color = VGA_COLOR_LIGHT_BLUE;
-#elif CONFIG_SH_BGC_LIGHT_GREEN
-static const uint8_t background_color = VGA_COLOR_LIGHT_GREEN;
-#elif CONFIG_SH_BGC_LIGHT_CYAN
-static const uint8_t background_color = VGA_COLOR_LIGHT_CYAN;
-#elif CONFIG_SH_BGC_LIGHT_RED
-static const uint8_t background_color = VGA_COLOR_LIGHT_RED;
-#elif CONFIG_SH_BGC_LIGHT_MAGENTA
-static const uint8_t background_color = VGA_COLOR_LIGHT_MAGENTA;
-#elif CONFIG_SH_BGC_LIGHT_BROWN
-static const uint8_t background_color = VGA_COLOR_LIGHT_BROWN;
-#elif CONFIG_SH_BGC_WHITE
-static const uint8_t background_color = VGA_COLOR_WHITE;
-#else
-static const uint8_t background_color = VGA_COLOR_BLACK;
-#endif
+struct tty_operations tty;
 
-#endif
-
-#ifdef CONFIG_TTY_VBE
-
-#include <kernel/global_addresses.h>
-#include <mm/vmm.h>
+static const uint32_t vbe_bg_color = VBE_COLOR_BLACK;
+static const uint32_t vbe_fg_color = VBE_COLOR_WHITE;
+static const uint8_t vga_bg_color = VGA_COLOR_BLACK;
+static const uint8_t vga_fg_color = VGA_COLOR_WHITE;
 
 static uint8_t *font = (uint8_t *) VGA_BIOS_FONT;
 static const struct vbe_mode_info_block *vbe_mode =
@@ -133,27 +30,27 @@ static uint32_t terminal_color;
 static size_t VBE_WIDTH;
 static size_t VBE_HEIGHT;
 
-void clear_screen(void) {
+void vbe_clear_screen(void) {
 	int num_pixels = VBE_WIDTH * VBE_HEIGHT;
 
 	for (int i = 0; i < num_pixels; i++) {
-		((uint32_t *) framebuffer)[i] = background_color;
+		((uint32_t *) framebuffer)[i] = vbe_bg_color;
 	}
 }
 
-void terminal_initialize(void) {
+void vbe_terminal_initialize(void) {
 	framebuffer = (uint32_t *) vbe_mode->framebuffer;
 	VBE_WIDTH = vbe_mode->width;
 	VBE_HEIGHT = vbe_mode->height;
 
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_setcolor(default_color);
+	terminal_color = vbe_fg_color;
 
-	clear_screen();
+	vbe_clear_screen();
 }
 
-void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
+void vbe_terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 	// get offset within the font data for the requested character
 	int font_offset = c * 16;
 
@@ -181,7 +78,7 @@ void terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 	}
 }
 
-void terminal_scroll(void) {
+void vbe_terminal_scroll(void) {
 	for (size_t y = 0; y < VBE_HEIGHT - 16; ++y) {
 		uint32_t *src = framebuffer + (y + 16) * VBE_WIDTH;
 		uint32_t *dest = framebuffer + y * VBE_WIDTH;
@@ -196,12 +93,12 @@ void terminal_scroll(void) {
 		uint32_t *dest = framebuffer + y * VBE_WIDTH;
 
 		for (size_t x = 0; x < VBE_WIDTH; ++x) {
-			dest[x] = background_color;
+			dest[x] = vbe_bg_color;
 		}
 	}
 }
 
-void terminal_putchar(char c) {
+void vbe_terminal_putchar(char c) {
 	unsigned char uc = c;
 
 	if (c == '\t') {
@@ -215,7 +112,7 @@ void terminal_putchar(char c) {
 			terminal_column = terminal_column - (VBE_WIDTH / 8);
 
 			if (++terminal_row == (VBE_HEIGHT / 16)) {
-				terminal_scroll();
+				vbe_terminal_scroll();
 				terminal_row = (VBE_HEIGHT / 16) - 1;
 			}
 		}
@@ -229,7 +126,7 @@ void terminal_putchar(char c) {
 
 		if (++terminal_row == (VBE_HEIGHT / 16)) {
 			terminal_row = (VBE_HEIGHT / 16) - 1;
-			terminal_scroll();
+			vbe_terminal_scroll();
 		}
 
 		// set_cursor(terminal_column, terminal_row);
@@ -237,13 +134,13 @@ void terminal_putchar(char c) {
 		return;
 	}
 
-	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+	vbe_terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 
 	if (++terminal_column == (VBE_WIDTH / 8)) {
 		terminal_column = 0;
 
 		if (++terminal_row == (VBE_HEIGHT / 16)) {
-			terminal_scroll();
+			vbe_terminal_scroll();
 			terminal_row = (VBE_HEIGHT / 16) - 1;
 		}
 	}
@@ -251,72 +148,18 @@ void terminal_putchar(char c) {
 	// set_cursor(terminal_column, terminal_row);
 }
 
-void terminal_write(const char *data, size_t size) {
+void vbe_terminal_write(const char *data, size_t size) {
 	for (size_t i = 0; i < size; i++) {
-		terminal_putchar(data[i]);
+		vbe_terminal_putchar(data[i]);
 	}
 }
 
-void terminal_writestring(const char *data) {
-	terminal_write(data, strlen(data));
+void vbe_terminal_writestring(const char *data) {
+	vbe_terminal_write(data, strlen(data));
 }
 
-void terminal_setcolor(uint8_t color) {
-	switch (color) {
-	case 0:
-		terminal_color = VBE_COLOR_BLACK;
-		break;
-	case 1:
-		terminal_color = VBE_COLOR_BLUE;
-		break;
-	case 2:
-		terminal_color = VBE_COLOR_GREEN;
-		break;
-	case 3:
-		terminal_color = VBE_COLOR_CYAN;
-		break;
-	case 4:
-		terminal_color = VBE_COLOR_RED;
-		break;
-	case 5:
-		terminal_color = VBE_COLOR_MAGENTA;
-		break;
-	case 6:
-		terminal_color = VBE_COLOR_BROWN;
-		break;
-	case 7:
-		terminal_color = VBE_COLOR_LIGHT_GREY;
-		break;
-	case 8:
-		terminal_color = VBE_COLOR_DARK_GREY;
-		break;
-	case 9:
-		terminal_color = VBE_COLOR_LIGHT_BLUE;
-		break;
-	case 10:
-		terminal_color = VBE_COLOR_LIGHT_GREEN;
-		break;
-	case 11:
-		terminal_color = VBE_COLOR_LIGHT_CYAN;
-		break;
-	case 12:
-		terminal_color = VBE_COLOR_LIGHT_RED;
-		break;
-	case 13:
-		terminal_color = VBE_COLOR_LIGHT_MAGENTA;
-		break;
-	case 14:
-		terminal_color = VBE_COLOR_LIGHT_BROWN;
-		break;
-	case 15:
-		terminal_color = VBE_COLOR_WHITE;
-		break;
-	default:
-		terminal_color = VBE_COLOR_WHITE;
-	}
-}
-
-uint8_t map_framebuffer(void) {
+// TODO: move this function to mm
+uint8_t vbe_map_framebuffer(void) {
 	uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
 	uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
 
@@ -338,39 +181,24 @@ uint8_t map_framebuffer(void) {
 	return 0;
 }
 
-void terminal_backspace_cursor(char c) {
+void vbe_terminal_backspace_cursor(char c) {
 	terminal_column--;
-	terminal_putentryat(c, background_color, terminal_column, terminal_row);
+	vbe_terminal_putentryat(c, vbe_bg_color, terminal_column, terminal_row);
 }
 
-// void draw_square(int x, int y, int width, int height, uint32_t color) {
-//     if (x < 0 || x + width > VBE_WIDTH || y < 0 || y + height > VBE_HEIGHT) {
-//         return;
-//     }
-//
-//     for (int i = y; i < y + height; ++i) {
-//         for (int j = x; j < x + width; ++j) {
-//             int pixelIndex = i * VBE_WIDTH + j;
-//
-//             framebuffer[pixelIndex] = color;
-//         }
-//     }
-// }
+struct tty_operations vbe_tty_operations = {
+	.terminal_initialize		= vbe_terminal_initialize,
+	.terminal_write				= vbe_terminal_write,
+	.terminal_writestring		= vbe_terminal_writestring,
+	.terminal_putchar			= vbe_terminal_putchar,
+	.terminal_backspace_cursor	= vbe_terminal_backspace_cursor
+};
 
-#else /* CONFIG_TTY_VBE */
+void tty_init_vbe() {
+	tty = vbe_tty_operations;
+}
 
-#include <kernel/io.h>
-
-#define REG_SCREEN_CTRL 0x3D4
-#define REG_SCREEN_DATA 0x3D5
-
-static const size_t VGA_WIDTH = 80;
-static const size_t VGA_HEIGHT = 25;
-static uint16_t *const VGA_MEMORY = (uint16_t *) 0xB8000;
-
-static size_t terminal_row;
-static size_t terminal_column;
-static uint8_t terminal_color;
+static uint16_t *const VGA_MEMORY = (uint16_t *) VIDEO_ADDR;
 static uint16_t *terminal_buffer;
 
 /**
@@ -381,7 +209,7 @@ static uint16_t *terminal_buffer;
  * @param x  The x position of the cursor.
  * @param y  The y position of the cursor.
  */
-void set_cursor(size_t x, size_t y) {
+void vga_set_cursor(size_t x, size_t y) {
 	uint16_t pos = y * VGA_WIDTH + x;
 
 	port_byte_out(REG_SCREEN_CTRL, 14);
@@ -396,31 +224,20 @@ void set_cursor(size_t x, size_t y) {
  * This function initializes the terminal by clearing the screen and setting the
  * cursor to the top-left corner.
  */
-void terminal_initialize(void) {
+void vga_terminal_initialize(void) {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(default_color, background_color); // 0x0F
+	terminal_color = vga_entry_color(vga_fg_color, vga_bg_color); // 0x0F
 	terminal_buffer = VGA_MEMORY;
 
-	set_cursor(terminal_column, terminal_row);
+	vga_set_cursor(terminal_column, terminal_row);
 
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
 		for (size_t x = 0; x < VGA_WIDTH; x++) {
 			const size_t index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', terminal_color);
+			terminal_buffer[index] = vga_entry(' ', (uint8_t) terminal_color);
 		}
 	}
-}
-
-/**
- * @brief Set the color of the terminal.
- *
- * This function sets the color of the terminal.
- *
- * @param color  The color to set the terminal to (8 bits).
- */
-void terminal_setcolor(uint8_t color) {
-	terminal_color = vga_entry_color(color, background_color);
 }
 
 /**
@@ -433,7 +250,7 @@ void terminal_setcolor(uint8_t color) {
  * @param x      The x position of the character
  * @param y      The y position of the character
  */
-void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
+void vga_terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
 	const size_t index = y * VGA_WIDTH + x;
 	terminal_buffer[index] = vga_entry(c, color);
 }
@@ -443,7 +260,7 @@ void terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
  *
  * This function scrolls the terminal by one line.
  */
-void terminal_scroll(void) {
+void vga_terminal_scroll(void) {
 	size_t x, y;
 	uint16_t *ptr;
 
@@ -459,7 +276,7 @@ void terminal_scroll(void) {
 	for (x = 0; x < VGA_WIDTH * 2; x++) {
 		ptr = VGA_MEMORY + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
 		//*ptr = *(ptr + (VGA_WIDTH));
-		*ptr = vga_entry(' ', terminal_color);
+		*ptr = vga_entry(' ', (uint8_t) terminal_color);
 	}
 }
 
@@ -471,7 +288,7 @@ void terminal_scroll(void) {
  *
  * @param c  The ASCII character to be displayed (8 bits).
  */
-void terminal_putchar(char c) {
+void vga_terminal_putchar(char c) {
 	unsigned char uc = c;
 
 	if (c == '\t') {
@@ -485,12 +302,12 @@ void terminal_putchar(char c) {
 			terminal_column = terminal_column - VGA_WIDTH;
 
 			if (++terminal_row == VGA_HEIGHT) {
-				terminal_scroll();
+				vga_terminal_scroll();
 				terminal_row = VGA_HEIGHT - 1;
 			}
 		}
 
-		set_cursor(terminal_column, terminal_row);
+		vga_set_cursor(terminal_column, terminal_row);
 		return;
 	}
 
@@ -499,26 +316,26 @@ void terminal_putchar(char c) {
 
 		if (++terminal_row == VGA_HEIGHT) {
 			terminal_row = VGA_HEIGHT - 1;
-			terminal_scroll();
+			vga_terminal_scroll();
 		}
 
-		set_cursor(terminal_column, terminal_row);
+		vga_set_cursor(terminal_column, terminal_row);
 
 		return;
 	}
 
-	terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+	vga_terminal_putentryat(uc, (uint8_t) terminal_color, terminal_column, terminal_row);
 
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
 
 		if (++terminal_row == VGA_HEIGHT) {
-			terminal_scroll();
+			vga_terminal_scroll();
 			terminal_row = VGA_HEIGHT - 1;
 		}
 	}
 
-	set_cursor(terminal_column, terminal_row);
+	vga_set_cursor(terminal_column, terminal_row);
 }
 
 /**
@@ -529,11 +346,11 @@ void terminal_putchar(char c) {
  * @param data  The string to be displayed.
  * @param size  The size of the string to be displayed.
  */
-void terminal_write(const char *data, size_t size) {
+void vga_terminal_write(const char *data, size_t size) {
 	size_t i;
 
 	for (i = 0; i < size; i++) {
-		terminal_putchar(data[i]);
+		vga_terminal_putchar(data[i]);
 	}
 }
 
@@ -544,8 +361,8 @@ void terminal_write(const char *data, size_t size) {
  *
  * @param data  The string to be displayed.
  */
-void terminal_writestring(const char *data) {
-	terminal_write(data, strlen(data));
+void vga_terminal_writestring(const char *data) {
+	vga_terminal_write(data, strlen(data));
 }
 
 /**
@@ -553,179 +370,23 @@ void terminal_writestring(const char *data) {
  *
  * This function moves the cursor back one space.
  */
-void terminal_backspace_cursor(char c) {
+void vga_terminal_backspace_cursor(char c) {
 	c++; // used to eliminate compilation warning
 	--terminal_column;
-	terminal_writestring(" ");
-	set_cursor(--terminal_column, terminal_row);
+	vga_terminal_writestring(" ");
+	vga_set_cursor(--terminal_column, terminal_row);
 }
 
-#endif /* CONFIG_TTY_VGA */
+struct tty_operations vga_tty_operations = {
+	.terminal_initialize		= vga_terminal_initialize,
+	.terminal_write				= vga_terminal_write,
+	.terminal_writestring		= vga_terminal_writestring,
+	.terminal_putchar			= vga_terminal_putchar,
+	.terminal_backspace_cursor	= vga_terminal_backspace_cursor
+};
 
-/**
- * @brief Write a string of given length to stdout.
- *
- * This function writes length characters from the string pointed to by
- * data to stdout
- *
- * @param data    The string to be written.
- * @param length  The number of characters to be written.
- *
- * @return True if the string was written successfully, false otherwise.
- */
-static bool __print(const char *data, size_t length, uint8_t color) {
-	terminal_setcolor(color);
-	terminal_write(data, length);
-	terminal_setcolor(default_color); // se color back to default
-	return true;
-}
-
-/**
- * @brief Write a formatted string to stdout.
- *
- * This function writes a formatted string to stdout.
- *
- * @param format  The format string.
- * @param ...     The arguments to be formatted.
- *
- * @return The number of characters written, or a negative value if an error
- * 	   occurred.
- */
-int printkc(int color, const char *restrict format, ...) {
-	va_list parameters;
-	va_start(parameters, format);
-
-	int written = 0;
-
-	while (*format != '\0') {
-		if (format[0] != '%') {
-			// go through the string until a '%'
-			size_t index = 0;
-			while (format[index] && format[index] != '%') {
-				index++;
-			}
-
-			// print the string until the '%'
-			if (!__print(format, index, color)) {
-				return -1;
-			}
-
-			format += index;
-			written += index;
-			continue;
-		}
-
-		// skip the '%' character
-		format++;
-
-		if (*format == 's') {
-			format++;
-			const char *str = va_arg(parameters, const char *);
-			size_t len = strlen(str);
-
-			if (!__print(str, len, color)) {
-				return -1;
-			}
-
-			written += len;
-		} else if (*format == 'c') {
-			format++;
-			char c = (char) va_arg(parameters, int);
-
-			if (!__print(&c, sizeof(c), color)) {
-				return -1;
-			}
-
-			written++;
-		} else if (*format == 'd') {
-			format++;
-			int i = va_arg(parameters, int);
-			char str[12];
-			itoa(i, str, 10);
-
-			size_t len = strlen(str);
-			if (!__print(str, len, color)) {
-				return -1;
-			}
-
-			written += len;
-		} else if (*format == 'x') {
-			format++;
-			unsigned int i = va_arg(parameters, unsigned int);
-			char str[20] = {0};
-			itoa(i, str, 16);
-
-			size_t len = strlen(str);
-			if (!__print(str, len, color)) {
-				return -1;
-			}
-
-			written += len;
-		} else if (*format == 'l') {
-			format++;
-
-			if (*format == 'd') {
-				format++;
-				long int i = va_arg(parameters, long int);
-				char str[20];
-				itoa(i, str, 10);
-
-				size_t len = strlen(str);
-				if (!__print(str, len, color)) {
-					return -1;
-				}
-
-				written += len;
-			} else if (*format == 'x') {
-				format++;
-				long unsigned int i = va_arg(parameters, long unsigned int);
-				char str[20] = {0};
-				itoa(i, str, 16);
-
-				size_t len = strlen(str);
-				if (!__print(str, len, color)) {
-					return -1;
-				}
-
-				written += len;
-			} else if (*format == 'l') {
-				format++;
-
-				if (*format == 'd') {
-					format++;
-					long long int i = va_arg(parameters, long long int);
-					char str[20];
-					itoa(i, str, 10);
-
-					size_t len = strlen(str);
-					if (!__print(str, len, color)) {
-						return -1;
-					}
-
-					written += len;
-				} else if (*format == 'x') {
-					format++;
-					long long unsigned int i =
-						va_arg(parameters, long long unsigned int);
-					char str[20] = {0};
-					itoa(i, str, 16);
-
-					size_t len = strlen(str);
-					if (!__print(str, len, color)) {
-						return -1;
-					}
-
-					written += len;
-				}
-			}
-		} else {
-			// unsupported format
-			return -1;
-		}
-	}
-
-	va_end(parameters);
-	return written;
+void tty_init_vga() {
+	tty = vga_tty_operations;
 }
 
 /**
@@ -754,7 +415,7 @@ int printk(const char *restrict format, ...) {
 			}
 
 			// print the string until the '%'
-			terminal_write(format, index);
+			tty.terminal_write(format, index);
 
 			format += index;
 			written += index;
@@ -769,14 +430,14 @@ int printk(const char *restrict format, ...) {
 			const char *str = va_arg(parameters, const char *);
 			size_t len = strlen(str);
 
-			terminal_write(str, len);
+			tty.terminal_write(str, len);
 
 			written += len;
 		} else if (*format == 'c') {
 			format++;
 			char c = (char) va_arg(parameters, int);
 
-			terminal_write(&c, sizeof(c));
+			tty.terminal_write(&c, sizeof(c));
 
 			written++;
 		} else if (*format == 'd') {
@@ -786,7 +447,7 @@ int printk(const char *restrict format, ...) {
 			itoa(i, str, 10);
 
 			size_t len = strlen(str);
-			terminal_write(str, len);
+			tty.terminal_write(str, len);
 
 			written += len;
 		} else if (*format == 'x') {
@@ -796,7 +457,7 @@ int printk(const char *restrict format, ...) {
 			itoa(i, str, 16);
 
 			size_t len = strlen(str);
-			terminal_write(str, len);
+			tty.terminal_write(str, len);
 
 			written += len;
 		} else if (*format == 'f') {
@@ -806,7 +467,7 @@ int printk(const char *restrict format, ...) {
 			ftoa(d, str, 2);
 
 			size_t len = strlen(str);
-			terminal_write(str, len);
+			tty.terminal_write(str, len);
 
 			written += len;
 		} else if (*format == 'l') {
@@ -819,7 +480,7 @@ int printk(const char *restrict format, ...) {
 				itoa(i, str, 10);
 
 				size_t len = strlen(str);
-				terminal_write(str, len);
+				tty.terminal_write(str, len);
 
 				written += len;
 			} else if (*format == 'x') {
@@ -829,7 +490,7 @@ int printk(const char *restrict format, ...) {
 				itoa(i, str, 16);
 
 				size_t len = strlen(str);
-				terminal_write(str, len);
+				tty.terminal_write(str, len);
 
 				written += len;
 			} else if (*format == 'l') {
@@ -842,7 +503,7 @@ int printk(const char *restrict format, ...) {
 					itoa(i, str, 10);
 
 					size_t len = strlen(str);
-					terminal_write(str, len);
+					tty.terminal_write(str, len);
 
 					written += len;
 				} else if (*format == 'x') {
@@ -853,7 +514,7 @@ int printk(const char *restrict format, ...) {
 					itoa(i, str, 16);
 
 					size_t len = strlen(str);
-					terminal_write(str, len);
+					tty.terminal_write(str, len);
 
 					written += len;
 				}

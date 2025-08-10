@@ -321,7 +321,7 @@ size_t syscall_write(int fd, void *buf, size_t count) {
 
 	// chech for special file descriptors: stdin, stdout, stderr
 	if (fd == stdout || fd == stderr) {
-		terminal_writestring(buf);
+		tty.terminal_writestring(buf);
 		written_bytes = strlen(buf);
 
 		//__asm__ __volatile__ ("mov %0, %%eax" : : "r"(written_bytes));

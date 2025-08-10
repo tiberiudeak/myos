@@ -330,9 +330,9 @@ void elf_after_program_execution(int return_code) {
 	deallocate_elf_memory();
 
 	if (return_code != 0) {
-		printkc(4, "execution finished with error code: %d\n", return_code);
+		printk("execution finished with error code: %d\n", return_code);
 	} else {
-		printkc(2, "execution finished successfully\n");
+		printk("execution finished successfully\n");
 	}
 
 	shell_cleanup();

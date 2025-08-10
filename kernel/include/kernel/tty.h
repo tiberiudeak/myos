@@ -4,7 +4,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef CONFIG_TTY_VBE
+#define REG_SCREEN_CTRL 0x3D4
+#define REG_SCREEN_DATA 0x3D5
+#define VGA_WIDTH		80
+#define VGA_HEIGHT		25
+#define VIDEO_ADDR		0xB8000
+
 struct vbe_mode_info_block {
 	uint16_t attributes;
 	uint8_t window_a;
@@ -66,15 +71,19 @@ typedef enum vbe_colors {
 
 uint8_t map_framebuffer(void);
 void draw_square(int, int, int, int, uint32_t);
-#endif /* CONFIG_TTY_VBE */
 
-void terminal_initialize(void);
-void terminal_putchar(char c);
-void terminal_write(const char *data, size_t size);
-void terminal_writestring(const char *data);
-void terminal_setcolor(uint8_t color);
-void terminal_backspace_cursor(char);
+struct tty_operations {
+	void (*terminal_initialize) (void);
+	void (*terminal_write) (const char *, size_t);
+	void (*terminal_writestring) (const char *);
+	void (*terminal_putchar) (char);
+	void (*terminal_backspace_cursor) (char);
+};
+
+extern struct tty_operations tty;
+
 int printk(const char *__restrict, ...);
-int printkc(int, const char *__restrict, ...);
+void tty_init_vga();
+void tty_init_vbe();
 
 #endif // _KERNEL_TTYP_H

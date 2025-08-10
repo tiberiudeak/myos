@@ -230,7 +230,7 @@ void shell_scancode(uint8_t scancode) {
 	if (scancode == BACKSPACE) {
 		if (index > 0) {
 			index--;
-			terminal_backspace_cursor(key_buffer[index]);
+			tty.terminal_backspace_cursor(key_buffer[index]);
 			key_buffer[index] = '\0';
 		}
 		return;
@@ -246,7 +246,7 @@ void shell_scancode(uint8_t scancode) {
 
 	key_buffer[index++] = scancode;
 
-	terminal_putchar(scancode);
+	tty.terminal_putchar(scancode);
 }
 
 /* for now, the initialization only prints the prompt */

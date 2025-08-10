@@ -446,7 +446,7 @@ void restore_kernel_address_space(void) {
 	ret = set_page_directory(kernel_page_directory);
 
 	if (ret) {
-		printkc(4, "failed to change page directory!\n");
+		printk("failed to change page directory!\n");
 		__asm__ __volatile__("cli; hlt");
 	}
 

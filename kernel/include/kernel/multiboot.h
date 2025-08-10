@@ -47,6 +47,22 @@ struct multiboot_mmap_entry {
 	uint32_t type;
 }__attribute__((packed));
 
+struct multiboot_drive_entry {
+	uint32_t size;
+	uint8_t drive_number;
+	uint8_t drive_mode;
+	uint16_t drive_cylinders;
+	uint8_t drive_heads;
+	uint8_t drive_sectors;
+	uint8_t drive_ports;
+}__attribute__((packed));
+
+struct multiboot_color {
+	uint8_t red;
+	uint8_t green;
+	uint8_t blue;
+};
+
 struct multiboot_info {
 	uint32_t flags;
 	uint32_t mem_lower;
@@ -63,6 +79,41 @@ struct multiboot_info {
 
 	uint32_t mmap_length;
 	uint32_t mmap_addr;
+
+	uint32_t drive_length;
+	uint32_t drive_addr;
+
+	uint32_t config_table;
+	uint32_t bootloader_name;
+	uint32_t apm_table;
+
+	uint32_t vbe_control_info;
+	uint32_t vbe_mode_info;
+	uint16_t vbe_mode;
+	uint16_t vbe_interface_seg;
+	uint16_t vbe_interface_off;
+	uint16_t vbe_interface_len;
+
+	uint64_t framebuffer_addr;
+	uint32_t framebuffer_pitch;
+	uint32_t framebuffer_width;
+	uint32_t framebuffer_height;
+	uint8_t framebuffer_bpp;
+	uint8_t framebuffer_type;
+	union {
+		struct {
+			uint32_t framebuffer_palette_addr;
+			uint16_t framebuffer_palette_num_colors;
+		};
+		struct {
+			uint8_t framebuffer_red_field_position;
+			uint8_t framebuffer_red_mask_size;
+			uint8_t framebuffer_green_field_position;
+			uint8_t framebuffer_green_mask_size;
+			uint8_t framebuffer_blue_field_position;
+			uint8_t framebuffer_blue_mask_size;
+		};
+	};
 };
 
 #endif

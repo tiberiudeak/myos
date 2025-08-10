@@ -31,13 +31,21 @@ void halt_processor(void) {
 void kmain(unsigned long magic, unsigned long addr) {
 	struct multiboot_info *mbi;
 
-	terminal_initialize();
 	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
-		printk("Invalid magic number: 0x%x\n", magic);
 		return;
 	}
 
 	mbi = (struct multiboot_info *) addr;
+
+	// init video
+	if (mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER) {
+		tty_init_vbe();
+	} else {
+		tty_init_vga();
+	}
+
+	tty.terminal_initialize();
+
 	printk("flags = 0x%x\n", mbi->flags);
 
 	if (mbi->flags & MULTIBOOT_INFO_MEMORY) {
@@ -90,23 +98,40 @@ void kmain(unsigned long magic, unsigned long addr) {
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_MEMMAP) {
-		struct multiboot_mmap_entry *mmap_reg;
+		struct multiboot_mmap_entry *mmap_entry;
 
-		for (mmap_reg = (struct multiboot_mmap_entry *) mbi->mmap_addr;
-				(unsigned long) mmap_reg < mbi->mmap_addr + mbi->mmap_length;
-				mmap_reg = (struct multiboot_mmap_entry *) ((unsigned long) mmap_reg +
-					mmap_reg->size + sizeof(mmap_reg->size))) {
-			printk("mem [%llx-%llx] %s\n", mmap_reg->base_addr,
-					mmap_reg->base_addr + mmap_reg->length - 1,
-					mmap_reg->type == 1 ? "usable" : "reserved");
+		for (mmap_entry = (struct multiboot_mmap_entry *) mbi->mmap_addr;
+				(unsigned long) mmap_entry < mbi->mmap_addr + mbi->mmap_length;
+				mmap_entry = (struct multiboot_mmap_entry *) ((unsigned long) mmap_entry +
+					mmap_entry->size + sizeof(mmap_entry->size))) {
+			printk("mem [%llx-%llx] %s\n", mmap_entry->base_addr,
+					mmap_entry->base_addr + mmap_entry->length - 1,
+					mmap_entry->type == 1 ? "usable" : "reserved");
 		}
 	}
+
+	if (mbi->flags & MULTIBOOT_INFO_DRIVE && mbi->drive_length != 0) {
+		struct multiboot_drive_entry *drive_entry;
+
+		for (drive_entry = (struct multiboot_drive_entry *) mbi->drive_addr;
+				(unsigned long) drive_entry < mbi->drive_addr + mbi->drive_length;
+				drive_entry = (struct multiboot_drive_entry *) ((unsigned long) drive_entry +
+					drive_entry->size + sizeof(drive_entry->size))) {
+			printk("drive number =  %d, drive_mode = %s\n",
+					drive_entry->drive_number, drive_entry->drive_mode == 0 ? "CHS" : "LBA");
+		}
+	}
+
+	if (mbi->flags & MULTIBOOT_INFO_BOOTLOADNAME) {
+		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
+	}
+
 
 	while(1);
 #ifdef CONFIG_VERBOSE
 	char *a = "kernel";
 	printk("Booting, ");
-	printkc(3, "%s", a);
+	printk("%s", a);
 	printk("...\n\n");
 #endif
 
@@ -119,7 +144,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 
 	if (ret) {
 #ifdef CONFIG_VERBOSE
-		printkc(4, "failed");
+		printk("failed");
 #endif
 		halt_processor();
 	}
@@ -158,7 +183,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 	open_files_table = init_open_files_table();
 
 	if (open_files_table == NULL) {
-		printkc(4, "failed to init open files table!\n");
+		printk("failed to init open files table!\n");
 		halt_processor();
 	}
 
@@ -170,7 +195,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 	ret = scheduler_init();
 
 	if (ret) {
-		printkc(4, "failed to initialize the scheduler\n");
+		printk("failed to initialize the scheduler\n");
 		halt_processor();
 	}
 
@@ -180,7 +205,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 	ret = scheduler_init_rr(); // initialize the round robin scheduler
 
 	if (ret) {
-		printkc(4, "failed to initialize the scheduler\n");
+		printk("failed to initialize the scheduler\n");
 		halt_processor();
 	}
 

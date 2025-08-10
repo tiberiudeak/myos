@@ -126,7 +126,7 @@ char *exception_messages[] = {"Division By Zero",
  * @param r Pointer to the interrupt registers struct
  */
 void page_fault_handler(struct interrupt_regs *r) {
-	printkc(4, "%s\n", exception_messages[r->int_no]);
+	printk("%s\n", exception_messages[r->int_no]);
 	printk("Error Code: %d\n", r->err_code);
 
 	if (r->err_code & 0x1) {
@@ -201,7 +201,7 @@ void isr_handler(struct interrupt_regs *r) {
 			page_fault_handler(r);
 		} else {
 			printk("Received interrupt: ");
-			printkc(4, "%s\n", exception_messages[r->int_no]);
+			printk("%s\n", exception_messages[r->int_no]);
 			printk("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi,
 				   r->esi);
 			printk("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx,
