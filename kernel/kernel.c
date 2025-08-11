@@ -29,6 +29,7 @@ void halt_processor(void) {
 }
 
 void kmain(unsigned long magic, unsigned long addr) {
+	int ret;
 	struct multiboot_info *mbi;
 
 	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -39,9 +40,13 @@ void kmain(unsigned long magic, unsigned long addr) {
 
 	// init video
 	if (mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER) {
-		tty_init_vbe();
+		ret = tty_init_vbe(mbi);
 	} else {
-		tty_init_vga();
+		ret = tty_init_vga();
+	}
+
+	if (ret) {
+		return;
 	}
 
 	tty.terminal_initialize();
@@ -92,8 +97,8 @@ void kmain(unsigned long magic, unsigned long addr) {
 	if (mbi->flags & MULTIBOOT_INFO_ELF_SHDR) {
 		struct multiboot_elf_shdr *elf_shdr = &(mbi->u.elf_shdr);
 
-		printk("multiboot section header table from the ELF kernel, sections = %d,\
-				size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
+		printk("multiboot section header table from the ELF kernel:\n\
+sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 				elf_shdr->size, elf_shdr->addr, elf_shdr->shndx);
 	}
 
@@ -126,7 +131,6 @@ void kmain(unsigned long magic, unsigned long addr) {
 		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
 	}
 
-
 	while(1);
 #ifdef CONFIG_VERBOSE
 	char *a = "kernel";
@@ -134,8 +138,6 @@ void kmain(unsigned long magic, unsigned long addr) {
 	printk("%s", a);
 	printk("...\n\n");
 #endif
-
-	int8_t ret;
 
 	init_gdt();		  // initialize global descriptor table
 	init_idt();		  // initialize interrupt descriptor table

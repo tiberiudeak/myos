@@ -1,4 +1,6 @@
 #include <kernel/global_addresses.h>
+#include <kernel/multiboot.h>
+#include <kernel/font8x16.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
 #include <kernel/io.h>
@@ -9,8 +11,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include "vga.h"
-
 struct tty_operations tty;
 
 static const uint32_t vbe_bg_color = VBE_COLOR_BLACK;
@@ -18,9 +18,9 @@ static const uint32_t vbe_fg_color = VBE_COLOR_WHITE;
 static const uint8_t vga_bg_color = VGA_COLOR_BLACK;
 static const uint8_t vga_fg_color = VGA_COLOR_WHITE;
 
-static uint8_t *font = (uint8_t *) VGA_BIOS_FONT;
-static const struct vbe_mode_info_block *vbe_mode =
-	(struct vbe_mode_info_block *) VBE_MODE_INFO;
+static uint8_t *font = IBM_VGA_8x16;
+//static const struct vbe_mode_info_block *vbe_mode =
+//	(struct vbe_mode_info_block *) VBE_MODE_INFO;
 static uint32_t *framebuffer;
 
 static size_t terminal_row;
@@ -30,7 +30,7 @@ static uint32_t terminal_color;
 static size_t VBE_WIDTH;
 static size_t VBE_HEIGHT;
 
-void vbe_clear_screen(void) {
+void _vbe_clear_screen() {
 	int num_pixels = VBE_WIDTH * VBE_HEIGHT;
 
 	for (int i = 0; i < num_pixels; i++) {
@@ -38,19 +38,16 @@ void vbe_clear_screen(void) {
 	}
 }
 
-void vbe_terminal_initialize(void) {
-	framebuffer = (uint32_t *) vbe_mode->framebuffer;
-	VBE_WIDTH = vbe_mode->width;
-	VBE_HEIGHT = vbe_mode->height;
+void _vbe_terminal_initialize() {
 
 	terminal_row = 0;
 	terminal_column = 0;
 	terminal_color = vbe_fg_color;
 
-	vbe_clear_screen();
+	_vbe_clear_screen();
 }
 
-void vbe_terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
+void _vbe_terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 	// get offset within the font data for the requested character
 	int font_offset = c * 16;
 
@@ -78,7 +75,7 @@ void vbe_terminal_putentryat(char c, uint32_t color, size_t x, size_t y) {
 	}
 }
 
-void vbe_terminal_scroll(void) {
+void _vbe_terminal_scroll() {
 	for (size_t y = 0; y < VBE_HEIGHT - 16; ++y) {
 		uint32_t *src = framebuffer + (y + 16) * VBE_WIDTH;
 		uint32_t *dest = framebuffer + y * VBE_WIDTH;
@@ -98,7 +95,7 @@ void vbe_terminal_scroll(void) {
 	}
 }
 
-void vbe_terminal_putchar(char c) {
+void _vbe_terminal_putchar(char c) {
 	unsigned char uc = c;
 
 	if (c == '\t') {
@@ -112,7 +109,7 @@ void vbe_terminal_putchar(char c) {
 			terminal_column = terminal_column - (VBE_WIDTH / 8);
 
 			if (++terminal_row == (VBE_HEIGHT / 16)) {
-				vbe_terminal_scroll();
+				_vbe_terminal_scroll();
 				terminal_row = (VBE_HEIGHT / 16) - 1;
 			}
 		}
@@ -126,7 +123,7 @@ void vbe_terminal_putchar(char c) {
 
 		if (++terminal_row == (VBE_HEIGHT / 16)) {
 			terminal_row = (VBE_HEIGHT / 16) - 1;
-			vbe_terminal_scroll();
+			_vbe_terminal_scroll();
 		}
 
 		// set_cursor(terminal_column, terminal_row);
@@ -134,13 +131,13 @@ void vbe_terminal_putchar(char c) {
 		return;
 	}
 
-	vbe_terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
+	_vbe_terminal_putentryat(uc, terminal_color, terminal_column, terminal_row);
 
 	if (++terminal_column == (VBE_WIDTH / 8)) {
 		terminal_column = 0;
 
 		if (++terminal_row == (VBE_HEIGHT / 16)) {
-			vbe_terminal_scroll();
+			_vbe_terminal_scroll();
 			terminal_row = (VBE_HEIGHT / 16) - 1;
 		}
 	}
@@ -148,58 +145,108 @@ void vbe_terminal_putchar(char c) {
 	// set_cursor(terminal_column, terminal_row);
 }
 
-void vbe_terminal_write(const char *data, size_t size) {
+void _vbe_terminal_write(const char *data, size_t size) {
 	for (size_t i = 0; i < size; i++) {
-		vbe_terminal_putchar(data[i]);
+		_vbe_terminal_putchar(data[i]);
 	}
 }
 
-void vbe_terminal_writestring(const char *data) {
-	vbe_terminal_write(data, strlen(data));
+void _vbe_terminal_writestring(const char *data) {
+	_vbe_terminal_write(data, strlen(data));
 }
 
 // TODO: move this function to mm
-uint8_t vbe_map_framebuffer(void) {
-	uint32_t framebuffer_size = vbe_mode->width * vbe_mode->pitch;
-	uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+//uint8_t vbe_map_framebuffer(void) {
+//	uint32_t framebuffer_size = VBE_WIDTH * vbe_mode->pitch;
+//	uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
+//
+//	if (framebuffer_size_pages % PAGE_SIZE > 0) {
+//		framebuffer_size_pages++;
+//	}
+//
+//	framebuffer_size_pages *= 2;
+//	int ret;
+//
+//	for (uint32_t i = 0, fb_start = (uint32_t) framebuffer;
+//		 i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
+//		ret = map_page((void *) fb_start, (void *) fb_start);
+//		if (ret) {
+//			return ret;
+//		}
+//	}
+//
+//	return 0;
+//}
 
-	if (framebuffer_size_pages % PAGE_SIZE > 0) {
-		framebuffer_size_pages++;
+void _vbe_terminal_backspace_cursor(char c) {
+	terminal_column--;
+	_vbe_terminal_putentryat(c, vbe_bg_color, terminal_column, terminal_row);
+}
+
+struct tty_operations vbe_tty_operations = {
+	.terminal_initialize		= _vbe_terminal_initialize,
+	.terminal_write				= _vbe_terminal_write,
+	.terminal_writestring		= _vbe_terminal_writestring,
+	.terminal_putchar			= _vbe_terminal_putchar,
+	.terminal_backspace_cursor	= _vbe_terminal_backspace_cursor
+};
+
+int tty_init_vbe(void *data) {
+	if (!data) {
+		return 1;
 	}
 
-	framebuffer_size_pages *= 2;
-	int ret;
+	struct multiboot_info *mbi = (struct multiboot_info *) data;
 
-	for (uint32_t i = 0, fb_start = vbe_mode->framebuffer;
-		 i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
-		ret = map_page((void *) fb_start, (void *) fb_start);
-		if (ret) {
-			return ret;
-		}
-	}
+	framebuffer = (uint32_t *) mbi->framebuffer_addr;
+	VBE_WIDTH = mbi->framebuffer_width;
+	VBE_HEIGHT = mbi->framebuffer_height;
+
+	tty = vbe_tty_operations;
 
 	return 0;
 }
 
-void vbe_terminal_backspace_cursor(char c) {
-	terminal_column--;
-	vbe_terminal_putentryat(c, vbe_bg_color, terminal_column, terminal_row);
-}
-
-struct tty_operations vbe_tty_operations = {
-	.terminal_initialize		= vbe_terminal_initialize,
-	.terminal_write				= vbe_terminal_write,
-	.terminal_writestring		= vbe_terminal_writestring,
-	.terminal_putchar			= vbe_terminal_putchar,
-	.terminal_backspace_cursor	= vbe_terminal_backspace_cursor
-};
-
-void tty_init_vbe() {
-	tty = vbe_tty_operations;
-}
-
-static uint16_t *const VGA_MEMORY = (uint16_t *) VIDEO_ADDR;
+static uint16_t *const VGA_MEMORY = (uint16_t *) VGA_VIDEO_ADDR;
 static uint16_t *terminal_buffer;
+
+/**
+ * @brief Create a VGA color attribute combining foreground and background
+ * colors.
+ *
+ * This function takes foreground and background color enums and combines them
+ * into a single 8-bit value suitable for use as a color attribute in VGA text
+ * mode. The lower 4 bits represent the foreground color, and the upper 4 bits
+ * represent the background color.
+ *
+ * @param fg  The foreground color enum (from enum vga_color).
+ * @param bg  The background color enum (from enum vga_color).
+ *
+ * @return The combined 8-bit value representing the foreground and background
+ *         colors for use as a color attribute in VGA text mode.
+ */
+static inline uint8_t _vga_entry_color(enum vga_color fg, enum vga_color bg) {
+	return fg | bg << 4;
+}
+
+/**
+ * @brief Create a VGA entry combining an ASCII character and color attribute.
+ *
+ * This function takes an ASCII character and a color attribute, then combines
+ * them into a single 16-bit value suitable for writing to the video memory,
+ * where the upper 8 bits represent the color attribute and the lower 8 bits
+ * represent the ASCII character.
+ *
+ * @param uc     The ASCII character to be displayed (8 bits).
+ * @param color  The color attribute for the character (8 bits).
+ *               The lower 4 bits represent the foreground color, and the
+ *               upper 4 bits represent the background color.
+ *
+ * @return The combined 16-bit value representing the character and color.
+ */
+static inline uint16_t _vga_entry(unsigned char uc, uint8_t color) {
+	return (uint16_t) uc | (uint16_t) color << 8;
+}
 
 /**
  * @brief Set the cursor to the specified position.
@@ -209,7 +256,7 @@ static uint16_t *terminal_buffer;
  * @param x  The x position of the cursor.
  * @param y  The y position of the cursor.
  */
-void vga_set_cursor(size_t x, size_t y) {
+void _vga_set_cursor(size_t x, size_t y) {
 	uint16_t pos = y * VGA_WIDTH + x;
 
 	port_byte_out(REG_SCREEN_CTRL, 14);
@@ -224,18 +271,18 @@ void vga_set_cursor(size_t x, size_t y) {
  * This function initializes the terminal by clearing the screen and setting the
  * cursor to the top-left corner.
  */
-void vga_terminal_initialize(void) {
+void _vga_terminal_initialize() {
 	terminal_row = 0;
 	terminal_column = 0;
-	terminal_color = vga_entry_color(vga_fg_color, vga_bg_color); // 0x0F
+	terminal_color = _vga_entry_color(vga_fg_color, vga_bg_color); // 0x0F
 	terminal_buffer = VGA_MEMORY;
 
-	vga_set_cursor(terminal_column, terminal_row);
+	_vga_set_cursor(terminal_column, terminal_row);
 
 	for (size_t y = 0; y < VGA_HEIGHT; y++) {
 		for (size_t x = 0; x < VGA_WIDTH; x++) {
 			const size_t index = y * VGA_WIDTH + x;
-			terminal_buffer[index] = vga_entry(' ', (uint8_t) terminal_color);
+			terminal_buffer[index] = _vga_entry(' ', (uint8_t) terminal_color);
 		}
 	}
 }
@@ -250,9 +297,9 @@ void vga_terminal_initialize(void) {
  * @param x      The x position of the character
  * @param y      The y position of the character
  */
-void vga_terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
+void _vga_terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
 	const size_t index = y * VGA_WIDTH + x;
-	terminal_buffer[index] = vga_entry(c, color);
+	terminal_buffer[index] = _vga_entry(c, color);
 }
 
 /**
@@ -260,7 +307,7 @@ void vga_terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
  *
  * This function scrolls the terminal by one line.
  */
-void vga_terminal_scroll(void) {
+void _vga_terminal_scroll() {
 	size_t x, y;
 	uint16_t *ptr;
 
@@ -276,7 +323,7 @@ void vga_terminal_scroll(void) {
 	for (x = 0; x < VGA_WIDTH * 2; x++) {
 		ptr = VGA_MEMORY + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
 		//*ptr = *(ptr + (VGA_WIDTH));
-		*ptr = vga_entry(' ', (uint8_t) terminal_color);
+		*ptr = _vga_entry(' ', (uint8_t) terminal_color);
 	}
 }
 
@@ -288,7 +335,7 @@ void vga_terminal_scroll(void) {
  *
  * @param c  The ASCII character to be displayed (8 bits).
  */
-void vga_terminal_putchar(char c) {
+void _vga_terminal_putchar(char c) {
 	unsigned char uc = c;
 
 	if (c == '\t') {
@@ -302,12 +349,12 @@ void vga_terminal_putchar(char c) {
 			terminal_column = terminal_column - VGA_WIDTH;
 
 			if (++terminal_row == VGA_HEIGHT) {
-				vga_terminal_scroll();
+				_vga_terminal_scroll();
 				terminal_row = VGA_HEIGHT - 1;
 			}
 		}
 
-		vga_set_cursor(terminal_column, terminal_row);
+		_vga_set_cursor(terminal_column, terminal_row);
 		return;
 	}
 
@@ -316,26 +363,26 @@ void vga_terminal_putchar(char c) {
 
 		if (++terminal_row == VGA_HEIGHT) {
 			terminal_row = VGA_HEIGHT - 1;
-			vga_terminal_scroll();
+			_vga_terminal_scroll();
 		}
 
-		vga_set_cursor(terminal_column, terminal_row);
+		_vga_set_cursor(terminal_column, terminal_row);
 
 		return;
 	}
 
-	vga_terminal_putentryat(uc, (uint8_t) terminal_color, terminal_column, terminal_row);
+	_vga_terminal_putentryat(uc, (uint8_t) terminal_color, terminal_column, terminal_row);
 
 	if (++terminal_column == VGA_WIDTH) {
 		terminal_column = 0;
 
 		if (++terminal_row == VGA_HEIGHT) {
-			vga_terminal_scroll();
+			_vga_terminal_scroll();
 			terminal_row = VGA_HEIGHT - 1;
 		}
 	}
 
-	vga_set_cursor(terminal_column, terminal_row);
+	_vga_set_cursor(terminal_column, terminal_row);
 }
 
 /**
@@ -346,11 +393,11 @@ void vga_terminal_putchar(char c) {
  * @param data  The string to be displayed.
  * @param size  The size of the string to be displayed.
  */
-void vga_terminal_write(const char *data, size_t size) {
+void _vga_terminal_write(const char *data, size_t size) {
 	size_t i;
 
 	for (i = 0; i < size; i++) {
-		vga_terminal_putchar(data[i]);
+		_vga_terminal_putchar(data[i]);
 	}
 }
 
@@ -361,8 +408,8 @@ void vga_terminal_write(const char *data, size_t size) {
  *
  * @param data  The string to be displayed.
  */
-void vga_terminal_writestring(const char *data) {
-	vga_terminal_write(data, strlen(data));
+void _vga_terminal_writestring(const char *data) {
+	_vga_terminal_write(data, strlen(data));
 }
 
 /**
@@ -370,23 +417,24 @@ void vga_terminal_writestring(const char *data) {
  *
  * This function moves the cursor back one space.
  */
-void vga_terminal_backspace_cursor(char c) {
-	c++; // used to eliminate compilation warning
+void _vga_terminal_backspace_cursor(char c) {
+	(void)c; // eliminate compilation warning
 	--terminal_column;
-	vga_terminal_writestring(" ");
-	vga_set_cursor(--terminal_column, terminal_row);
+	_vga_terminal_writestring(" ");
+	_vga_set_cursor(--terminal_column, terminal_row);
 }
 
 struct tty_operations vga_tty_operations = {
-	.terminal_initialize		= vga_terminal_initialize,
-	.terminal_write				= vga_terminal_write,
-	.terminal_writestring		= vga_terminal_writestring,
-	.terminal_putchar			= vga_terminal_putchar,
-	.terminal_backspace_cursor	= vga_terminal_backspace_cursor
+	.terminal_initialize		= _vga_terminal_initialize,
+	.terminal_write				= _vga_terminal_write,
+	.terminal_writestring		= _vga_terminal_writestring,
+	.terminal_putchar			= _vga_terminal_putchar,
+	.terminal_backspace_cursor	= _vga_terminal_backspace_cursor
 };
 
-void tty_init_vga() {
+int tty_init_vga() {
 	tty = vga_tty_operations;
+	return 0;
 }
 
 /**

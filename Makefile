@@ -17,15 +17,16 @@ PROG_SRC_DIR:=programs
 KERNEL_BIN:=$(KERNEL_SRC_DIR)/kernel
 LIBC_AR:=$(LIBC_SRC_DIR)/libc.a
 
-QEMU:=qemu-system-i386
-QEMUFLAGS:= -kernel $(KERNEL_BIN) -rtc base=localtime,clock=host,driftfix=none
-QEMUFLAGS_DEBUG:= -kernel $(KERNEL_BIN) -rtc base=localtime,clock=host,driftfix=none -S -s
-
 BINARIES:=$(KERNEL_BIN)
 ISODIR:=isodir
 ISO:=myos.iso
 
-.PHONY: all clean run iso kernel userspace
+QEMU:=qemu-system-i386
+QEMUFLAGS:=-kernel $(KERNEL_BIN) -rtc base=localtime,clock=host,driftfix=none
+QEMUFLAGS_DEBUG:=-kernel $(KERNEL_BIN) -rtc base=localtime,clock=host,driftfix=none -S -s
+QEMUFLAGS_ISO:=-cdrom $(ISO) -rtc base=localtime,clock=host,driftfix=none
+
+.PHONY: all clean run iso runiso kernel userspace
 
 all: $(KERNEL_BIN)
 
@@ -52,6 +53,9 @@ run: $(KERNEL_BIN)
 
 gdb-debug: $(KERNEL_BIN)
 	$(QEMU) $(QEMUFLAGS_DEBUG)
+
+runiso: $(ISO)
+	$(QEMU) $(QEMUFLAGS_ISO)
 
 iso: $(ISO)
 

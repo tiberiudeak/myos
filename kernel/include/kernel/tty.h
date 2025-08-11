@@ -8,7 +8,26 @@
 #define REG_SCREEN_DATA 0x3D5
 #define VGA_WIDTH		80
 #define VGA_HEIGHT		25
-#define VIDEO_ADDR		0xB8000
+#define VGA_VIDEO_ADDR	0xB8000
+
+enum vga_color {
+	VGA_COLOR_BLACK			= 0,
+	VGA_COLOR_BLUE			= 1,
+	VGA_COLOR_GREEN			= 2,
+	VGA_COLOR_CYAN			= 3,
+	VGA_COLOR_RED			= 4,
+	VGA_COLOR_MAGENTA		= 5,
+	VGA_COLOR_BROWN			= 6,
+	VGA_COLOR_LIGHT_GREY	= 7,
+	VGA_COLOR_DARK_GREY		= 8,
+	VGA_COLOR_LIGHT_BLUE	= 9,
+	VGA_COLOR_LIGHT_GREEN	= 10,
+	VGA_COLOR_LIGHT_CYAN	= 11,
+	VGA_COLOR_LIGHT_RED		= 12,
+	VGA_COLOR_LIGHT_MAGENTA = 13,
+	VGA_COLOR_LIGHT_BROWN	= 14,
+	VGA_COLOR_WHITE			= 15
+};
 
 struct vbe_mode_info_block {
 	uint16_t attributes;
@@ -19,13 +38,13 @@ struct vbe_mode_info_block {
 	uint16_t segment_a;
 	uint16_t segment_b;
 	uint32_t win_func_ptr;
-	uint16_t pitch;	 // number of bytes per horizontal line
-	uint16_t width;	 // width in pixels
-	uint16_t height; // height in pixels
+	uint16_t pitch;
+	uint16_t width;
+	uint16_t height;
 	uint8_t w_char;
 	uint8_t y_char;
 	uint8_t planes;
-	uint8_t bpp; // bits per pixel
+	uint8_t bpp;
 	uint8_t banks;
 	uint8_t memory_model;
 	uint8_t bank_size;
@@ -42,7 +61,7 @@ struct vbe_mode_info_block {
 	uint8_t reserved_position;
 	uint8_t direct_color_attributes;
 
-	uint32_t framebuffer; // physical address of the linear frame buffer
+	uint32_t framebuffer;
 	uint32_t off_screen_mem_off;
 	uint16_t off_screen_mem_size;
 	uint8_t reserved1[206];
@@ -69,9 +88,6 @@ typedef enum vbe_colors {
 	VBE_COLOR_WHITE			= 0xFFFFFFFF
 } vbe_colors;
 
-uint8_t map_framebuffer(void);
-void draw_square(int, int, int, int, uint32_t);
-
 struct tty_operations {
 	void (*terminal_initialize) (void);
 	void (*terminal_write) (const char *, size_t);
@@ -83,7 +99,7 @@ struct tty_operations {
 extern struct tty_operations tty;
 
 int printk(const char *__restrict, ...);
-void tty_init_vga();
-void tty_init_vbe();
+int tty_init_vga(void);
+int tty_init_vbe(void *);
 
 #endif // _KERNEL_TTYP_H
