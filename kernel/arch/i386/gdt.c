@@ -23,10 +23,7 @@ struct tss_entry tss_entry;
  * The GDT is then loaded into the processor using the gdt_flush function
  * and the TSS is loaded using the tss_flush function.
  */
-void init_gdt() {
-#ifdef CONFIG_VERBOSE
-	printk("Initializing GDT");
-#endif
+void gdt_init() {
 	gdt_ptr.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
 	gdt_ptr.base = (uint32_t) &gdt_entries;
 
@@ -57,14 +54,10 @@ void init_gdt() {
 				 GDT_FLAGS_GRANULARITY_4KB | GDT_FLAGS_32_BIT);
 
 	// Task State Segment (TSS)
-	write_tss(5, 0x10, 0x90000);
+	gdt_write_tss(5, 0x10, 0x90000);
 
 	gdt_flush((uint32_t) &gdt_ptr);
 	tss_flush();
-
-#ifdef CONFIG_VERBOSE
-	printkc(2, "\t\tdone\n");
-#endif
 }
 
 /**
@@ -102,7 +95,7 @@ void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access,
  * @param ss0  The stack segment for privilege level 0
  * @param esp0 The stack pointer for privilege level 0
  */
-void write_tss(int num, uint16_t ss0, uint32_t esp0) {
+void gdt_write_tss(int num, uint16_t ss0, uint32_t esp0) {
 	uint32_t base = (uint32_t) &tss_entry;
 	uint32_t limit = base + sizeof(tss_entry);
 

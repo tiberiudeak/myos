@@ -127,10 +127,10 @@ typedef enum {
 	GDT_FLAGS_GRANULARITY_4KB	= 0x80
 } GDT_FLAGS;
 
-void init_gdt();
+void gdt_init();
 void gdt_set_gate(int num, uint32_t base, uint32_t limit, uint8_t access,
 				  uint8_t flags);
 void gdt_flush(uint32_t gdt_ptr);
-void write_tss(int num, uint16_t ss0, uint32_t esp0);
+void gdt_write_tss(int num, uint16_t ss0, uint32_t esp0);
 
 #endif // ARCH_I386_GDT_H

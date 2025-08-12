@@ -131,37 +131,40 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
 	}
 
-	while(1);
-#ifdef CONFIG_VERBOSE
-	char *a = "kernel";
-	printk("Booting, ");
-	printk("%s", a);
-	printk("...\n\n");
-#endif
+	// initialize global descriptor table
+	gdt_init();
 
-	init_gdt();		  // initialize global descriptor table
-	init_idt();		  // initialize interrupt descriptor table
-	ACPI_init();	  // detect some ACPI tables
-	ret = PS2_init(); // initialize PS/2 controller
+	// initialize interrupt descriptor table
+	idt_init();
+
+	// detect some ACPI tables
+	// ACPI_init();
+
+	// initialize PS/2 controller
+	ret = PS2_init();
 
 	if (ret) {
-#ifdef CONFIG_VERBOSE
-		printk("failed");
-#endif
 		halt_processor();
 	}
 
-	keyboard_init(); // install keyboard irq handler
-	PIT_init();		 // initialize programmable interrupt timer
+	// install keyboard irq handler
+	keyboard_init();
 
-	ret = initialize_memory(); // initialize physical memory manager
+	while(1);
+
+	// initialize programmable interrupt timer
+	PIT_init();
+
+	// initialize physical memory manager
+	ret = initialize_memory();
 
 	if (ret) {
 		printk("Error initializing the physical memory manager\n");
 		halt_processor();
 	}
 
-	ret = initialize_virtual_memory(); // initialize virtual memory
+	// initialize virtual memory
+	ret = initialize_virtual_memory();
 
 	if (ret) {
 		printk("Error initializing the virtual memory manager\n");

@@ -82,7 +82,7 @@ typedef enum {
 	IDT_FLAGS_PRESENT		= 0x80
 } IDT_FLAGS;
 
-void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags);
-void init_idt();
+void idt_set_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags);
+void idt_init();
 
 #endif // ARCH_I386_IDT_H

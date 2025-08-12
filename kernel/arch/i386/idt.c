@@ -15,7 +15,7 @@ struct idt_ptr idt_ptr_reg;
  * @param n        The number of the idt_entries gate.
  * @param handler  The handler of the idt_entries gate.
  */
-void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
+void idt_set_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
 	idt_entries[n].low_offset = low_16(handler);
 	idt_entries[n].selector = selector;
 	idt_entries[n].reserved = 0;
@@ -37,10 +37,7 @@ void set_idt_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
  * called exceptions. The first 16 IRQs are reserved by the
  * PICs and are used to handle hardware interrupts.
  */
-void init_idt() {
-#ifdef CONFIG_VERBOSE
-	printk("Initializing IDT");
-#endif
+void idt_init() {
 	idt_ptr_reg.limit = (sizeof(struct idt_gate) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t) &idt_entries;
 
@@ -53,8 +50,4 @@ void init_idt() {
 
 	__asm__ __volatile__("lidt %0" : : "m"(idt_ptr_reg));
 	__asm__ __volatile__("sti");
-
-#ifdef CONFIG_VERBOSE
-	printkc(2, "\t\tdone\n");
-#endif
 }
