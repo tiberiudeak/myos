@@ -2,6 +2,7 @@ ENTRY(_start)
 
 SECTIONS
 {
+	PROVIDE(kernel_start = .);
 	. = 2M;
 	.text BLOCK(4K) : ALIGN(4K)
 	{

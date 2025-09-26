@@ -3,11 +3,9 @@
 
 #include <stdint.h>
 
-#define MEM_MAP_NR_ENTRIES_ADDRESS 0x1000
-#define MEM_MAP_ADDRESS			   0x1004
-
-#define BLOCK_SIZE				   4096 // 4K
-#define BITMAP_ADDRESS			   0x60000
+#define BLOCK_SIZE			4096 // 4K
+#define MAX_RAM_SIZE		0x100000000 // 4GB
+#define BITMAP_SIZE			((MAX_RAM_SIZE / BLOCK_SIZE) / 8)
 
 struct mem_map_entry {
 	uint64_t base_addr;
@@ -16,8 +14,7 @@ struct mem_map_entry {
 	uint32_t acpi;
 } __attribute__((packed));
 
-void print_mem_map(void);
-uint8_t initialize_memory(void);
+uint8_t pmm_init(uint32_t, uint32_t);
 void *allocate_blocks(uint32_t);
 void free_blocks(void *, uint32_t);
 void print_phymem_info(void);

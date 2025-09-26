@@ -18,6 +18,7 @@
 #include <stdint.h>
 
 extern char kernel_end[];
+extern char kernel_start[];
 
 // the system-wide table of open files
 struct open_files_table *open_files_table;
@@ -51,7 +52,9 @@ void kmain(unsigned long magic, unsigned long addr) {
 
 	tty.terminal_initialize();
 
-	printk("flags = 0x%x\n", mbi->flags);
+	if (mbi->flags & MULTIBOOT_INFO_BOOTLOADNAME) {
+		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
+	}
 
 	if (mbi->flags & MULTIBOOT_INFO_MEMORY) {
 		printk("mem_lower = 0x%xKB, mem_upper = 0x%xKB\n",
@@ -113,6 +116,17 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 					mmap_entry->base_addr + mmap_entry->length - 1,
 					mmap_entry->type == 1 ? "usable" : "reserved");
 		}
+
+		// initialize physical memory manager
+		ret = pmm_init(mbi->mmap_addr, mbi->mmap_length);
+
+		if (ret) {
+			printk("ERROR: couldn't initialize physical memory manager!\n");
+			return;
+		}
+	} else {
+		printk("ERROR: no memory map provided by bootloader! Cannot initialize physical memory manager!\n");
+		return;
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_DRIVE && mbi->drive_length != 0) {
@@ -125,10 +139,6 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 			printk("drive number =  %d, drive_mode = %s\n",
 					drive_entry->drive_number, drive_entry->drive_mode == 0 ? "CHS" : "LBA");
 		}
-	}
-
-	if (mbi->flags & MULTIBOOT_INFO_BOOTLOADNAME) {
-		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
 	}
 
 	// initialize global descriptor table
@@ -150,18 +160,10 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	// install keyboard irq handler
 	keyboard_init();
 
-	while(1);
-
 	// initialize programmable interrupt timer
 	PIT_init();
 
-	// initialize physical memory manager
-	ret = initialize_memory();
-
-	if (ret) {
-		printk("Error initializing the physical memory manager\n");
-		halt_processor();
-	}
+	while(1);
 
 	// initialize virtual memory
 	ret = initialize_virtual_memory();

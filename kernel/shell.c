@@ -67,8 +67,6 @@ void tokenize(const char *str, char **argv) {
 
 void show_available_commands(void) {
 	printk("Available commands:\n");
-	printk("\tmemmap\t - display memory map layout created by the E820 BIOS "
-		   "function\n");
 	printk("\tuptime\t - display the uptime in milliseconds\n");
 	printk("\tpmeminfo - display information about the physical memory\n");
 #ifdef CONFIG_RTC
@@ -122,9 +120,7 @@ void shell_exec_command(char *command) {
 
 	// TODO: remove spaces at the beginning
 
-	if (strcmp(command, "memmap") == 0) {
-		print_mem_map();
-	} else if (strcmp(command, "uptime") == 0) {
+	if (strcmp(command, "uptime") == 0) {
 		printk("%d\n", get_uptime());
 	} else if (strcmp(command, "pmeminfo") == 0) {
 		print_phymem_info();
