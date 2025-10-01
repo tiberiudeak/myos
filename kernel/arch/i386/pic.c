@@ -1,5 +1,6 @@
 #include <arch/i386/pic.h>
 #include <kernel/io.h>
+#include <kernel/tty.h>
 
 #include <stdint.h>
 
@@ -11,7 +12,7 @@
  *
  * @param irq  The IRQ number
  */
-void PIC_send_EOI(uint8_t irq) {
+void pic_send_eoi(uint8_t irq) {
 	if (irq >= 8) {
 		port_byte_out(PIC2_COMMAND_PORT, PIC_EOI);
 	}
@@ -25,7 +26,7 @@ void PIC_send_EOI(uint8_t irq) {
  * This function disables the PIC by setting the masks
  * of both PICs to 0xFF (all interrupts disabled).
  */
-void PIC_disable(void) {
+void pic_disable(void) {
 	port_byte_out(PIC1_DATA_PORT, 0xFF);
 	port_byte_out(PIC2_DATA_PORT, 0xFF);
 }
@@ -38,7 +39,7 @@ void PIC_disable(void) {
  *
  * @param irq_line  The IRQ line
  */
-void IRQ_set_mask(uint8_t irq_line) {
+void irq_set_mask(uint8_t irq_line) {
 	uint16_t port;
 	uint8_t value;
 
@@ -61,7 +62,7 @@ void IRQ_set_mask(uint8_t irq_line) {
  *
  * @param irq_line  The IRQ line
  */
-void IRQ_clear_mask(uint8_t irq_line) {
+void irq_clear_mask(uint8_t irq_line) {
 	uint16_t port;
 	uint8_t value;
 
@@ -85,7 +86,8 @@ void IRQ_clear_mask(uint8_t irq_line) {
  * @param offset1  The offset for the master PIC
  * @param offset2  The offset for the slave PIC
  */
-void PIC_configure(uint8_t offset1, uint8_t offset2) {
+void pic_8259_init(uint8_t offset1, uint8_t offset2) {
+	printk("%s: Initializing the 8259 PIC\n", __FUNCTION__);
 	uint8_t a1, a2;
 
 	// save masks
@@ -130,7 +132,7 @@ void PIC_configure(uint8_t offset1, uint8_t offset2) {
  *
  * @param ocw3  The command to send
  */
-static uint16_t __PIC_get_irq_reg(uint8_t ocw3) {
+static uint16_t _pic_get_irq_reg(uint8_t ocw3) {
 	port_byte_out(PIC1_COMMAND_PORT, ocw3);
 	port_byte_out(PIC2_COMMAND_PORT, ocw3);
 
@@ -145,8 +147,8 @@ static uint16_t __PIC_get_irq_reg(uint8_t ocw3) {
  *
  * @return The ISRs for both PICs (the upper byte is for the slave PIC)
  */
-uint16_t PIC_geT_IRR(void) {
-	return __PIC_get_irq_reg(PIC_READ_IRR);
+uint16_t pic_get_irr(void) {
+	return _pic_get_irq_reg(PIC_READ_IRR);
 }
 
 /**
@@ -156,6 +158,6 @@ uint16_t PIC_geT_IRR(void) {
  *
  * @return The IRRs for both PICs (the upper byte is for the slave PIC)
  */
-uint16_t PIC_get_ISR(void) {
-	return __PIC_get_irq_reg(PIC_READ_ISR);
+uint16_t pic_get_isr(void) {
+	return _pic_get_irq_reg(PIC_READ_ISR);
 }

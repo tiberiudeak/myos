@@ -38,12 +38,13 @@ void idt_set_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
  * PICs and are used to handle hardware interrupts.
  */
 void idt_init() {
+	printk("%s: Initializing IDT\n", __FUNCTION__);
 	idt_ptr_reg.limit = (sizeof(struct idt_gate) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t) &idt_entries;
 
 	memset(&idt_entries, 0, sizeof(struct idt_gate) * 256);
 
-	PIC_configure(0x20, 0x28);
+	pic_8259_init(0x20, 0x28);
 
 	add_isrs_to_idt();
 	add_irqs_to_idt();

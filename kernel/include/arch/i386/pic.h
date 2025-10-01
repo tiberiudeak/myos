@@ -1,7 +1,7 @@
 #ifndef ARCH_I386_PIC_H
 #define ARCH_I386_PIC_H 1
 
-/* PIC Driver */
+/* 8259 PIC Driver */
 
 #include <stdint.h>
 
@@ -16,8 +16,8 @@
 
 #define PIC_EOI			  0x20
 
-#define PIC_READ_IRR	  0x0a
-#define PIC_READ_ISR	  0x0b
+#define PIC_READ_IRR	  0x0A
+#define PIC_READ_ISR	  0x0B
 
 /**
  * PIC Initialization Command Word 1
@@ -106,12 +106,12 @@ typedef enum {
 	PIC_ICW4_SLAVE_BUFFERED		= 0x08
 } PIC_ICW4;
 
-void PIC_send_EOI(uint8_t);
-void PIC_disable(void);
-void PIC_configure(uint8_t, uint8_t);
-void IRQ_set_mask(uint8_t);
-void IRQ_clear_mask(uint8_t);
-uint16_t PIC_get_IRR(void);
-uint16_t PIC_get_ISR(void);
+void pic_send_eoi(uint8_t);
+void pic_disable(void);
+void pic_8259_init(uint8_t, uint8_t);
+void irq_set_mask(uint8_t);
+void irq_clear_mask(uint8_t);
+uint16_t pic_get_irr(void);
+uint16_t pic_get_isr(void);
 
 #endif

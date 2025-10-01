@@ -262,7 +262,7 @@ uint8_t pmm_init(uint32_t addr, uint32_t length) {
 
 	printk("%s: total number of blocks: %d\n", __FUNCTION__, max_blocks);
 	printk("%s: used blocks: %d\n", __FUNCTION__, used_blocks);
-	printk("%s: free blocks: %d\n\n", __FUNCTION__, max_blocks - used_blocks);
+	printk("%s: free blocks: %d\n", __FUNCTION__, max_blocks - used_blocks);
 
 	// perform some tests to see that everything works as expected
 	return pmm_self_test();
