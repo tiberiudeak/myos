@@ -1,3 +1,4 @@
+#define pr_log_fmt(msg)	"8259: %s: " msg, __func__
 #include <arch/i386/pic.h>
 #include <kernel/io.h>
 #include <kernel/tty.h>
@@ -87,7 +88,7 @@ void irq_clear_mask(uint8_t irq_line) {
  * @param offset2  The offset for the slave PIC
  */
 void pic_8259_init(uint8_t offset1, uint8_t offset2) {
-	printk("%s: Initializing the 8259 PIC\n", __FUNCTION__);
+	pr_log("Initializing the 8259 PIC\n");
 	uint8_t a1, a2;
 
 	// save masks

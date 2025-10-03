@@ -1,4 +1,5 @@
 /* Physical memory manager */
+#define pr_log_fmt(msg)	"PMM: %s: " msg, __func__
 #include <kernel/multiboot.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
@@ -246,7 +247,7 @@ uint8_t pmm_self_test() {
  * @return 0 if self tests passed successfully, 1 otherwise
  */
 uint8_t pmm_init(uint32_t addr, uint32_t length) {
-	printk("%s: Initializing Physical Memory Manager\n", __FUNCTION__);
+	pr_log("Initializing Physical Memory Manager\n");
 	max_blocks = MAX_RAM_SIZE / BLOCK_SIZE;
 	used_blocks = max_blocks;
 
@@ -260,9 +261,9 @@ uint8_t pmm_init(uint32_t addr, uint32_t length) {
 	__mark_region_reserved((uint32_t) kernel_start,
 			(uint32_t) (kernel_end - kernel_start));
 
-	printk("%s: total number of blocks: %d\n", __FUNCTION__, max_blocks);
-	printk("%s: used blocks: %d\n", __FUNCTION__, used_blocks);
-	printk("%s: free blocks: %d\n", __FUNCTION__, max_blocks - used_blocks);
+	pr_log("total number of blocks: %d\n", max_blocks);
+	pr_log("used blocks: %d\n", used_blocks);
+	pr_log("free blocks: %d\n", max_blocks - used_blocks);
 
 	// perform some tests to see that everything works as expected
 	return pmm_self_test();

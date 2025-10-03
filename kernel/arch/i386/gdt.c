@@ -1,3 +1,4 @@
+#define pr_log_fmt(msg) "GDT: %s: " msg, __func__
 #include <arch/i386/gdt.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
@@ -77,7 +78,7 @@ void _gdt_write_tss(int num, uint16_t ss0, uint32_t esp0) {
  * and the TSS is loaded using the tss_flush function.
  */
 void gdt_init() {
-	printk("%s: Initializing GDT\n", __FUNCTION__);
+	pr_log("Initializing GDT\n");
 	gdt_ptr.limit = (sizeof(struct gdt_entry) * GDT_ENTRIES) - 1;
 	gdt_ptr.base = (uint32_t) &gdt_entries;
 

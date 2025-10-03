@@ -1,8 +1,10 @@
+#define pr_log_fmt(msg) "ACPI: %s: " msg, __func__
 #include <kernel/acpi.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
 
 #include <stdint.h>
+
 
 /**
  * @brief Compute and return checksum of the given SDT Header
@@ -42,7 +44,7 @@ int acpi_validate_rsdp(struct acpi_rsdp_descriptor *rsdp) {
 	}
 
 	if (checksum != 0) {
-		printk("RSDP checksum is invalid\n");
+		pr_log("RSDP checksum is invalid\n");
 		return 1;
 	}
 
@@ -123,23 +125,23 @@ void *find_FACP(void *RSDT_pointer) {
  * TODO: create a function  that displays the hardware information
  */
 uint8_t acpi_init() {
-	printk("%s: Initializing ACPI\n", __FUNCTION__);
+	pr_log("Initializing ACPI\n");
 	struct acpi_rsdp_descriptor *rsdp = acpi_find_rsdp();
 
 	if (rsdp == NULL) {
-		printk("%s: RSDP not found!\n", __FUNCTION__);
+		pr_log("RSDP not found!\n");
 		return 1;
 	} else {
-		printk("%s: RSDP found at physical addr: 0x%x\n", __FUNCTION__, rsdp);
+		pr_log("RSDP found at physical addr: 0x%x\n", rsdp);
 	}
 
 	struct FADT *fadt = (struct FADT *) find_FACP((void *) rsdp->rsdt_phy_address);
 
 	if (fadt == NULL) {
-		printk("%s: FADT not found!\n", __FUNCTION__);
+		pr_log("FADT not found!\n");
 		return 1;
 	} else {
-		printk("%s: FADT found at physical addr: 0x%x\n", __FUNCTION__, fadt);
+		pr_log("FADT found at physical addr: 0x%x\n", fadt);
 	}
 
 	return 0;

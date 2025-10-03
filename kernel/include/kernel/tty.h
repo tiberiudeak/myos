@@ -4,6 +4,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifndef pr_log_fmt
+#define pr_log_fmt(msg)	msg
+#endif
+#define pr_log(msg, ...) \
+	printk(pr_log_fmt(msg), ##__VA_ARGS__)
+
 #define REG_SCREEN_CTRL 0x3D4
 #define REG_SCREEN_DATA 0x3D5
 #define VGA_WIDTH		80

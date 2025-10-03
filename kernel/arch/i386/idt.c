@@ -1,3 +1,4 @@
+#define pr_log_fmt(msg)	"IDT: %s: " msg, __func__
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/pic.h>
@@ -38,7 +39,7 @@ void idt_set_gate(int n, uint32_t handler, uint16_t selector, uint8_t flags) {
  * PICs and are used to handle hardware interrupts.
  */
 void idt_init() {
-	printk("%s: Initializing IDT\n", __FUNCTION__);
+	pr_log("Initializing IDT\n");
 	idt_ptr_reg.limit = (sizeof(struct idt_gate) * 256) - 1;
 	idt_ptr_reg.base = (uint32_t) &idt_entries;
 
