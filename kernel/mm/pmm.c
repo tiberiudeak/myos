@@ -243,7 +243,7 @@ uint8_t pmm_self_test() {
  *
  * @param addr		Addr where the memory map starts
  * @param length	Total size of buffer
- * @return 0 if self tests passed successfully, 0 otherwise
+ * @return 0 if self tests passed successfully, 1 otherwise
  */
 uint8_t pmm_init(uint32_t addr, uint32_t length) {
 	printk("%s: Initializing Physical Memory Manager\n", __FUNCTION__);

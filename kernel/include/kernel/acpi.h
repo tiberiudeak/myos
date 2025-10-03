@@ -3,107 +3,104 @@
 
 #include <stdint.h>
 
-struct RSDP_descriptor {
-	char Signature[8];
-	uint8_t Checksum;
-	char OEMID[6];
-	uint8_t Revision;
-	uint32_t RsdtAddress;
+struct acpi_rsdp_descriptor {
+	char signature[8];
+	uint8_t checksum;
+	char oem_id[6];
+	uint8_t revision;
+	uint32_t rsdt_phy_address;
 } __attribute__((packed));
 
 /**
  * ACPI System Descriptor Table Header which is common to
  * all the SDTs.
  */
-struct ACPISDT_header {
-	char Signature[4];
-	uint32_t Length;
-	uint8_t Revision;
-	uint8_t Checksum;
-	char OEMID[6];
-	char OEMTableID[8];
-	uint32_t OEMRevision;
-	uint32_t CreatorID;
-	uint32_t CreatorRevision;
+struct acpi_sdt_header {
+	char signature[4];
+	uint32_t length;
+	uint8_t revision;
+	uint8_t checksum;
+	char oem_id[6];
+	char oem_table_id[8];
+	uint32_t oem_revision;
+	uint32_t creator_id;
+	uint32_t creator_revision;
+} __attribute__((packed));
+
+struct acpi_rsdt {
+	struct acpi_sdt_header header;
+	uint32_t pointer_to_other_sdt[];
 };
 
-struct RSDT {
-	struct ACPISDT_header header;
-	uint32_t pointer_to_other_SDT[];
+struct acpi_generic_address {
+	uint8_t address_space;
+	uint8_t bit_width;
+	uint8_t bit_offset;
+	uint8_t access_size;
+	uint64_t address;
 };
 
-struct GenericAddressStructure {
-	uint8_t AddressSpace;
-	uint8_t BitWidth;
-	uint8_t BitOffset;
-	uint8_t AccessSize;
-	uint64_t Address;
+struct acpi_fadt {
+	struct acpi_sdt_header header;
+	uint32_t firmware_ctrl;
+	uint32_t dsdt;
+	uint8_t reserved;
+	uint8_t preferred_power_mgmt_profile;
+	uint16_t sci_interrupt;
+	uint32_t smi_command_port;
+	uint8_t acpi_enable;
+	uint8_t acpi_disable;
+	uint8_t s4_bios_request;
+	uint8_t pstate_control;
+	uint32_t pm1a_event_block;
+	uint32_t pm1b_event_block;
+	uint32_t pm1a_control_block;
+	uint32_t pm1b_control_block;
+	uint32_t pm2_control_block;
+	uint32_t pm_timer_block;
+	uint32_t gpe0_block;
+	uint32_t gpe1_block;
+	uint8_t pm1_event_length;
+	uint8_t pm1_control_length;
+	uint8_t pm2_control_length;
+	uint8_t pm_timer_length;
+	uint8_t gpe0_length;
+	uint8_t gpe1_length;
+	uint8_t gpe1_base;
+	uint8_t cstate_control;
+	uint16_t worst_c2_latency;
+	uint16_t worst_c3_latency;
+	uint16_t flush_size;
+	uint16_t flush_stride;
+	uint8_t duty_offset;
+	uint8_t duty_width;
+	uint8_t day_alarm;
+	uint8_t month_alarm;
+	uint8_t century;
+
+	uint16_t boot_architecture_flags;
+
+	uint8_t reserved2;
+	uint32_t flags;
+
+	struct acpi_generic_address reset_reg;
+
+	uint8_t reset_value;
+	uint8_t reserved3[3];
+
+	uint64_t x_firmware_control;
+	uint64_t x_dsdt;
+
+	struct acpi_generic_address x_pm1a_event_block;
+	struct acpi_generic_address x_pm1b_event_block;
+	struct acpi_generic_address x_pm1a_control_block;
+	struct acpi_generic_address x_pm1b_control_block;
+	struct acpi_generic_address x_pm2_control_block;
+	struct acpi_generic_address x_pm_timer_block;
+	struct acpi_generic_address x_gpe0_block;
+	struct acpi_generic_address x_gpe1_block;
 };
 
-struct FADT {
-	struct ACPISDT_header header;
-	uint32_t FirmwareCtrl;
-	uint32_t Dsdt;
-	uint8_t Reserved;
-	uint8_t ReferredPowerManagementProfile;
-	uint16_t SCI_Interrupt;
-	uint32_t SMI_CommandPort;
-	uint8_t ACPIEnable;
-	uint8_t AcpiDisable;
-	uint8_t S4BIOS_REQ;
-	uint8_t PSTATE_Control;
-	uint32_t PM1aEventBlock;
-	uint32_t PM1bEventBlock;
-	uint32_t PM1aControlBlock;
-	uint32_t PM1bControlBlock;
-	uint32_t PM2ControlBlock;
-	uint32_t PMTimerBlock;
-	uint32_t GPE0Block;
-	uint32_t GPE1Block;
-	uint8_t PM1EventLength;
-	uint8_t PM1ControlLength;
-	uint8_t PM2ControlLength;
-	uint8_t PMTimerLength;
-	uint8_t GPE0Length;
-	uint8_t GPE1Length;
-	uint8_t GPE1Base;
-	uint8_t CStateControl;
-	uint16_t WorstC2Latency;
-	uint16_t WorstC3Latency;
-	uint16_t FlushSize;
-	uint16_t FlushStride;
-	uint8_t DutyOffset;
-	uint8_t DutyWidth;
-	uint8_t DayAlarm;
-	uint8_t MonthAlarm;
-	uint8_t Century;
-
-	uint16_t BootArchitectureFlags;
-
-	uint8_t Reserved2;
-	uint32_t Flags;
-
-	struct GenericAddressStructure ResetReg;
-
-	uint8_t ResetValue;
-	uint8_t Reserved3[3];
-
-	uint64_t X_FirmwareControl;
-	uint64_t X_Dsdt;
-
-	struct GenericAddressStructure X_PM1aEventBlock;
-	struct GenericAddressStructure X_PM1bEventBlock;
-	struct GenericAddressStructure X_PM1aControlBlock;
-	struct GenericAddressStructure X_PM1bControlBlock;
-	struct GenericAddressStructure X_PM2ControlBlock;
-	struct GenericAddressStructure X_PMTimerBlock;
-	struct GenericAddressStructure X_GPE0Block;
-	struct GenericAddressStructure X_GPE1Block;
-};
-
-void ACPI_init(void);
-void *RSDP_detect(void);
-int RSDP_validate(struct RSDP_descriptor *rsdp);
-void *find_FACP(void *);
+uint8_t acpi_init(void);
 
 #endif /* KERNEL_ACPI_H */

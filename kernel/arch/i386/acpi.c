@@ -5,35 +5,23 @@
 #include <stdint.h>
 
 /**
- * @brief Detects the Root System Description Pointer (RSDP) in memory.
+ * @brief Compute and return checksum of the given SDT Header
  *
- * This function searches for the RSDP signature in the memory
- * range 0x00080000 to 0x00081024 and 0x000E0000 to 0x000FFFFF.
+ * This function receives a System Descriptor Table Header and
+ * returns its checksum.
  *
- * @return The address of the RSDP if found, NULL otherwise.
+ * @param table_header ACPI SDT Header
+ *
+ * @return the checksum
  */
-void *RSDP_detect() {
-	char *start = (char *) 0x00080000;
-	char *end = (char *) 0x00081024;
+int acpi_compute_checksum(struct acpi_sdt_header *table_header) {
+	unsigned char sum = 0;
 
-	while (start < end) {
-		if (memcmp(start, "RSD PTR ", 8) == 0) {
-			return start;
-		}
-		start += 16;
+	for (size_t i = 0; i < table_header->length; i++) {
+		sum += ((char *) table_header)[i];
 	}
 
-	start = (char *) 0x000E0000;
-	end = (char *) 0x000FFFFF;
-
-	while (start < end) {
-		if (memcmp(start, "RSD PTR ", 8) == 0) {
-			return start;
-		}
-		start += 16;
-	}
-
-	return NULL;
+	return sum;
 }
 
 /**
@@ -46,10 +34,10 @@ void *RSDP_detect() {
  *
  * @return 0 if the RSDP is valid, 1 otherwise.
  */
-int RSDP_validate(struct RSDP_descriptor *rsdp) {
+int acpi_validate_rsdp(struct acpi_rsdp_descriptor *rsdp) {
 	uint8_t checksum = 0;
 
-	for (size_t i = 0; i < sizeof(struct RSDP_descriptor); i++) {
+	for (size_t i = 0; i < sizeof(struct acpi_rsdp_descriptor); i++) {
 		checksum += ((char *) rsdp)[i];
 	}
 
@@ -62,66 +50,39 @@ int RSDP_validate(struct RSDP_descriptor *rsdp) {
 }
 
 /**
- * @brief Discovers location of ACPI Tables
+ * @brief Detect the Root System Description Pointer (RSDP) in memory.
  *
- * This function discovers the location of the present ACPI tables
- * and initializes the global variables with their addresses.
+ * This function searches for the RSDP signature in the memory
+ * range 0x00080000 to 0x00081024 and 0x000E0000 to 0x000FFFFF.
  *
- * TODO: create and populate global addresses
- * TODO: create a function  that displays the hardware information
+ * @return The address of the RSDP if found, NULL otherwise.
  */
-void ACPI_init() {
-#ifdef CONFIG_VERBOSE
-	printk("Detecting ACPI");
-#endif
-	struct RSDP_descriptor *rsdp = RSDP_detect();
+void *acpi_find_rsdp() {
+	char *start = (char *) 0x00080000;
+	char *end = (char *) 0x00081024;
 
-	if (rsdp == NULL) {
-#ifdef CONFIG_VERBOSE
-		printkc(4, "\t\t\tRSDP not found\n");
-#endif
-		return;
+	while (start < end) {
+		if (memcmp(start, "RSD PTR ", 8) == 0) {
+			if (acpi_validate_rsdp((struct acpi_rsdp_descriptor *) start) == 0) {
+				return start;
+			}
+		}
+		start += 16;
 	}
 
-	if (RSDP_validate(rsdp)) {
-#ifdef CONFIG_VERBOSE
-		printkc(4, "\t\t\tRSDP is invalid\n");
-#endif
-		return;
+	start = (char *) 0x000E0000;
+	end = (char *) 0x000FFFFF;
+
+	while (start < end) {
+		if (memcmp(start, "RSD PTR ", 8) == 0) {
+			if (acpi_validate_rsdp((struct acpi_rsdp_descriptor *) start) == 0) {
+				return start;
+			}
+		}
+		start += 16;
 	}
 
-	struct FADT *fadt = (struct FADT *) find_FACP((void *) rsdp->RsdtAddress);
-
-	if (fadt == NULL) {
-#ifdef CONFIG_VERBOSE
-		printkc(4, "\t\t\tFADT not found!\n");
-#endif
-		return;
-	}
-
-#ifdef CONFIG_VERBOSE
-	printkc(2, "\t\t\tdone\n");
-#endif
-}
-
-/**
- * @brief Compute and return checksum of the given SDT Header
- *
- * This function receives a System Descriptor Table Header and
- * returns its checksum.
- *
- * @param table_header ACPI SDT Header
- *
- * @return the checksum
- */
-int ACPI_do_checksum(struct ACPISDT_header *table_header) {
-	unsigned char sum = 0;
-
-	for (size_t i = 0; i < table_header->Length; i++) {
-		sum += ((char *) table_header)[i];
-	}
-
-	return sum;
+	return NULL;
 }
 
 /**
@@ -133,15 +94,15 @@ int ACPI_do_checksum(struct ACPISDT_header *table_header) {
  * @param RSDT_pointer address of the RSDT
  */
 void *find_FACP(void *RSDT_pointer) {
-	struct RSDT *rsdt = (struct RSDT *) RSDT_pointer;
-	int entries = (rsdt->header.Length - sizeof(rsdt->header)) / 4;
+	struct acpi_rsdt *rsdt = (struct acpi_rsdt *) RSDT_pointer;
+	int entries = (rsdt->header.length - sizeof(rsdt->header)) / 4;
 
 	for (int i = 0; i < entries; i++) {
-		struct ACPISDT_header *h =
-			(struct ACPISDT_header *) rsdt->pointer_to_other_SDT[i];
+		struct acpi_sdt_header *h =
+			(struct acpi_sdt_header *) rsdt->pointer_to_other_sdt[i];
 
-		if (memcmp(h->Signature, "FACP", 4) == 0) {
-			if (ACPI_do_checksum(h) == 0) {
+		if (memcmp(h->signature, "FACP", 4) == 0) {
+			if (acpi_compute_checksum(h) == 0) {
 				return (void *) h;
 			} else {
 				return NULL;
@@ -150,4 +111,36 @@ void *find_FACP(void *RSDT_pointer) {
 	}
 
 	return NULL;
+}
+
+/**
+ * @brief Discovers location of ACPI Tables
+ *
+ * This function discovers the location of the present ACPI tables
+ * and initializes the global variables with their addresses.
+ *
+ * TODO: create and populate global addresses
+ * TODO: create a function  that displays the hardware information
+ */
+uint8_t acpi_init() {
+	printk("%s: Initializing ACPI\n", __FUNCTION__);
+	struct acpi_rsdp_descriptor *rsdp = acpi_find_rsdp();
+
+	if (rsdp == NULL) {
+		printk("%s: RSDP not found!\n", __FUNCTION__);
+		return 1;
+	} else {
+		printk("%s: RSDP found at physical addr: 0x%x\n", __FUNCTION__, rsdp);
+	}
+
+	struct FADT *fadt = (struct FADT *) find_FACP((void *) rsdp->rsdt_phy_address);
+
+	if (fadt == NULL) {
+		printk("%s: FADT not found!\n", __FUNCTION__);
+		return 1;
+	} else {
+		printk("%s: FADT found at physical addr: 0x%x\n", __FUNCTION__, fadt);
+	}
+
+	return 0;
 }
