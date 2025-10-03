@@ -175,13 +175,6 @@ char *itoa(int n, char *str, int base) {
 			str[i++] = (rem < 10) ? rem + '0' : rem + 'A' - 10;
 		} while ((un /= 16) > 0);
 
-		while (i < 8) {
-			str[i++] = '0';
-		}
-
-		// str[i] = 'x';
-		// str[i + 1] = '0';
-		// str[i + 2] = '\0';
 		str[i] = '\0';
 
 		reverse(str);

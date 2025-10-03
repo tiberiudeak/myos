@@ -112,7 +112,7 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 				(unsigned long) mmap_entry < mbi->mmap_addr + mbi->mmap_length;
 				mmap_entry = (struct multiboot_mmap_entry *) ((unsigned long) mmap_entry +
 					mmap_entry->size + sizeof(mmap_entry->size))) {
-			printk("mem [%llx-%llx] %s\n", mmap_entry->base_addr,
+			printk("mem [%8llx-%8llx] %8s\n", mmap_entry->base_addr,
 					mmap_entry->base_addr + mmap_entry->length - 1,
 					mmap_entry->type == 1 ? "usable" : "reserved");
 		}

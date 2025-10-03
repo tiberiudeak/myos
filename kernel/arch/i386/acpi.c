@@ -1,4 +1,4 @@
-#define pr_log_fmt(msg) "ACPI: %s: " msg, __func__
+#define pr_log_fmt(msg) "ACPI: " msg
 #include <kernel/acpi.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
@@ -115,6 +115,26 @@ void *find_FACP(void *RSDT_pointer) {
 	return NULL;
 }
 
+void acpi_print_table_header(void *physical_address) {
+	if (memcmp(((struct acpi_rsdp_descriptor *) physical_address)->signature,
+				"RSD PTR ", 8) == 0) {
+		pr_log("RSDP at 0x%8x (v%d %.6s)\n",
+				physical_address,
+				((struct acpi_rsdp_descriptor *) physical_address)->revision
+				== 0 ? 1 : 2,
+				((struct acpi_rsdp_descriptor *) physical_address)->oem_id);
+	} else {
+		struct acpi_sdt_header *header = (struct acpi_sdt_header *) physical_address;
+
+		pr_log("%.4s at 0x%8x (v%d %.6s %.8s)\n",
+				header->signature,
+				physical_address,
+				header->revision == 0 ? 1 : 2,
+				header->oem_id,
+				header->oem_table_id);
+	}
+}
+
 /**
  * @brief Discovers location of ACPI Tables
  *
@@ -132,7 +152,7 @@ uint8_t acpi_init() {
 		pr_log("RSDP not found!\n");
 		return 1;
 	} else {
-		pr_log("RSDP found at physical addr: 0x%x\n", rsdp);
+		acpi_print_table_header(rsdp);
 	}
 
 	struct FADT *fadt = (struct FADT *) find_FACP((void *) rsdp->rsdt_phy_address);
@@ -141,7 +161,7 @@ uint8_t acpi_init() {
 		pr_log("FADT not found!\n");
 		return 1;
 	} else {
-		pr_log("FADT found at physical addr: 0x%x\n", fadt);
+		acpi_print_table_header(fadt);
 	}
 
 	return 0;

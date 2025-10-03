@@ -438,6 +438,31 @@ int tty_init_vga() {
 }
 
 /**
+ * Write given length of padding
+ *
+ * @param length	Length of padding to write
+ * @param flag		1 = ' ', 0 = '0'
+ */
+void _tty_print_padding(size_t length, int flag) {
+	// allocate string statically, as we can't be sure that
+	// the memory manager has been initialized at this point
+	// max padding is 16, this should be enough for numbers,
+	// could be better for strings, but for now it is what it is
+	const char padding_str[16] = "                ";
+	const char padding_nr[16] = "0000000000000000";
+	size_t len = 0;
+
+	if (length > 0) {
+		len = length > 16 ? 16 : length;
+		if (flag) {
+			tty.terminal_write(padding_str, len);
+		} else {
+			tty.terminal_write(padding_nr, len);
+		}
+	}
+}
+
+/**
  * @brief Write a formatted string to stdout.
  *
  * This function writes a formatted string to stdout.
@@ -453,6 +478,7 @@ int printk(const char *restrict format, ...) {
 	va_start(parameters, format);
 
 	int written = 0;
+	size_t precision = 0, width = 0;
 
 	while (*format != '\0') {
 		if (format[0] != '%') {
@@ -472,18 +498,59 @@ int printk(const char *restrict format, ...) {
 
 		// skip the '%' character
 		format++;
+		precision = 0;
+		width = 0;
 
-		if (*format == 's') {
+resume:
+		if (*format >= '0' && *format <= '9') {
+			// determine width
+			// read until a '.' or a letter
+			size_t index = 0;
+			while (format[index] && format[index] != '.' &&
+					!(format[index] >= 'a' && format[index] <= 'z')) {
+				width = width * 10 + (format[index] - '0');
+				index++;
+			}
+
+			format += index;
+			goto resume;
+		} else if (*format == '.') {
+			// determine precision
+			// skip '.'
+			format++;
+
+			// read until a letter
+			size_t index = 0;
+			while (format[index] && !(format[index] >= 'a' &&
+					format[index] <= 'z')) {
+				precision = precision * 10 + (format[index] - '0');
+				index++;
+			}
+
+			format += index;
+			goto resume;
+		} else if (*format == 's') {
 			format++;
 			const char *str = va_arg(parameters, const char *);
 			size_t len = strlen(str);
+			size_t actual_len = (len > precision && precision > 0)
+				? precision : len;
 
-			tty.terminal_write(str, len);
+			if (width > 0 && actual_len < width) {
+				_tty_print_padding(width - actual_len, 1);
+			}
+
+			tty.terminal_write(str, (len > precision && precision > 0)
+					? precision : len);
 
 			written += len;
 		} else if (*format == 'c') {
 			format++;
 			char c = (char) va_arg(parameters, int);
+
+			if (width > 1) {
+				_tty_print_padding(width - 1, 0);
+			}
 
 			tty.terminal_write(&c, sizeof(c));
 
@@ -495,6 +562,11 @@ int printk(const char *restrict format, ...) {
 			itoa(i, str, 10);
 
 			size_t len = strlen(str);
+
+			if (width > 0 && len < width) {
+				_tty_print_padding(width - len, 0);
+			}
+
 			tty.terminal_write(str, len);
 
 			written += len;
@@ -505,6 +577,11 @@ int printk(const char *restrict format, ...) {
 			itoa(i, str, 16);
 
 			size_t len = strlen(str);
+
+			if (width > 0 && len < width) {
+				_tty_print_padding(width - len, 0);
+			}
+
 			tty.terminal_write(str, len);
 
 			written += len;
@@ -515,6 +592,11 @@ int printk(const char *restrict format, ...) {
 			ftoa(d, str, 2);
 
 			size_t len = strlen(str);
+
+			if (width > 0 && len < width) {
+				_tty_print_padding(width - len, 0);
+			}
+
 			tty.terminal_write(str, len);
 
 			written += len;
@@ -528,6 +610,11 @@ int printk(const char *restrict format, ...) {
 				itoa(i, str, 10);
 
 				size_t len = strlen(str);
+
+				if (width > 0 && len < width) {
+					_tty_print_padding(width - len, 0);
+				}
+
 				tty.terminal_write(str, len);
 
 				written += len;
@@ -538,6 +625,11 @@ int printk(const char *restrict format, ...) {
 				itoa(i, str, 16);
 
 				size_t len = strlen(str);
+
+				if (width > 0 && len < width) {
+					_tty_print_padding(width - len, 0);
+				}
+
 				tty.terminal_write(str, len);
 
 				written += len;
@@ -551,6 +643,11 @@ int printk(const char *restrict format, ...) {
 					itoa(i, str, 10);
 
 					size_t len = strlen(str);
+
+					if (width > 0 && len < width) {
+						_tty_print_padding(width - len, 0);
+					}
+
 					tty.terminal_write(str, len);
 
 					written += len;
@@ -562,6 +659,11 @@ int printk(const char *restrict format, ...) {
 					itoa(i, str, 16);
 
 					size_t len = strlen(str);
+
+					if (width > 0 && len < width) {
+						_tty_print_padding(width - len, 0);
+					}
+
 					tty.terminal_write(str, len);
 
 					written += len;
