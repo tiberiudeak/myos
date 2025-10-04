@@ -3,6 +3,17 @@
 
 #include <stdint.h>
 
+struct acpi_table_descriptor {
+	uint32_t physical_address;
+	struct acpi_sdt_header *header;
+};
+
+struct acpi_table_list {
+	struct acpi_table_descriptor *tables;
+	uint32_t table_count;
+};
+
+/* Root System Description Pointer */
 struct acpi_rsdp_descriptor {
 	char signature[8];
 	uint8_t checksum;
@@ -12,8 +23,7 @@ struct acpi_rsdp_descriptor {
 } __attribute__((packed));
 
 /**
- * ACPI System Descriptor Table Header which is common to
- * all the SDTs.
+ * ACPI System Descriptor Table Header common to all SDTs.
  */
 struct acpi_sdt_header {
 	char signature[4];
@@ -23,14 +33,15 @@ struct acpi_sdt_header {
 	char oem_id[6];
 	char oem_table_id[8];
 	uint32_t oem_revision;
-	uint32_t creator_id;
+	char creator_id[4];
 	uint32_t creator_revision;
 } __attribute__((packed));
 
+/* Root System Description Table */
 struct acpi_rsdt {
 	struct acpi_sdt_header header;
 	uint32_t pointer_to_other_sdt[];
-};
+} __attribute__((packed));
 
 struct acpi_generic_address {
 	uint8_t address_space;
@@ -38,8 +49,9 @@ struct acpi_generic_address {
 	uint8_t bit_offset;
 	uint8_t access_size;
 	uint64_t address;
-};
+} __attribute__((packed));
 
+/* Fixed ACPI Description  Table */
 struct acpi_fadt {
 	struct acpi_sdt_header header;
 	uint32_t firmware_ctrl;
@@ -99,7 +111,7 @@ struct acpi_fadt {
 	struct acpi_generic_address x_pm_timer_block;
 	struct acpi_generic_address x_gpe0_block;
 	struct acpi_generic_address x_gpe1_block;
-};
+} __attribute__((packed));
 
 uint8_t acpi_init(void);
 

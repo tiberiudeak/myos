@@ -120,8 +120,8 @@ void acpi_print_table_header(void *physical_address) {
 				"RSD PTR ", 8) == 0) {
 		pr_log("RSDP at 0x%8x (v%d %.6s)\n",
 				physical_address,
-				((struct acpi_rsdp_descriptor *) physical_address)->revision
-				== 0 ? 1 : 2,
+				((struct acpi_rsdp_descriptor *) physical_address)->revision,
+				//== 0 ? 1 : 2,
 				((struct acpi_rsdp_descriptor *) physical_address)->oem_id);
 	} else {
 		struct acpi_sdt_header *header = (struct acpi_sdt_header *) physical_address;
@@ -129,10 +129,59 @@ void acpi_print_table_header(void *physical_address) {
 		pr_log("%.4s at 0x%8x (v%d %.6s %.8s)\n",
 				header->signature,
 				physical_address,
-				header->revision == 0 ? 1 : 2,
+				header->revision,// == 0 ? 1 : 2,
 				header->oem_id,
 				header->oem_table_id);
 	}
+}
+
+uint8_t acpi_parse_root_table(struct acpi_rsdp_descriptor *rsdp) {
+	struct acpi_rsdt *rsdt;
+	struct acpi_sdt_header *table;
+	uint32_t nr_entries = 0;
+
+	if (rsdp->revision > 0) {
+		pr_log("ACPI version 2, using XSDT table not implemented!\n");
+		return 1;
+	}
+
+	rsdt = (struct acpi_rsdt *) rsdp->rsdt_phy_address;
+
+	if (!rsdt) {
+		pr_log("Invalid RSDT physical address!\n");
+		return 1;
+	}
+
+	// validate table length
+	if (rsdt->header.length < (sizeof(struct acpi_sdt_header) + sizeof(uint32_t))) {
+		pr_log("Invalid RSDT table length!\n");
+		return 1;
+	}
+
+	// check checksum
+	if (acpi_compute_checksum(&rsdt->header) != 0) {
+		pr_log("Invalid RSDT checksum!\n");
+		return 1;
+	}
+
+	acpi_print_table_header(rsdt);
+
+	// determine nr of entries
+	nr_entries = (rsdt->header.length - sizeof(struct acpi_sdt_header)) / sizeof(uint32_t);
+
+	for (uint32_t i = 0; i < nr_entries; i++) {
+		table = (struct acpi_sdt_header *) rsdt->pointer_to_other_sdt[i];
+
+		if (table && acpi_compute_checksum(table) == 0) {
+			acpi_print_table_header(table);
+
+			// add table in global list
+		} else {
+			pr_log("%.4s: wrong checksum!\n", table->signature);
+		}
+	}
+
+	return 0;
 }
 
 /**
@@ -155,13 +204,8 @@ uint8_t acpi_init() {
 		acpi_print_table_header(rsdp);
 	}
 
-	struct FADT *fadt = (struct FADT *) find_FACP((void *) rsdp->rsdt_phy_address);
-
-	if (fadt == NULL) {
-		pr_log("FADT not found!\n");
+	if (acpi_parse_root_table(rsdp)) {
 		return 1;
-	} else {
-		acpi_print_table_header(fadt);
 	}
 
 	return 0;
