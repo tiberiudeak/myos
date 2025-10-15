@@ -1,5 +1,6 @@
 CFLAGS:=-O0 -g -ffreestanding -Wall -Wextra -Iinclude -std=gnu99 -include ../config.h
 LDFLAGS:=-Tlinker.ld -nostdlib
+ASFLAGS:=-g
 
 KERNEL_SOURCES_C:=$(shell find . -type f -name '*.c')
 KERNEL_SOURCES_S:=$(shell find . -type f -name '*.S')
@@ -24,7 +25,7 @@ kernel: $(OBJS)
 	$(CC) -MD -c $< -o $@ $(CFLAGS)
 
 %.o: %.S
-	$(AS) $< -o $@
+	$(AS) $< -o $@ $(ASFLAGS)
 
 clean:
 	rm -f $(BINARIES) $(OBJS) *.d */*.d */*/*.d

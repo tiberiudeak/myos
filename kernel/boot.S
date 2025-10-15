@@ -21,7 +21,7 @@
  * of the image (the header is put first in the linker script) and be
  * 32-bit aligned.
  */
-.section .multiboot
+.section .multiboot.data, "aw"
 .align 4
 .long MAGIC
 .long FLAGS
@@ -36,32 +36,126 @@
 .long 768		/* number of lines in pixels */
 .long 32		/* bits per pixel */
 
-.section .bss
-/* stack */
-.align 16
+
+/* initial stack */
+.section .bootstrap_stack, "aw", @nobits
 stack_bottom:
 .skip STACK_SIZE
 stack_top:
 
-.section .text
+.section .bss, "aw", @nobits
+.align 4096
+boot_page_directory:
+.skip 4096
+boot_page_table1:
+.skip 4096
+
+.section .multiboot.text, "a"
 .global _start
 _start:
-	/* initialize stack pointer */
+	/* Initial Page Directory & Page Table initialization */
+
+	/* Structure of the initial PD and PT
+
+
+	|-----------------|         |-----------------|             |                 |
+	|       ...       |         | 0x3FF000| flags |             |                 |
+	|                 |         |-----------------|             |                 |
+	|-----------------|         |                 |             |-----------------| 0x400000
+768	| pt_addr | flags |----     |                 |             |                 |
+	|-----------------|   |     |       ...       |             |                 |
+	|                 |   |     |                 |             |                 |
+	|                 |   |     |                 |             |                 |
+	|       ...       |   |     |-----------------|             |                 |
+	|                 |   |     | 0x02000 | flags |             |       4MB       |
+	|                 |   |     |-----------------|             |                 |
+	|                 |   |     | 0x01000 | flags |             |                 |
+	|-----------------|   |     |-----------------|             |                 |
+0	| pt_addr | flags |----     | 0x00000 | flags |             |                 |
+	|-----------------|   |---->|-----------------|             |-----------------| 0x000000
+	   Page Directory                Page Table                          RAM
+
+	*/
+
+	/* fill in the page directory
+		- identity map the first 4MB
+		- also map first 4MB at 0xC0000000 */
+
+	// set the entries at indices 0 and 0x300 (corresponding to virtual address 0xC0000000)
+	// to the corresponding page table address (and also set the present and read-write bits)
+	movl $(boot_page_table1 - 0xC0000000 + 0x003), boot_page_directory - 0xC0000000
+	movl $(boot_page_table1 - 0xC0000000 + 0x003), boot_page_directory - 0xC0000000 + 0x300 * 4
+
+
+	/* fill in the page table */
+
+	// initialize %edi with the address of the page table
+	// and %esi with the first address of the 4KiB page frame
+	// (which is 0x00000000)
+	movl $(boot_page_table1 - 0xC0000000), %edi
+	movl $0, %esi
+
+1:
+	// move 4KiB page frame address into %edx and set the
+	// less two sognificant bits (marking the page as present
+	// and read-write) - it's true, all pages are now set as
+	// read-write, so even the .text section if it's in the
+	// first 4MB. This will be changed later in the vmm
+	movl %esi, %edx
+	orl $0x003, %edx
+	movl %edx, (%edi)
+
+	// go to the address of the next 4kb page frame
+	// and to the next position in the page table
+	addl $4096, %esi
+	addl $4, %edi
+
+	// have we finished mapping the first 4MB?
+	// (as we only have one page table right now)
+	cmpl $0x400000, %esi
+	jge 2f
+
+	// have we finished mapping the kernel?
+	cmpl $(_kernel_end - 0xC0000000), %esi
+	jge 2f
+
+	// mapping is not finished, so loop back
+	jmp 1b
+2:
+	// set %cr3 to the physical address of the page table
+	movl $(boot_page_directory - 0xC0000000), %ecx
+	movl %ecx, %cr3
+
+	// enable paging and the write-protect bit
+	movl %cr0, %ecx
+	orl $0x80010000, %ecx
+	movl %ecx, %cr0
+
+	// jump to higher half
+	lea 3f, %ecx
+	jmp *%ecx
+
+.section .text
+
+3:
+	jmp 3b
+	// initialize stack pointer
 	mov $stack_top, %esp
 
-	/* reset eflags */
+	// reset eflags
 	pushl $0
 	popf
 
-	/* push pointer to multiboot information structure */
+	// push pointer to multiboot information structure
 	pushl %ebx
 
-	/* push magic value */
+	// push magic value
 	pushl %eax
 
-	/* entering the main function... */
+	// entering the main function...
 	call kmain
 
+	// endless loop, should not be reached
 	cli
 loop:
 	hlt
