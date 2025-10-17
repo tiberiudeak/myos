@@ -1,53 +1,77 @@
+#define pr_log_fmt(msg)	"VMM: " msg
 #include <kernel/global_addresses.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
+#include <mm/kmalloc.h>
 
 #include <stddef.h>
+
+// get page directory from the linker
+extern char boot_page_directory[];
+
+extern char _kernel_text_sec_start[];
+extern char _kernel_text_sec_end[];
+extern char _kernel_rodata_sec_start[];
+extern char _kernel_rodata_sec_end[];
 
 struct page_directory *current_page_directory = 0;
 struct page_directory *kernel_page_directory = 0;
 
 /**
- * @brief Get entry from page table for the given virtual address
+ * @brief Return the PTE for the given virtual address
  *
- * This function returns the address of the 4KB page frame from the
- * page table that corresponds to the given virtual address (the
- * least significant 12 bits are the flags)
- *
- * @param pt 				Pointer to the page table structure
- * @param virtual_address	The virtual address
- *
- * @return Address of 4KB page frame corresponding to the virtual address
+ * @param virtual_address The virtual address
+ * @return The corresponding page table entry
  */
-pt_entry *get_pt_entry(struct page_table *pt, address virtual_address) {
-	if (pt == NULL) {
-		return NULL;
+pt_entry *vmm_get_pte(uint32_t virtual_address) {
+	uint32_t *pd = (uint32_t *) PD_VIRT_ADDR;
+
+	// check if page directory entry is present
+	if (!(pd[PAGE_DIRECTORY_INDEX(virtual_address)] & PAGE_PDE_PRESENT)) {
+		return 0;
 	}
 
-	return &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
+	return ((pt_entry *) (PT_VIRT_BASE) +
+			TABLES_PER_DIR * PAGE_DIRECTORY_INDEX(virtual_address) +
+			PAGE_TABLE_INDEX(virtual_address));
+
+	// // get current page directory
+	// struct page_directory *pd = current_page_directory;
+
+	// // get corresponding PDE for the given virtutal address
+	// pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virtual_address)];
+
+	// // get the page table
+	// struct page_table *pt = (struct page_table *) PAGE_GET_PHY_ADDRESS(pde);
+
+	// // return the corresponding PTE for the given virtual address
+	// return &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
 }
 
 /**
- * @brief Get entry from page directory for the given virtual address
+ * @brief Return the physical address corresponding to the given virtual address
  *
- * This function returns the address of the page table from the entry
- * in the page directory that corresponds to the given virtual address
- * (the 12 least significant bits are the flags and that is why the
- * PAGE_TABLE_INDEX macro is used here as well)
- *
- * @param pd				Pointer to the page directory structure
- * @param virtual_address 	The virtual address
- *
- * @return Address of the corresponding page table
+ * @param virtual_address	The virtual address
+ * @return The physical address, or 0 if there is none
  */
-pd_entry *get_pd_entry(struct page_directory *pd, address virtual_address) {
-	if (pd == NULL) {
-		return NULL;
+uint32_t vmm_virt_to_phys(uint32_t virtual_address) {
+	uint32_t *pd = (uint32_t *) PD_VIRT_ADDR;
+
+	// check if page directory entry is present
+	if (!(pd[PAGE_DIRECTORY_INDEX(virtual_address)] & PAGE_PDE_PRESENT)) {
+		return 0;
 	}
 
-	return &pd->entries[PAGE_TABLE_INDEX(virtual_address)];
+	pt_entry pte = *vmm_get_pte(virtual_address);
+
+	// check if page table entry is present
+	if (!(pte & PAGE_PTE_PRESENT)) {
+		return 0;
+	}
+
+	return PAGE_FRAME(pte) + PAGE_OFFSET(virtual_address);
 }
 
 /**
@@ -66,7 +90,7 @@ void *allocate_page(pt_entry *pte) {
 	void *block = allocate_blocks(1);
 
 	if (block != NULL) {
-		SET_FRAME(pte, (address) block);
+		SET_FRAME(pte, (uint32_t) block);
 		SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
 	}
 
@@ -102,7 +126,7 @@ void free_page(pt_entry *pte) {
  *
  * @return 0 if successful, 1 otherwise
  */
-uint8_t set_page_directory(struct page_directory *pd) {
+uint8_t vmm_set_page_directory(struct page_directory *pd) {
 	if (pd == NULL) {
 		return 1;
 	}
@@ -122,7 +146,7 @@ uint8_t set_page_directory(struct page_directory *pd) {
  *
  * @param virtual_address The virtual address
  */
-void flush_tlb_entry(address virtual_address) {
+void flush_tlb_entry(uint32_t virtual_address) {
 	__asm__ __volatile__("cli; invlpg (%0); sti" : : "r"(virtual_address));
 }
 
@@ -192,7 +216,8 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
  *
  * @return 0 if successful, 1 otherwise
  */
-uint8_t map_page(void *physical_address, void *virtual_address) {
+uint8_t vmm_map_page(void *physical_address, void *virtual_address,
+		PAGE_PDE_FLAGS pde_flags, PAGE_PTE_FLAGS pte_flags) {
 	// get current page directory
 	struct page_directory *pd = current_page_directory;
 
@@ -214,8 +239,7 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
 
 		// set frame and present and read-write bits
 		SET_FRAME(pde, (uint32_t) block);
-		SET_ATTRIBUTE(pde, PAGE_PDE_PRESENT);
-		SET_ATTRIBUTE(pde, PAGE_PDE_WRITABLE);
+		SET_ATTRIBUTE(pde, pde_flags);
 	}
 
 	// get address of the page table
@@ -226,34 +250,11 @@ uint8_t map_page(void *physical_address, void *virtual_address) {
 
 	// set frame and present bit
 	SET_FRAME(pte, (uint32_t) physical_address);
-	SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+	SET_ATTRIBUTE(pte, pte_flags);
 
 	return 0;
 }
 
-/**
- * @brief Return the PTE for the given virtual address
- *
- * This function returns the page table entry for the given virtual
- * address. More details in the code below.
- *
- * @param virtual_address The virtual address
- *
- * @return The corresponding page table entry
- */
-pt_entry *get_page(address virtual_address) {
-	// get current page directory
-	struct page_directory *pd = current_page_directory;
-
-	// get corresponding PDE for the given virtutal address
-	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virtual_address)];
-
-	// get the page table
-	struct page_table *pt = (struct page_table *) PAGE_GET_PHY_ADDRESS(pde);
-
-	// return the corresponding PTE for the given virtual address
-	return &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
-}
 
 /**
  * @brief Unmap the page for the given virtual address
@@ -264,9 +265,9 @@ pt_entry *get_page(address virtual_address) {
  *
  * @param virtual_address The virtual address
  */
-void unmap_page(void *virtual_address) {
+void vmm_unmap_page(uint32_t virtual_address) {
 	// get page table entry
-	pt_entry *pte = get_page((uint32_t) virtual_address);
+	pt_entry *pte = vmm_get_pte((uint32_t) virtual_address);
 
 	// set frame to address 0 and clear present bit
 	SET_FRAME(pte, 0x0);
@@ -274,108 +275,42 @@ void unmap_page(void *virtual_address) {
 }
 
 /**
- * @brief Initialize virtual memory manager
+ * @brief Phase 2 in setting up the virtual memory
  *
- * This function creates a page directory with only two present entries: one
- * that identity maps the first 1MB of memory, and another one that maps 1MB
- * of memory starting at 0xC0000000 to the 1MB of physical memory that starts
- * at 0x00008000 (kernel location). It sets the created page directory as the
- * current page directory and enables paging. See comments below for more
- * information.
+ * - unmap identity map of the first 4MB
+ * - set R/W bit in the page table entries based on section
+ * - reload %cr3
  *
  * @return 0 if successful, 1 otherwise
  */
-uint8_t initialize_virtual_memory(void) {
-	// allocate physical block for the page directory
-	struct page_directory *pd = (struct page_directory *) allocate_blocks(1);
+void vmm_init_phase2(void) {
+	struct page_directory *pd = (struct page_directory *) boot_page_directory;
+	current_page_directory = pd;
 
-	if (pd == NULL) {
-		return 1;
+	// unset R/W bit for the entries corresponding to .text
+	// starting address should be already page aligned from the linker
+	for (uint32_t start = (uint32_t) _kernel_text_sec_start;
+				start < ALIGN((uint32_t) _kernel_text_sec_end, PAGE_SIZE);
+				start += PAGE_SIZE) {
+		pt_entry *pte = vmm_get_pte(start);
+		CLEAR_ATTRIBUTE(pte, PAGE_PTE_WRITABLE);
 	}
 
-	// clear all entries in the page directory
-	memset(pd, 0, sizeof(struct page_directory));
-
-	// mark each entry in the PD as read-write
-	// for (uint32_t i = 0; i < 1024; i++) {
-	// 	SET_ATTRIBUTE(&pd->entries[i], PAGE_PDE_WRITABLE);
-	// }
-
-	// allocate physical block for the page table that will be used
-	// for the identity mapping of the first 4MB
-	struct page_table *pt = (struct page_table *) allocate_blocks(1);
-
-	if (pt == NULL) {
-		return 1;
+	// unset R/W bit for the entries corresponding to .rodata
+	// starting address should be already page aligned from the linker
+	for (uint32_t start = (uint32_t) _kernel_rodata_sec_start;
+				start < ALIGN((uint32_t) _kernel_rodata_sec_end, PAGE_SIZE);
+				start += PAGE_SIZE) {
+		pt_entry *pte = vmm_get_pte(start);
+		CLEAR_ATTRIBUTE(pte, PAGE_PTE_WRITABLE);
 	}
 
-	// clear all entries in the page table
-	memset(pt, 0, sizeof(struct page_table));
+	// unmap identity map of the first 4MB as it's no longer useful
+	pd->entries[0] = 0;
 
-	// allocate physical block for the page table that will be used
-	// for the higher half kernel
-	struct page_table *pt3gb = (struct page_table *) allocate_blocks(1);
-
-	if (pt3gb == NULL) {
-		return 1;
-	}
-
-	// clear all entries in the page table
-	memset(pt3gb, 0, sizeof(struct page_table));
-
-	// map 4MB of memory starting at 0x00000000 to the 4MB of physical memory
-	// starting at 0x00000000 (identity mapping)
-	for (uint32_t i = 0, block = 0x0, virt = 0x0; i < 1024;
-		 i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
-		// initialize page table entry to 0
-		pt_entry pte = 0;
-
-		// set writable and present bits and put the physical address in the
-		// frame
-		SET_ATTRIBUTE(&pte, PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE);
-		SET_FRAME(&pte, block);
-
-		// put the PTE in the page table at the corresponding entry
-		pt->entries[PAGE_TABLE_INDEX(virt)] = pte;
-	}
-
-	// map 4MB of memory starting at 0xC0000000 to the 4MB of physical memory
-	// starting at 0x00008000 (where the kernel resides) (higher half kernel)
-	for (uint32_t i = 0, block = KERNEL_ADDRESS, virt = KERNEL_VIRT_ADDR;
-		 i < 1024; i++, block += PAGE_SIZE, virt += PAGE_SIZE) {
-		//  initialize page table entry to 0
-		pt_entry pte = 0;
-
-		// set writable and present bits and put the physical address in the
-		// frame
-		SET_ATTRIBUTE(&pte, PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE);
-		SET_FRAME(&pte, block);
-
-		// put the PTE in the page table at the corresponding index
-		pt3gb->entries[PAGE_TABLE_INDEX(virt)] = pte;
-	}
-
-	// put the pt3gb page table in the page directory at the corresponding index
-	// and set the present and writable bits
-	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(KERNEL_VIRT_ADDR)];
-	SET_ATTRIBUTE(pde, PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE);
-	SET_FRAME(pde, (address) pt3gb);
-
-	// put the pt page table in the page directory at the corresponding index
-	// and set the present and writable bits
-	pd_entry *pde2 = &pd->entries[PAGE_DIRECTORY_INDEX(0x0)];
-	SET_ATTRIBUTE(pde2, PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE);
-	SET_FRAME(pde2, (address) pt);
-
-	// set the page directory
-	set_page_directory(pd);
+	// reload page directory addr into %cr3
+	__asm__ __volatile__("movl %%eax, %%cr3" : : "a"(vmm_virt_to_phys((uint32_t) pd)));
 	kernel_page_directory = current_page_directory;
-
-	// enable paging
-	__asm__ __volatile__(
-		"movl %cr0, %eax; orl $0x80000001, %eax; movl %eax, %cr0");
-
-	return 0;
 }
 
 /**
@@ -443,7 +378,7 @@ void restore_kernel_address_space(void) {
 	struct page_directory *tmp = current_page_directory;
 
 	// set kernel page directory to current page directory
-	ret = set_page_directory(kernel_page_directory);
+	ret = vmm_set_page_directory(kernel_page_directory);
 
 	if (ret) {
 		printk("failed to change page directory!\n");
@@ -484,43 +419,10 @@ void free_proc_phys_mem(void) {
 }
 
 /**
- * @brief Return the physical address corresponding to the given virtual address
- *
- * This funcion returns the physical address for the given virtual address based
- * on the current page directory.
- *
- * @param virt_addr The virtual address
- *
- * @return The physical address
- */
-address get_physical_addr(address virt_addr) {
-	// get current page directory
-	struct page_directory *pd = current_page_directory;
-
-	printk("%d - %x\n", PAGE_DIRECTORY_INDEX(virt_addr),
-		   pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)]);
-	// get corresponding PDE for the given virtutal address
-	pd_entry *pde = &pd->entries[PAGE_DIRECTORY_INDEX(virt_addr)];
-
-	// get the page table
-	struct page_table *pt = (struct page_table *) PAGE_GET_PHY_ADDRESS(pde);
-
-	printk("%x - %x\n", PAGE_TABLE_INDEX(virt_addr),
-		   pt->entries[PAGE_TABLE_INDEX(virt_addr)]);
-
-	pt_entry test = pt->entries[PAGE_TABLE_INDEX(virt_addr)];
-
-	test &= 0xFFFFF000;
-	test += (virt_addr & 0x00000FFF);
-
-	return test;
-}
-
-/**
  * @brief Set the page directory to the kernel page directory
  *
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t set_kernel_page_directory(void) {
-	return set_page_directory(kernel_page_directory);
+	return vmm_set_page_directory(kernel_page_directory);
 }

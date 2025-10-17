@@ -16,6 +16,15 @@
 #define CLEAR_ATTRIBUTE(entry, attr)	(*entry &= ~attr)
 #define TEST_ATTRIBUTE(entry, attr)		(*entry & attr)
 #define SET_FRAME(entry, address)		(*entry = (*entry & ~0x7FFFF000) | address)
+#define PAGE_FRAME(addr)				((addr) & ~0xFFF)
+#define PAGE_OFFSET(addr)				((addr) & 0xFFF)
+
+// PD is mapped to itself into its last entry (1023rd),
+// making the following virtual address point to the PD itself
+#define PD_VIRT_ADDR					0xFFFFF000
+// the page tables are now also accessible starting from
+// this virtual address
+#define PT_VIRT_BASE					0xFFC00000
 
 /**
  * Page Directory Entry Format (4K)
@@ -73,7 +82,6 @@ typedef enum {
 
 typedef uint32_t pd_entry;
 typedef uint32_t pt_entry;
-typedef uint32_t address;
 
 /**
  * PAge directory: array of PAGES_PER_TABLE entries
@@ -91,16 +99,16 @@ struct page_table {
 	pt_entry entries[TABLES_PER_DIR];
 };
 
-uint8_t initialize_virtual_memory(void);
-uint8_t map_page(void *, void *);
+void vmm_init_phase2(void);
+uint8_t vmm_map_page(void *, void *, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS);
+void vmm_unmap_page(uint32_t);
 uint8_t map_user_page(void *, void *);
-void unmap_page(void *);
-pt_entry *get_page(address);
+pt_entry *vmm_get_pte(uint32_t);
+uint32_t vmm_virt_to_phys(uint32_t);
+
 struct page_directory *create_address_space(void);
-uint8_t set_page_directory(struct page_directory *);
+uint8_t vmm_set_page_directory(struct page_directory *);
 void restore_kernel_address_space(void);
-address get_physical_addr(address);
-void print_current_pd();
 uint8_t set_kernel_page_directory(void);
 void free_proc_phys_mem(void);
 

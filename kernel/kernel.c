@@ -17,9 +17,6 @@
 
 #include <stdint.h>
 
-extern char kernel_end[];
-extern char kernel_start[];
-
 // the system-wide table of open files
 struct open_files_table *open_files_table;
 
@@ -36,6 +33,11 @@ void kmain(unsigned long magic, unsigned long addr) {
 	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
 		return;
 	}
+
+	// virtual memory setup - phase 2 (after the early boot phase)
+	vmm_init_phase2();
+
+	while(1);
 
 	mbi = (struct multiboot_info *) addr;
 
@@ -167,16 +169,6 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 
 	// initialize programmable interrupt timer
 	PIT_init();
-
-	while(1);
-
-	// initialize virtual memory
-	ret = initialize_virtual_memory();
-
-	if (ret) {
-		printk("Error initializing the virtual memory manager\n");
-		halt_processor();
-	}
 
 #ifdef CONFIG_TTY_VBE
 	ret = map_framebuffer(); // map the framebuffer

@@ -231,7 +231,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 
 			map_user_page(addr, (void *) virt);
 
-			pt_entry *page = get_page(virt);
+			pt_entry *page = vmm_get_pte(virt);
 
 			SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
 
@@ -273,7 +273,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 
 			map_user_page(addr, (void *) uheap_start);
 
-			pt_entry *page = get_page(uheap_start);
+			pt_entry *page = vmm_get_pte(uheap_start);
 
 			SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
 			SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
@@ -304,7 +304,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 
 			map_user_page(addr, (void *) (*ustack_start));
 
-			page = get_page(*ustack_start);
+			page = vmm_get_pte(*ustack_start);
 
 			SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
 			SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);

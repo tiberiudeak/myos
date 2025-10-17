@@ -45,8 +45,12 @@ stack_top:
 
 .section .bss, "aw", @nobits
 .align 4096
+.global boot_page_directory
+// reserve memory for the page directory
 boot_page_directory:
 .skip 4096
+// reserve memory for the page tables
+.global boot_page_table1
 boot_page_table1:
 .skip 4096
 
@@ -59,8 +63,8 @@ _start:
 
 
 	|-----------------|         |-----------------|             |                 |
-	|       ...       |         | 0x3FF000| flags |             |                 |
-	|                 |         |-----------------|             |                 |
+1023| pd_addr | flags |         | 0x3FF000| flags |             |                 |
+	|-----------------|         |-----------------|             |                 |
 	|-----------------|         |                 |             |-----------------| 0x400000
 768	| pt_addr | flags |----     |                 |             |                 |
 	|-----------------|   |     |       ...       |             |                 |
@@ -79,13 +83,17 @@ _start:
 
 	/* fill in the page directory
 		- identity map the first 4MB
-		- also map first 4MB at 0xC0000000 */
+		- also map first 4MB at 0xC0000000
+		- map page directory to itself
+	 */
 
 	// set the entries at indices 0 and 0x300 (corresponding to virtual address 0xC0000000)
 	// to the corresponding page table address (and also set the present and read-write bits)
 	movl $(boot_page_table1 - 0xC0000000 + 0x003), boot_page_directory - 0xC0000000
 	movl $(boot_page_table1 - 0xC0000000 + 0x003), boot_page_directory - 0xC0000000 + 0x300 * 4
 
+	// map the page directory itself into its last entry
+	movl $(boot_page_directory - 0xC0000000 + 0x003), boot_page_directory - 0xC0000000 + 0x3FF * 4
 
 	/* fill in the page table */
 
@@ -94,6 +102,9 @@ _start:
 	// (which is 0x00000000)
 	movl $(boot_page_table1 - 0xC0000000), %edi
 	movl $0, %esi
+
+	// table has 1024 entries
+	movl $1024, %edx
 
 1:
 	// move 4KiB page frame address into %edx and set the
@@ -110,17 +121,11 @@ _start:
 	addl $4096, %esi
 	addl $4, %edi
 
-	// have we finished mapping the first 4MB?
-	// (as we only have one page table right now)
-	cmpl $0x400000, %esi
-	jge 2f
+	// check if we've completed the table
+	subl $1, %edx
+	cmpl $0, %edx
+	jge 1b
 
-	// have we finished mapping the kernel?
-	cmpl $(_kernel_end - 0xC0000000), %esi
-	jge 2f
-
-	// mapping is not finished, so loop back
-	jmp 1b
 2:
 	// set %cr3 to the physical address of the page table
 	movl $(boot_page_directory - 0xC0000000), %ecx
@@ -128,7 +133,7 @@ _start:
 
 	// enable paging and the write-protect bit
 	movl %cr0, %ecx
-	orl $0x80010000, %ecx
+	orl $0x80000001, %ecx
 	movl %ecx, %cr0
 
 	// jump to higher half
@@ -138,7 +143,6 @@ _start:
 .section .text
 
 3:
-	jmp 3b
 	// initialize stack pointer
 	mov $stack_top, %esp
 

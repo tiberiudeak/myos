@@ -5,7 +5,7 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-extern char kernel_end[]; // symbol from the kernel linker script
+extern char _kernel_end[]; // symbol from the kernel linker script
 struct kblock_meta *metadata_blk_header;
 
 // starting virtual address will be the starting virtual address of the kernel
@@ -28,7 +28,7 @@ uint32_t current_virtual_address = 0;
  */
 uint8_t kmalloc_init(size_t size) {
 	// determine starting virtual address
-	uint32_t kernel_size_bytes = (uint32_t) (kernel_end - KERNEL_ADDRESS);
+	uint32_t kernel_size_bytes = (uint32_t) (_kernel_end - KERNEL_ADDRESS);
 	starting_virtual_address =
 		KERNEL_VIRT_ADDR + ALIGN(kernel_size_bytes, PAGE_SIZE);
 
@@ -52,9 +52,10 @@ uint8_t kmalloc_init(size_t size) {
 		// printk("physical address: %x ", starting_phys_addr);
 		// printk("will be mapped to virtual address: %x\n", virt);
 
-		map_page((void *) (starting_phys_addr), (void *) virt);
+		vmm_map_page((void *) (starting_phys_addr), (void *) virt,
+				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE, 0);
 
-		pt_entry *page = get_page(virt);
+		pt_entry *page = vmm_get_pte(virt);
 
 		SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
 
@@ -200,9 +201,10 @@ void *kmalloc_expand_memory(uint32_t size) {
 		// printk("physical address: %x ", starting_phys_addr);
 		// printk("will be mapped to virtual address: %x\n", virt);
 
-		map_page((void *) (starting_phys_addr), (void *) virt);
+		vmm_map_page((void *) (starting_phys_addr), (void *) virt,
+				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE, 0);
 
-		pt_entry *page = get_page(virt);
+		pt_entry *page = vmm_get_pte(virt);
 
 		SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
 

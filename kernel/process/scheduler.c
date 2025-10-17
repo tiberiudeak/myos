@@ -123,7 +123,7 @@ void simple_task_scheduler(void) {
 
 		// change virtual address space
 		if (task->vas != NULL) {
-			set_page_directory(task->vas);
+			vmm_set_page_directory(task->vas);
 		}
 
 		// execute task
@@ -525,7 +525,7 @@ void schedule(QUEUE_TYPE queue_type) {
 
 	// change virtual address space for user tasks
 	if (task->vas != NULL) {
-		set_page_directory(task->vas);
+		vmm_set_page_directory(task->vas);
 	} else {
 		set_kernel_page_directory();
 	}

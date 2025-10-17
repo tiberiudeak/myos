@@ -509,7 +509,7 @@ void *syscall_sbrk(intptr_t increment) {
 
 			map_user_page(phys_addr, (void *) virt);
 
-			pt_entry *page = get_page((uint32_t) virt);
+			pt_entry *page = vmm_get_pte((uint32_t) virt);
 
 			SET_ATTRIBUTE(page, PAGE_PTE_WRITABLE);
 			SET_ATTRIBUTE(page, PAGE_PTE_USER | PAGE_PTE_PRESENT);
