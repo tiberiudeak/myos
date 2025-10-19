@@ -222,7 +222,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 		// map obtained blocks to corresponding virtual addresses
 		for (uint32_t i = 0, virt = pr_header->p_vaddr; i < needed_blocks;
 			 i++, virt += PAGE_SIZE) {
-			void *addr = allocate_blocks(1);
+			void *addr = pmm_allocate_blocks(1);
 
 			if (addr == NULL) {
 				printk("out of memory!\n");
@@ -264,7 +264,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 			uint32_t uheap_end = uheap_start + PAGE_SIZE;
 #endif
 
-			void *addr = allocate_blocks(1);
+			void *addr = pmm_allocate_blocks(1);
 
 			if (addr == NULL) {
 				printk("out of memory\n");
@@ -295,7 +295,7 @@ void *load_elf(uint32_t *elf_address, uint32_t *ustack_start,
 			*ustack_start = KERNEL_VIRT_ADDR - PAGE_SIZE;
 
 			// map stack
-			addr = allocate_blocks(1);
+			addr = pmm_allocate_blocks(1);
 
 			if (addr == NULL) {
 				printk("out of memory!\n");

@@ -51,6 +51,8 @@ SECTIONS
 	{
 		*(COMMON)
 		*(.bss)
+
+		. = ALIGN(4K);
 		*(.bootstrap_stack)
 	}
 	_kernel_end = .;

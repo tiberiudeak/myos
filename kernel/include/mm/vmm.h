@@ -100,12 +100,14 @@ struct page_table {
 };
 
 void vmm_init_phase2(void);
-uint8_t vmm_map_page(void *, void *, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS);
-void vmm_unmap_page(uint32_t);
-uint8_t map_user_page(void *, void *);
+int vmm_map_page(uint32_t, uint32_t, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS);
+int vmm_unmap_page(uint32_t);
 pt_entry *vmm_get_pte(uint32_t);
 uint32_t vmm_virt_to_phys(uint32_t);
+int vmm_map_page_early(uint32_t);
+void vmm_reload_cr3(uint32_t);
 
+uint8_t map_user_page(void *, void *);
 struct page_directory *create_address_space(void);
 uint8_t vmm_set_page_directory(struct page_directory *);
 void restore_kernel_address_space(void);

@@ -37,10 +37,37 @@ void kmain(unsigned long magic, unsigned long addr) {
 	// virtual memory setup - phase 2 (after the early boot phase)
 	vmm_init_phase2();
 
+	// map mbi structure temporarily to access its members
+	uint32_t mbi_vaddr = vmm_map_page_early(addr);
+
+	if (!mbi_vaddr) {
+		return;
+	}
+
+	mbi = (struct multiboot_info *) mbi_vaddr;
+
+	if (mbi->flags & MULTIBOOT_INFO_MEMMAP) {
+		uint32_t mmap_vaddr = vmm_map_page_early(mbi->mmap_addr);
+
+		if (!mmap_vaddr) {
+			return;
+		}
+
+		// initialize physical memory manager
+		ret = pmm_init(mmap_vaddr, mbi->mmap_length);
+
+		if (ret) {
+			return;
+		}
+
+		// ignore return code in this case, as this would be a warning
+		// but we can't print it at this point
+		vmm_unmap_page(mmap_vaddr);
+	} else {
+		return;
+	}
+
 	while(1);
-
-	mbi = (struct multiboot_info *) addr;
-
 	// init video
 	if (mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER) {
 		ret = tty_init_vbe(mbi);

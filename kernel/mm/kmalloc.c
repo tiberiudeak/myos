@@ -5,7 +5,8 @@
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 
-extern char _kernel_end[]; // symbol from the kernel linker script
+// symbol from the kernel linker script
+extern char _kernel_end[];
 struct kblock_meta *metadata_blk_header;
 
 // starting virtual address will be the starting virtual address of the kernel
@@ -43,7 +44,7 @@ uint8_t kmalloc_init(size_t size) {
 	for (uint32_t i = 0, virt = starting_virtual_address; i < req_pages;
 		 i++, virt += PAGE_SIZE) {
 		// request pages from the physical memory manager
-		uint32_t starting_phys_addr = (uint32_t) allocate_blocks(1);
+		uint32_t starting_phys_addr = (uint32_t) pmm_allocate_blocks(1);
 
 		if ((void *) starting_phys_addr == NULL) {
 			return 1;
@@ -52,7 +53,7 @@ uint8_t kmalloc_init(size_t size) {
 		// printk("physical address: %x ", starting_phys_addr);
 		// printk("will be mapped to virtual address: %x\n", virt);
 
-		vmm_map_page((void *) (starting_phys_addr), (void *) virt,
+		vmm_map_page(starting_phys_addr, virt,
 				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE, 0);
 
 		pt_entry *page = vmm_get_pte(virt);
@@ -191,7 +192,7 @@ void *kmalloc_expand_memory(uint32_t size) {
 	for (uint32_t i = 0, virt = current_virtual_address; i < req_pages;
 		 i++, virt += PAGE_SIZE) {
 		// request pages from the physical memory manager
-		uint32_t starting_phys_addr = (uint32_t) allocate_blocks(1);
+		uint32_t starting_phys_addr = (uint32_t) pmm_allocate_blocks(1);
 
 		if ((void *) starting_phys_addr == NULL) {
 			printk("out of memory!\n");
@@ -201,7 +202,7 @@ void *kmalloc_expand_memory(uint32_t size) {
 		// printk("physical address: %x ", starting_phys_addr);
 		// printk("will be mapped to virtual address: %x\n", virt);
 
-		vmm_map_page((void *) (starting_phys_addr), (void *) virt,
+		vmm_map_page(starting_phys_addr, virt,
 				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE, 0);
 
 		pt_entry *page = vmm_get_pte(virt);

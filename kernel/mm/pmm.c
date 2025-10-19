@@ -1,5 +1,5 @@
 /* Physical memory manager */
-#define pr_log_fmt(msg)	"PMM: %s: " msg, __func__
+#define pr_log_fmt(msg)	"PMM: " msg
 #include <kernel/multiboot.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
@@ -12,8 +12,8 @@ static uint32_t max_blocks;
 static uint32_t used_blocks;
 
 // defined in the linker script
-extern char kernel_end[];
-extern char kernel_start[];
+extern char _kernel_end_phys[];
+extern char _kernel_start_phys[];
 
 int ceil(int a, int b) {
 	return (a + b - 1) / b;
@@ -144,7 +144,7 @@ void __mark_region_reserved(uint32_t base_addr, uint32_t size) {
  * @param addr		Addr where the memory map starts
  * @param length	Total size of buffer
  */
-void mark_e820_regions(uint32_t addr, uint32_t length) {
+void pmm_mark_e820_regions(uint32_t addr, uint32_t length) {
 	struct multiboot_mmap_entry *mmap_entry;
 
 	for (mmap_entry = (struct multiboot_mmap_entry *) addr;
@@ -171,59 +171,51 @@ void mark_e820_regions(uint32_t addr, uint32_t length) {
 /**
  * @brief Perform some tests for the memmory manager
  *
- * This function performs some test to see if the physical memory manager
- * works as expected.
+ * This function performs some basic test to see if the physical
+ * memory manager works as expected.
  */
 uint8_t pmm_self_test() {
 	uint32_t test_used_blocks = used_blocks;
 	uint32_t test_free_blocks = max_blocks - used_blocks;
 
-	uint32_t *a = (uint32_t *) allocate_blocks(1);
+	uint32_t *a = (uint32_t *) pmm_allocate_blocks(1);
 
 	if ((test_free_blocks == 0 && a != NULL) ||
 		(test_free_blocks > 0 && a == NULL) ||
 		(a != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) ||
 		(a != NULL && used_blocks - test_used_blocks != 1)) {
-		printk("FAILED\n");
 		return 1;
 	} else {
 		test_free_blocks--;
 		test_used_blocks++;
 	}
 
-	uint32_t *b = (uint32_t *) allocate_blocks(2);
+	uint32_t *b = (uint32_t *) pmm_allocate_blocks(2);
 
 	if ((test_free_blocks < 2 && b != NULL) ||
 		(test_free_blocks > 2 && b == NULL) ||
 		(b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) ||
 		(b != NULL && used_blocks - test_used_blocks != 2)) {
-		printk("FAILED\n");
 		return 1;
 	} else {
 		test_free_blocks -= 2;
 		test_used_blocks += 2;
 	}
 
-	free_blocks(a, 1);
+	pmm_free_blocks(a, 1);
 
 	if (((max_blocks - used_blocks) - test_free_blocks != 1) ||
 		(test_used_blocks - used_blocks != 1)) {
-		printk("FAILED\n");
-		return 1;
-	} else if (*a != 0x01010101) {
-		printk("FAILED\n");
 		return 1;
 	} else {
 		test_free_blocks += 1;
 		test_used_blocks -= 1;
 	}
 
-	free_blocks(b, 2);
+	pmm_free_blocks(b, 2);
 
 	if (((max_blocks - used_blocks) - test_free_blocks != 2) ||
 		(test_used_blocks - used_blocks != 2)) {
-		return 1;
-	} else if (*b != 0x01010101) {
 		return 1;
 	} else {
 		test_free_blocks += 2;
@@ -247,7 +239,6 @@ uint8_t pmm_self_test() {
  * @return 0 if self tests passed successfully, 1 otherwise
  */
 uint8_t pmm_init(uint32_t addr, uint32_t length) {
-	pr_log("Initializing Physical Memory Manager\n");
 	max_blocks = MAX_RAM_SIZE / BLOCK_SIZE;
 	used_blocks = max_blocks;
 
@@ -255,15 +246,14 @@ uint8_t pmm_init(uint32_t addr, uint32_t length) {
 	memset(bitmap, 0xFF, BITMAP_SIZE);
 
 	// mark regions in the memory map
-	mark_e820_regions(addr, length);
+	pmm_mark_e820_regions(addr, length);
 
 	// reserve kernel region
-	__mark_region_reserved((uint32_t) kernel_start,
-			(uint32_t) (kernel_end - kernel_start));
+	__mark_region_reserved((uint32_t) _kernel_start_phys,
+			(uint32_t) (_kernel_end_phys - _kernel_start_phys));
 
-	pr_log("total number of blocks: %d\n", max_blocks);
-	pr_log("used blocks: %d\n", used_blocks);
-	pr_log("free blocks: %d\n", max_blocks - used_blocks);
+	// reserve 0x0000000
+	__mark_region_reserved(0x00000000, BLOCK_SIZE);
 
 	// perform some tests to see that everything works as expected
 	return pmm_self_test();
@@ -305,13 +295,10 @@ uint32_t __find_first_fit(uint32_t req_num_blocks) {
 /**
  * @brief Allocate num_blocks of physical memory
  *
- * This function allocates the requested number of blocks.
- *
  * @param num_blocks Requested number of blocks
- *
  * @return Starting physical address for the requested region
  */
-void *allocate_blocks(uint32_t num_blocks) {
+void *pmm_allocate_blocks(uint32_t num_blocks) {
 	if (num_blocks == 0) {
 		return NULL;
 	}
@@ -340,16 +327,11 @@ void *allocate_blocks(uint32_t num_blocks) {
 /**
  * @brief Free "size" blocks starting at the given address
  *
- * This function frees "size" blocks starting at the given address.
- *
  * @param address 		Starting address
  * @param num_blocks	Number of blocks to free
  */
-void free_blocks(void *address, uint32_t num_blocks) {
+void pmm_free_blocks(void *address, uint32_t num_blocks) {
 	uint32_t block_index = (uint32_t) address / BLOCK_SIZE;
-
-	// override entire block with 1
-	memset(address, 1, BLOCK_SIZE * num_blocks);
 
 	for (; num_blocks > 0; num_blocks--) {
 		__unset_block(block_index);
@@ -360,8 +342,6 @@ void free_blocks(void *address, uint32_t num_blocks) {
 
 /**
  * @brief Print information about the physical memory
- *
- * Print total number of blocks, used and free blocks and the block size.
  */
 void print_phymem_info() {
 	printk("total number of blocks: %d\n", max_blocks);

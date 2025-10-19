@@ -15,8 +15,8 @@ struct mem_map_entry {
 } __attribute__((packed));
 
 uint8_t pmm_init(uint32_t, uint32_t);
-void *allocate_blocks(uint32_t);
-void free_blocks(void *, uint32_t);
+void *pmm_allocate_blocks(uint32_t);
+void pmm_free_blocks(void *, uint32_t);
 void print_phymem_info(void);
 
 #endif /* !MM_PMM_H */

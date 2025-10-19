@@ -87,7 +87,7 @@ uint32_t vmm_virt_to_phys(uint32_t virtual_address) {
  * @return Address allocated by the physical memory manager
  */
 void *allocate_page(pt_entry *pte) {
-	void *block = allocate_blocks(1);
+	void *block = pmm_allocate_blocks(1);
 
 	if (block != NULL) {
 		SET_FRAME(pte, (uint32_t) block);
@@ -109,10 +109,19 @@ void free_page(pt_entry *pte) {
 	void *address = (void *) PAGE_GET_PHY_ADDRESS(pte);
 
 	if (address != NULL) {
-		free_blocks(address, 1);
+		pmm_free_blocks(address, 1);
 	}
 
 	CLEAR_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+}
+
+/**
+ * Reload address of page directory - cache is also cleared
+ *
+ * @param pr_addr Physical address of the page directory
+ */
+void inline vmm_reload_cr3(uint32_t pd_addr) {
+	__asm__ __volatile__("movl %%eax, %%cr3" : : "a"(pd_addr));
 }
 
 /**
@@ -133,21 +142,9 @@ uint8_t vmm_set_page_directory(struct page_directory *pd) {
 
 	current_page_directory = pd;
 
-	__asm__ __volatile__("movl %%eax, %%cr3" : : "a"(current_page_directory));
+	vmm_reload_cr3((uint32_t) current_page_directory);
 
 	return 0;
-}
-
-/**
- * @brief Flush TLB entry for the given virtual address (only in supervisor
- * mode)
- *
- * This function invalidates the TLB entry for the given virtual address.
- *
- * @param virtual_address The virtual address
- */
-void flush_tlb_entry(uint32_t virtual_address) {
-	__asm__ __volatile__("cli; invlpg (%0); sti" : : "r"(virtual_address));
 }
 
 /**
@@ -173,7 +170,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = allocate_blocks(1);
+		void *block = pmm_allocate_blocks(1);
 
 		if (block == NULL) {
 			return 1;
@@ -216,19 +213,19 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
  *
  * @return 0 if successful, 1 otherwise
  */
-uint8_t vmm_map_page(void *physical_address, void *virtual_address,
+int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 		PAGE_PDE_FLAGS pde_flags, PAGE_PTE_FLAGS pte_flags) {
 	// get current page directory
 	struct page_directory *pd = current_page_directory;
 
 	// get corresponding PDE for the given virtual address
 	pd_entry *pde =
-		&pd->entries[PAGE_DIRECTORY_INDEX((uint32_t) virtual_address)];
+		&pd->entries[PAGE_DIRECTORY_INDEX(virtual_address)];
 
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = allocate_blocks(1);
+		void *block = pmm_allocate_blocks(1);
 
 		if (block == NULL) {
 			return 1;
@@ -246,10 +243,10 @@ uint8_t vmm_map_page(void *physical_address, void *virtual_address,
 	struct page_table *pt = (struct page_table *) PAGE_GET_PHY_ADDRESS(pde);
 
 	// get corresponding PTE for the given virtual address
-	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX((uint32_t) virtual_address)];
+	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
 
 	// set frame and present bit
-	SET_FRAME(pte, (uint32_t) physical_address);
+	SET_FRAME(pte, physical_address);
 	SET_ATTRIBUTE(pte, pte_flags);
 
 	return 0;
@@ -265,13 +262,20 @@ uint8_t vmm_map_page(void *physical_address, void *virtual_address,
  *
  * @param virtual_address The virtual address
  */
-void vmm_unmap_page(uint32_t virtual_address) {
+int vmm_unmap_page(uint32_t virtual_address) {
 	// get page table entry
 	pt_entry *pte = vmm_get_pte((uint32_t) virtual_address);
+
+	if (!pte) {
+		return 1;
+	}
 
 	// set frame to address 0 and clear present bit
 	SET_FRAME(pte, 0x0);
 	CLEAR_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) PD_VIRT_ADDR));
+
+	return 0;
 }
 
 /**
@@ -309,7 +313,7 @@ void vmm_init_phase2(void) {
 	pd->entries[0] = 0;
 
 	// reload page directory addr into %cr3
-	__asm__ __volatile__("movl %%eax, %%cr3" : : "a"(vmm_virt_to_phys((uint32_t) pd)));
+	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) pd));
 	kernel_page_directory = current_page_directory;
 }
 
@@ -324,7 +328,7 @@ void vmm_init_phase2(void) {
  * @return New page directory
  */
 struct page_directory *create_address_space(void) {
-	struct page_directory *dir = allocate_blocks(1);
+	struct page_directory *dir = pmm_allocate_blocks(1);
 
 	if (dir == NULL) {
 		return NULL;
@@ -370,7 +374,7 @@ void restore_kernel_address_space(void) {
 			pd_entry phys_address_of_page_table =
 				current_page_directory->entries[i];
 
-			free_blocks(
+			pmm_free_blocks(
 				(void *) PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
 		}
 	}
@@ -386,7 +390,7 @@ void restore_kernel_address_space(void) {
 	}
 
 	// free memory with the old page directory
-	free_blocks((void *) tmp, 1);
+	pmm_free_blocks((void *) tmp, 1);
 }
 
 /**
@@ -425,4 +429,37 @@ void free_proc_phys_mem(void) {
  */
 uint8_t set_kernel_page_directory(void) {
 	return vmm_set_page_directory(kernel_page_directory);
+}
+
+/**
+ * Idea: use the recursive part of the page directory
+ *
+ * basically, go to the last entry, which points to the PD
+ * itself, then search for the first free PT. Once one is
+ * found, set its frame to the given physical address.
+ * The obtained virtual address corresponding to the given
+ * physical address will then have the following format:
+ *
+ * 0xFFC<PT_index><offset>
+ */
+int vmm_map_page_early(uint32_t physical_address) {
+	uint32_t *pd = (uint32_t *) PD_VIRT_ADDR;
+	uint32_t index = 0;
+
+	for (; index < TABLES_PER_DIR; index++) {
+		if (*(pd + index) != 0) {
+			continue;
+		}
+
+		// found a free PTE
+		uint32_t *pte = pd + index;
+		SET_FRAME(pte, physical_address);
+		SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE);
+
+		uint32_t vaddr = PT_VIRT_BASE + index * PAGE_SIZE + PAGE_OFFSET(physical_address);
+		vmm_reload_cr3(vmm_virt_to_phys((uint32_t) pd));
+		return vaddr;
+	}
+
+	return 0;
 }
