@@ -252,8 +252,8 @@ uint8_t pmm_init(uint32_t addr, uint32_t length) {
 	__mark_region_reserved((uint32_t) _kernel_start_phys,
 			(uint32_t) (_kernel_end_phys - _kernel_start_phys));
 
-	// reserve 0x0000000
-	__mark_region_reserved(0x00000000, BLOCK_SIZE);
+	// reserve first MB as well
+	__mark_region_reserved(0x00000000, 0x100000);
 
 	// perform some tests to see that everything works as expected
 	return pmm_self_test();

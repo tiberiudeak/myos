@@ -198,7 +198,10 @@ int tty_init_vbe(void *data) {
 
 	struct multiboot_info *mbi = (struct multiboot_info *) data;
 
-	framebuffer = (uint32_t *) mbi->framebuffer_addr;
+	uint32_t vaddr = vmm_map_video_mem(mbi->framebuffer_addr,
+			mbi->framebuffer_width * mbi->framebuffer_height * mbi->framebuffer_bpp);
+
+	framebuffer = (uint32_t *) vaddr;
 	VBE_WIDTH = mbi->framebuffer_width;
 	VBE_HEIGHT = mbi->framebuffer_height;
 
@@ -207,7 +210,6 @@ int tty_init_vbe(void *data) {
 	return 0;
 }
 
-static uint16_t *const VGA_MEMORY = (uint16_t *) VGA_VIDEO_ADDR;
 static uint16_t *terminal_buffer;
 
 /**
@@ -275,7 +277,6 @@ void _vga_terminal_initialize() {
 	terminal_row = 0;
 	terminal_column = 0;
 	terminal_color = _vga_entry_color(vga_fg_color, vga_bg_color); // 0x0F
-	terminal_buffer = VGA_MEMORY;
 
 	_vga_set_cursor(terminal_column, terminal_row);
 
@@ -314,14 +315,14 @@ void _vga_terminal_scroll() {
 	// scroll all lines up
 	for (y = 0; y < VGA_HEIGHT - 2; y++) {
 		for (x = 0; x < VGA_WIDTH * 2; x++) {
-			ptr = VGA_MEMORY + (VGA_WIDTH * y) + x;
+			ptr = terminal_buffer + (VGA_WIDTH * y) + x;
 			*ptr = *(ptr + (VGA_WIDTH));
 		}
 	}
 
 	// clear the last line
 	for (x = 0; x < VGA_WIDTH * 2; x++) {
-		ptr = VGA_MEMORY + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
+		ptr = terminal_buffer + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
 		//*ptr = *(ptr + (VGA_WIDTH));
 		*ptr = _vga_entry(' ', (uint8_t) terminal_color);
 	}
@@ -434,6 +435,16 @@ struct tty_operations vga_tty_operations = {
 
 int tty_init_vga() {
 	tty = vga_tty_operations;
+
+	// map video memory (fits in one page table)
+	uint32_t vaddr = vmm_map_video_mem(VGA_VIDEO_ADDR, PAGE_SIZE);
+
+	if (!vaddr) {
+		return 1;
+	}
+
+	terminal_buffer = (uint16_t *) vaddr;
+
 	return 0;
 }
 

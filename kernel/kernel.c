@@ -67,7 +67,6 @@ void kmain(unsigned long magic, unsigned long addr) {
 		return;
 	}
 
-	while(1);
 	// init video
 	if (mbi->flags & MULTIBOOT_INFO_FRAMEBUFFER) {
 		ret = tty_init_vbe(mbi);
@@ -80,6 +79,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 	}
 
 	tty.terminal_initialize();
+	while(1);
 
 	if (mbi->flags & MULTIBOOT_INFO_BOOTLOADNAME) {
 		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);

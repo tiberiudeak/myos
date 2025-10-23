@@ -16,6 +16,8 @@ extern char _kernel_text_sec_end[];
 extern char _kernel_rodata_sec_start[];
 extern char _kernel_rodata_sec_end[];
 
+extern char _kernel_end[];
+
 struct page_directory *current_page_directory = 0;
 struct page_directory *kernel_page_directory = 0;
 
@@ -231,27 +233,23 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 			return 1;
 		}
 
-		// clear page table
-		memset(block, 0, sizeof(struct page_table));
-
-		// set frame and present and read-write bits
+		// set frame and flags
 		SET_FRAME(pde, (uint32_t) block);
 		SET_ATTRIBUTE(pde, pde_flags);
 	}
 
-	// get address of the page table
-	struct page_table *pt = (struct page_table *) PAGE_GET_PHY_ADDRESS(pde);
-
 	// get corresponding PTE for the given virtual address
-	pt_entry *pte = &pt->entries[PAGE_TABLE_INDEX(virtual_address)];
+	pt_entry *pte = vmm_get_pte(virtual_address);
 
-	// set frame and present bit
+	// set frame and flags
 	SET_FRAME(pte, physical_address);
 	SET_ATTRIBUTE(pte, pte_flags);
 
+	// reload %cr3
+	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) pd));
+
 	return 0;
 }
-
 
 /**
  * @brief Unmap the page for the given virtual address
@@ -442,7 +440,7 @@ uint8_t set_kernel_page_directory(void) {
  *
  * 0xFFC<PT_index><offset>
  */
-int vmm_map_page_early(uint32_t physical_address) {
+uint32_t vmm_map_page_early(uint32_t physical_address) {
 	uint32_t *pd = (uint32_t *) PD_VIRT_ADDR;
 	uint32_t index = 0;
 
@@ -462,4 +460,35 @@ int vmm_map_page_early(uint32_t physical_address) {
 	}
 
 	return 0;
+}
+
+// map video memory, either vga or vbe framebuffer
+// virt mem will be right after the kernel
+// for vga, memory should already be mapped in boot.S, this
+// will also remap it to a new virtual address
+// (maybe remove the mapping from boot.S?)
+uint32_t vmm_map_video_mem(uint32_t phys_addr, uint32_t size) {
+	uint32_t vaddr = ALIGN((uint32_t) _kernel_end, PAGE_SIZE);
+	uint32_t vaddr_copy = vaddr;
+
+	// number of pages
+	uint32_t nr_pages = size / PAGE_SIZE;
+	int ret;
+
+	if (size % PAGE_SIZE) {
+		nr_pages++;
+	}
+
+	// map every page
+	for (uint32_t i = 0; i < nr_pages; i++, vaddr += PAGE_SIZE, phys_addr += PAGE_SIZE) {
+		ret = vmm_map_page(phys_addr, vaddr,
+				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
+				PAGE_PTE_PRESENT | PAGE_PDE_WRITABLE);
+
+		if (ret) {
+			return 0;
+		}
+	}
+
+	return vaddr_copy;
 }

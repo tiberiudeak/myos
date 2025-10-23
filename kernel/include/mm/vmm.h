@@ -104,8 +104,9 @@ int vmm_map_page(uint32_t, uint32_t, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS);
 int vmm_unmap_page(uint32_t);
 pt_entry *vmm_get_pte(uint32_t);
 uint32_t vmm_virt_to_phys(uint32_t);
-int vmm_map_page_early(uint32_t);
+uint32_t vmm_map_page_early(uint32_t);
 void vmm_reload_cr3(uint32_t);
+uint32_t vmm_map_video_mem(uint32_t, uint32_t);
 
 uint8_t map_user_page(void *, void *);
 struct page_directory *create_address_space(void);
