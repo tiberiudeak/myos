@@ -104,7 +104,7 @@ _start:
 	movl $0, %esi
 
 	// table has 1024 entries
-	movl $1024, %edx
+	movl $1024, %ecx
 
 1:
 	// move 4KiB page frame address into %edx and set the
@@ -121,10 +121,7 @@ _start:
 	addl $4096, %esi
 	addl $4, %edi
 
-	// check if we've completed the table
-	subl $1, %edx
-	cmpl $0, %edx
-	jge 1b
+	loop 1b
 
 2:
 	// set %cr3 to the physical address of the page table
