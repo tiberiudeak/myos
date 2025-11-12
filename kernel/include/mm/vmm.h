@@ -8,16 +8,16 @@
 
 #define PAGE_SIZE						4096
 
-#define PAGE_DIRECTORY_INDEX(x)			(((x) >> 22) & 0x3FF)
-#define PAGE_TABLE_INDEX(x)				(((x) >> 12) & 0x3FF)
+#define PAGE_DIRECTORY_INDEX(x)         (((x) >> 22) & 0x3FF)
+#define PAGE_TABLE_INDEX(x)             (((x) >> 12) & 0x3FF)
 #define PAGE_GET_PHY_ADDRESS(dir_entry) ((*dir_entry) & ~0xFFF)
 
-#define SET_ATTRIBUTE(entry, attr)		(*entry |= attr)
-#define CLEAR_ATTRIBUTE(entry, attr)	(*entry &= ~attr)
-#define TEST_ATTRIBUTE(entry, attr)		(*entry & attr)
-#define SET_FRAME(entry, address)		(*entry = (*entry & ~0x7FFFF000) | address)
-#define PAGE_FRAME(addr)				((addr) & ~0xFFF)
-#define PAGE_OFFSET(addr)				((addr) & 0xFFF)
+#define SET_ATTRIBUTE(entry, attr)      (*(entry) |= (attr))
+#define CLEAR_ATTRIBUTE(entry, attr)    (*(entry) &= ~(attr))
+#define TEST_ATTRIBUTE(entry, attr)     (*(entry) & (attr))
+#define SET_FRAME(entry, address)       (*(entry) = (*(entry) & 0x00000FFF) | (address) & 0xFFFFF000)
+#define PAGE_FRAME(addr)                ((addr) & ~0xFFF)
+#define PAGE_OFFSET(addr)               ((addr) & 0xFFF)
 
 // PD is mapped to itself into its last entry (1023rd),
 // making the following virtual address point to the PD itself

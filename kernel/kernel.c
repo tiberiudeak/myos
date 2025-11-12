@@ -28,6 +28,7 @@ void halt_processor(void) {
 
 void kmain(unsigned long magic, unsigned long addr) {
 	int ret;
+	uint32_t tmp_vaddr;
 	struct multiboot_info *mbi;
 
 	if (magic != MULTIBOOT_BOOTLOADER_MAGIC) {
@@ -54,9 +55,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 		}
 
 		// initialize physical memory manager
-		ret = pmm_init(mmap_vaddr, mbi->mmap_length);
-
-		if (ret) {
+		if (pmm_init(mmap_vaddr, mbi->mmap_length)) {
 			return;
 		}
 
@@ -79,10 +78,17 @@ void kmain(unsigned long magic, unsigned long addr) {
 	}
 
 	tty.terminal_initialize();
-	while(1);
 
 	if (mbi->flags & MULTIBOOT_INFO_BOOTLOADNAME) {
-		printk("bootloader booting the kernel: %s\n", (char *) mbi->bootloader_name);
+		tmp_vaddr = vmm_map_page_early(mbi->bootloader_name);
+
+		if (tmp_vaddr) {
+			printk("bootloader booting the kernel: %s\n", (char *) tmp_vaddr);
+
+			if (vmm_unmap_page(tmp_vaddr)) {
+				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
+			}
+		}
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_MEMORY) {
@@ -95,21 +101,29 @@ void kmain(unsigned long magic, unsigned long addr) {
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_CMDLINE) {
-		printk("cmdline = %s\n", (char *) mbi->cmdline);
+		tmp_vaddr = vmm_map_page_early(mbi->cmdline);
+
+		if (tmp_vaddr) {
+			printk("cmdline = %s\n", (char *) tmp_vaddr);
+
+			if (vmm_unmap_page(tmp_vaddr)) {
+				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
+			}
+		}
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_MODS && mbi->mods_count != 0) {
-		struct multiboot_mod_list *mod;
-		unsigned int i;
+		// struct multiboot_mod_list *mod;
+		// unsigned int i;
 
 		printk("mod_count = %d, mods_addr = 0x%x\n",
 				mbi->mods_count, mbi->mods_addr);
 
-		for (i = 0, mod = (struct multiboot_mod_list *) mbi->mods_addr;
-				i < mbi->mods_count; i++, mod++) {
-			printk("mod_start = 0x%x, mod_end = 0x%x, cmdline = %s\n",
-					mod->mod_start, mod->mod_end, (char *) mod->string);
-		}
+		// for (i = 0, mod = (struct multiboot_mod_list *) mbi->mods_addr;
+		// 		i < mbi->mods_count; i++, mod++) {
+		// 	printk("mod_start = 0x%x, mod_end = 0x%x, cmdline = %s\n",
+		// 			mod->mod_start, mod->mod_end, (char *) mod->string);
+		// }
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_SYMS && mbi->flags & MULTIBOOT_INFO_ELF_SHDR) {
@@ -137,37 +151,46 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	if (mbi->flags & MULTIBOOT_INFO_MEMMAP) {
 		struct multiboot_mmap_entry *mmap_entry;
 
-		for (mmap_entry = (struct multiboot_mmap_entry *) mbi->mmap_addr;
-				(unsigned long) mmap_entry < mbi->mmap_addr + mbi->mmap_length;
-				mmap_entry = (struct multiboot_mmap_entry *) ((unsigned long) mmap_entry +
-					mmap_entry->size + sizeof(mmap_entry->size))) {
-			printk("mem [%8llx-%8llx] %8s\n", mmap_entry->base_addr,
-					mmap_entry->base_addr + mmap_entry->length - 1,
-					mmap_entry->type == 1 ? "usable" : "reserved");
-		}
+		tmp_vaddr = vmm_map_page_early(mbi->mmap_addr);
 
-		// initialize physical memory manager
-		ret = pmm_init(mbi->mmap_addr, mbi->mmap_length);
+		if (tmp_vaddr) {
+			for (mmap_entry = (struct multiboot_mmap_entry *) tmp_vaddr;
+					(unsigned long) mmap_entry < tmp_vaddr + mbi->mmap_length;
+					mmap_entry = (struct multiboot_mmap_entry *) ((unsigned long) mmap_entry +
+						mmap_entry->size + sizeof(mmap_entry->size))) {
+				printk("mem [%8llx-%8llx] %8s\n", mmap_entry->base_addr,
+						mmap_entry->base_addr + mmap_entry->length - 1,
+						mmap_entry->type == 1 ? "usable" : "reserved");
+			}
 
-		if (ret) {
-			printk("ERROR: couldn't initialize physical memory manager!\n");
-			return;
+			if (vmm_unmap_page(tmp_vaddr)) {
+				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
+			}
 		}
-	} else {
-		printk("ERROR: no memory map provided by bootloader! Cannot initialize physical memory manager!\n");
-		return;
 	}
 
 	if (mbi->flags & MULTIBOOT_INFO_DRIVE && mbi->drive_length != 0) {
 		struct multiboot_drive_entry *drive_entry;
 
-		for (drive_entry = (struct multiboot_drive_entry *) mbi->drive_addr;
-				(unsigned long) drive_entry < mbi->drive_addr + mbi->drive_length;
-				drive_entry = (struct multiboot_drive_entry *) ((unsigned long) drive_entry +
-					drive_entry->size + sizeof(drive_entry->size))) {
-			printk("drive number =  %d, drive_mode = %s\n",
-					drive_entry->drive_number, drive_entry->drive_mode == 0 ? "CHS" : "LBA");
+		tmp_vaddr = vmm_map_page_early(mbi->drive_addr);
+
+		if (tmp_vaddr) {
+			for (drive_entry = (struct multiboot_drive_entry *) tmp_vaddr;
+					(unsigned long) drive_entry < tmp_vaddr + mbi->drive_length;
+					drive_entry = (struct multiboot_drive_entry *) ((unsigned long) drive_entry +
+						drive_entry->size + sizeof(drive_entry->size))) {
+				printk("drive number =  %d, drive_mode = %s\n",
+						drive_entry->drive_number, drive_entry->drive_mode == 0 ? "CHS" : "LBA");
+			}
+
+			if (vmm_unmap_page(tmp_vaddr)) {
+				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
+			}
 		}
+	}
+
+	if (vmm_unmap_page(mbi_vaddr)) {
+		printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", mbi_vaddr);
 	}
 
 	// initialize global descriptor table
@@ -184,6 +207,7 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 		return;
 	}
 
+	while(1);
 	// initialize PS/2 controller
 	ret = PS2_init();
 

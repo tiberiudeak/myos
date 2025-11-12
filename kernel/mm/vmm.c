@@ -234,6 +234,7 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 		}
 
 		// set frame and flags
+		memset(pde, 0, sizeof(uint32_t));
 		SET_FRAME(pde, (uint32_t) block);
 		SET_ATTRIBUTE(pde, pde_flags);
 	}
@@ -242,6 +243,7 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 	pt_entry *pte = vmm_get_pte(virtual_address);
 
 	// set frame and flags
+	memset(pte, 0, sizeof(uint32_t));
 	SET_FRAME(pte, physical_address);
 	SET_ATTRIBUTE(pte, pte_flags);
 
@@ -445,12 +447,13 @@ uint32_t vmm_map_page_early(uint32_t physical_address) {
 	uint32_t index = 0;
 
 	for (; index < TABLES_PER_DIR; index++) {
-		if (*(pd + index) != 0) {
+		if (*(pd + index) & PAGE_PTE_PRESENT) {
 			continue;
 		}
 
 		// found a free PTE
 		uint32_t *pte = pd + index;
+		memset(pte, 0, sizeof(uint32_t));
 		SET_FRAME(pte, physical_address);
 		SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE);
 

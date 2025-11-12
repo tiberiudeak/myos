@@ -159,12 +159,14 @@ void page_fault_handler(struct interrupt_regs *r) {
 
 	printk("Bad Address: %x\n", address);
 
-	printk("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi, r->esi);
-	printk("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx, r->edx);
-	printk("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax,
-		   r->int_no, r->err_code);
-	printk("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip, r->cs,
-		   r->eflags, r->useresp, r->ss);
+	printk("cr2: 0x%x ds: 0x%x edi: 0x%x esi: 0x%x\n",
+			r->cr2, r->ds, r->edi, r->esi);
+	printk("ebp: 0x%x esp: 0x%x ebx: 0x%x edx: 0x%x\n",
+			r->ebp, r->esp, r->ebx, r->edx);
+	printk("ecx: 0x%x eax: 0x%x int_no: 0x%x err_code: 0x%x\n",
+			r->ecx, r->eax, r->int_no, r->err_code);
+	printk("eip: 0x%x cs: 0x%x eflags: 0x%x useresp: 0x%x ss: 0x%x\n",
+			r->eip, r->cs, r->eflags, r->useresp, r->ss);
 
 	// if processor was in ring 3, then terminate task and return to scheduler
 	if (r->err_code & 0x4) {
@@ -202,14 +204,14 @@ void isr_handler(struct interrupt_regs *r) {
 		} else {
 			printk("Received interrupt: ");
 			printk("%s\n", exception_messages[r->int_no]);
-			printk("cr2: %x ds: %x edi: %x esi: %x\n", r->cr2, r->ds, r->edi,
-				   r->esi);
-			printk("ebp: %x esp: %x ebx: %x edx: %x\n", r->ebp, r->esp, r->ebx,
-				   r->edx);
-			printk("ecx: %x eax: %x int_no: %x err_code: %x\n", r->ecx, r->eax,
-				   r->int_no, r->err_code);
-			printk("eip: %x cs: %x eflags: %x useresp: %x ss: %x\n", r->eip,
-				   r->cs, r->eflags, r->useresp, r->ss);
+			printk("cr2: 0x%x ds: 0x%x edi: 0x%x esi: 0x%x\n",
+					r->cr2, r->ds, r->edi, r->esi);
+			printk("ebp: 0x%x esp: 0x%x ebx: 0x%x edx: 0x%x\n",
+					r->ebp, r->esp, r->ebx, r->edx);
+			printk("ecx: 0x%x eax: 0x%x int_no: 0x%x err_code: 0x%x\n",
+					r->ecx, r->eax, r->int_no, r->err_code);
+			printk("eip: 0x%x cs: 0x%x eflags: 0x%x useresp: 0x%x ss: 0x%x\n",
+					r->eip, r->cs, r->eflags, r->useresp, r->ss);
 			printk("Kernel Panic - System Halted!\n");
 			for (;;)
 				;
