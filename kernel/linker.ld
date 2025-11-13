@@ -55,6 +55,7 @@ SECTIONS
 		. = ALIGN(4K);
 		*(.bootstrap_stack)
 	}
+	. = ALIGN(4K);
 	_kernel_end = .;
 
 	_kernel_start_phys = KERNEL_PHYS_BASE_ADDR;

@@ -54,6 +54,7 @@ boot_page_directory:
 boot_page_table1:
 .skip 4096
 
+.extern _kernel_end
 .section .multiboot.text, "a"
 .global _start
 _start:
@@ -103,8 +104,12 @@ _start:
 	movl $(boot_page_table1 - 0xC0000000), %edi
 	movl $0, %esi
 
-	// table has 1024 entries
-	movl $1024, %ecx
+	// map only until _kernel_end
+	movl $_kernel_end, %ecx
+	// skip offset
+	shrl $12, %ecx
+	// mask page directory index
+	andl $0x3FF, %ecx
 
 1:
 	// move 4KiB page frame address into %edx and set the
