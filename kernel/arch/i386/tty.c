@@ -199,7 +199,7 @@ int tty_init_vbe(void *data) {
 	struct multiboot_info *mbi = (struct multiboot_info *) data;
 
 	uint32_t vaddr = vmm_map_video_mem(mbi->framebuffer_addr,
-			mbi->framebuffer_width * mbi->framebuffer_height * mbi->framebuffer_bpp);
+			mbi->framebuffer_width * mbi->framebuffer_height * (mbi->framebuffer_bpp / 8));
 
 	framebuffer = (uint32_t *) vaddr;
 	VBE_WIDTH = mbi->framebuffer_width;
