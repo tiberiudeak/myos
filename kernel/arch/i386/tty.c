@@ -34,7 +34,7 @@ void _vbe_clear_screen() {
 	int num_pixels = VBE_WIDTH * VBE_HEIGHT;
 
 	for (int i = 0; i < num_pixels; i++) {
-		((uint32_t *) framebuffer)[i] = vbe_bg_color;
+		framebuffer[i] = vbe_bg_color;
 	}
 }
 
@@ -155,29 +155,6 @@ void _vbe_terminal_writestring(const char *data) {
 	_vbe_terminal_write(data, strlen(data));
 }
 
-// TODO: move this function to mm
-//uint8_t vbe_map_framebuffer(void) {
-//	uint32_t framebuffer_size = VBE_WIDTH * vbe_mode->pitch;
-//	uint32_t framebuffer_size_pages = framebuffer_size / PAGE_SIZE;
-//
-//	if (framebuffer_size_pages % PAGE_SIZE > 0) {
-//		framebuffer_size_pages++;
-//	}
-//
-//	framebuffer_size_pages *= 2;
-//	int ret;
-//
-//	for (uint32_t i = 0, fb_start = (uint32_t) framebuffer;
-//		 i < framebuffer_size_pages; i++, fb_start += PAGE_SIZE) {
-//		ret = map_page((void *) fb_start, (void *) fb_start);
-//		if (ret) {
-//			return ret;
-//		}
-//	}
-//
-//	return 0;
-//}
-
 void _vbe_terminal_backspace_cursor(char c) {
 	terminal_column--;
 	_vbe_terminal_putentryat(c, vbe_bg_color, terminal_column, terminal_row);
@@ -200,6 +177,10 @@ int tty_init_vbe(void *data) {
 
 	uint32_t vaddr = vmm_map_video_mem(mbi->framebuffer_addr,
 			mbi->framebuffer_width * mbi->framebuffer_height * (mbi->framebuffer_bpp / 8));
+
+	if (!vaddr) {
+		return 1;
+	}
 
 	framebuffer = (uint32_t *) vaddr;
 	VBE_WIDTH = mbi->framebuffer_width;
@@ -310,21 +291,19 @@ void _vga_terminal_putentryat(char c, uint8_t color, size_t x, size_t y) {
  */
 void _vga_terminal_scroll() {
 	size_t x, y;
-	uint16_t *ptr;
 
 	// scroll all lines up
-	for (y = 0; y < VGA_HEIGHT - 2; y++) {
-		for (x = 0; x < VGA_WIDTH * 2; x++) {
-			ptr = terminal_buffer + (VGA_WIDTH * y) + x;
-			*ptr = *(ptr + (VGA_WIDTH));
+	for (y = 0; y < VGA_HEIGHT - 1; y++) {
+		for (x = 0; x < VGA_WIDTH; x++) {
+			terminal_buffer[y*VGA_WIDTH + x] =
+				terminal_buffer[(y+1)*VGA_WIDTH + x];
 		}
 	}
 
 	// clear the last line
-	for (x = 0; x < VGA_WIDTH * 2; x++) {
-		ptr = terminal_buffer + (VGA_WIDTH * (VGA_HEIGHT - 1)) + x;
-		//*ptr = *(ptr + (VGA_WIDTH));
-		*ptr = _vga_entry(' ', (uint8_t) terminal_color);
+	for (x = 0; x < VGA_WIDTH; x++) {
+		terminal_buffer[(VGA_HEIGHT-1) * VGA_WIDTH + x] =
+			_vga_entry(' ', (uint8_t) terminal_color);
 	}
 }
 
@@ -459,8 +438,8 @@ void _tty_print_padding(size_t length, int flag) {
 	// the memory manager has been initialized at this point
 	// max padding is 16, this should be enough for numbers,
 	// could be better for strings, but for now it is what it is
-	const char padding_str[16] = "                ";
-	const char padding_nr[16] = "0000000000000000";
+	const char padding_str[16] = "               ";
+	const char padding_nr[16] = "000000000000000";
 	size_t len = 0;
 
 	if (length > 0) {
