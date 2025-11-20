@@ -15,8 +15,15 @@ struct mem_map_entry {
 } __attribute__((packed));
 
 uint8_t pmm_init(uint32_t, uint32_t);
-void *pmm_allocate_blocks(uint32_t);
-void pmm_free_blocks(void *, uint32_t);
+void *pmm_allocate_block(void);
+void pmm_free_block(void *);
 void print_phymem_info(void);
+
+int mark_region_reserved(uint8_t *, uint32_t, uint32_t, uint32_t, uint32_t);
+int mark_region_free(uint8_t *, uint32_t, uint32_t, uint32_t);
+int set_bit_in_bitmap(uint8_t *, uint32_t, uint32_t);
+int unset_bit_in_bitmap(uint8_t *, uint32_t, uint32_t);
+int get_bit_from_bitmap(uint8_t *, uint32_t, uint32_t);
+uint32_t find_first_fit(uint8_t *, uint32_t, uint32_t);
 
 #endif /* !MM_PMM_H */

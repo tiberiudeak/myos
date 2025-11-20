@@ -499,7 +499,7 @@ void *syscall_sbrk(intptr_t increment) {
 		// allocate and map memory
 		for (uint32_t i = 0, virt = (uint32_t) addr_start; i < needed_blocks;
 			 i++, virt += PAGE_SIZE) {
-			void *phys_addr = pmm_allocate_blocks(1);
+			void *phys_addr = pmm_allocate_block();
 
 			if (phys_addr == NULL) {
 				printk("out of memory!\n");

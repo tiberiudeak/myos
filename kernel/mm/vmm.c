@@ -1,7 +1,8 @@
-#define pr_log_fmt(msg)	"VMM: " msg
+#define pr_log_fmt(msg)	"vmm: " msg
 #include <kernel/global_addresses.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
+#include <kernel/utils.h>
 #include <mm/pmm.h>
 #include <mm/vmm.h>
 #include <mm/kmalloc.h>
@@ -21,10 +22,14 @@ extern char _kernel_end[];
 struct page_directory *current_page_directory = 0;
 struct page_directory *kernel_page_directory = 0;
 
+// vmm_bitmap for the page allocator
+uint8_t vmm_bitmap[VMM_BITMAP_SIZE];
+extern uint8_t pmm_bitmap[BITMAP_SIZE];
+
 /**
  * @brief Return the PTE for the given virtual address
  *
- * @param virtual_address The virtual address
+ * @param virtual_address		The virtual address
  * @return The corresponding page table entry
  */
 pt_entry *vmm_get_pte(uint32_t virtual_address) {
@@ -53,7 +58,7 @@ pt_entry *vmm_get_pte(uint32_t virtual_address) {
 }
 
 /**
- * @brief Return the physical address corresponding to the given virtual address
+ * @brief Get the physical address corresponding to the given virtual address
  *
  * @param virtual_address	The virtual address
  * @return The physical address, or 0 if there is none
@@ -77,49 +82,87 @@ uint32_t vmm_virt_to_phys(uint32_t virtual_address) {
 }
 
 /**
- * @brief Allocate page given from the physical memory manager to
- * 			the given page table entry
+ * @brief Allocate a page
  *
- * This function first requests one block of memory from the physical
- * memory manager and then sets the frame of the given page table entry
- * to that physical memory and also sets the page entry as present.
- *
- * @param pte Pointer to the page table entry
- *
- * @return Address allocated by the physical memory manager
+ * @return virtual address of the page if any free,
+ * NULL otherwise
  */
-void *allocate_page(pt_entry *pte) {
-	void *block = pmm_allocate_blocks(1);
+void *allocate_page(void) {
+	void *block;
+	uint32_t vaddr, first_fit_page;
 
-	if (block != NULL) {
-		SET_FRAME(pte, (uint32_t) block);
-		SET_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+	first_fit_page = find_first_fit(vmm_bitmap, VMM_BITMAP_SIZE,
+			(END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE);
+
+	// index 0 is reserved in the vmm init 2 function
+	if (first_fit_page == 0) {
+		return NULL;
 	}
 
-	return block;
+	// compute virtual address and mark bit as reserved
+	vaddr = first_fit_page * PAGE_SIZE + KERNEL_BASE_ADDR;
+	set_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, first_fit_page);
+
+	block = pmm_allocate_block();
+
+	if (block == NULL) {
+		goto unset_bit;
+	}
+
+	// map virtual address to the physical address we got
+	// from the physical memory manager
+	if (vmm_map_page((uint32_t) block, vaddr,
+			PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
+			PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE)) {
+		goto free_pmem;
+	}
+
+	memset((void*)vaddr, 0, PAGE_SIZE);
+
+	return (void *) vaddr;
+
+free_pmem:
+	pmm_free_block(block);
+unset_bit:
+	unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, first_fit_page);
+
+	return NULL;
 }
 
 /**
- * @brief Free physical memory "pointed" to by the given page table entry
- *
- * This function gets the physical address from the page table entry, frees
- * it and sets the present bit to 0.
- *
- * @param pte Pointer to the page table entry
+ * @brief Free page starting at the given virtual address
+ * @param Virtual address
  */
-void free_page(pt_entry *pte) {
-	void *address = (void *) PAGE_GET_PHY_ADDRESS(pte);
-
-	if (address != NULL) {
-		pmm_free_blocks(address, 1);
+void free_page(void *address) {
+	if ((uint32_t) address < KERNEL_BASE_ADDR) {
+		panic("kfree: free page below kernel base");
+		return;
 	}
 
-	CLEAR_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
+	if ((uint32_t) address % PAGE_SIZE != 0) {
+		panic("kfree: free unaligned page");
+		return;
+	}
+
+	uint32_t page_index = ((uint32_t) address - KERNEL_BASE_ADDR) / PAGE_SIZE;
+
+	if (get_bit_from_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index) == 0) {
+		panic("kfree: page already free");
+		return;
+	}
+
+	void *paddr = vmm_unmap_page((uint32_t) address);
+	if (!paddr) {
+		printk("warning: could not unmap page for va = 0x%.8x\n", (uint32_t)address);
+		return;
+	}
+
+	unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index);
+	pmm_free_block(paddr);
 }
 
 /**
  * Reload address of page directory - cache is also cleared
- *
  * @param pr_addr Physical address of the page directory
  */
 void inline vmm_reload_cr3(uint32_t pd_addr) {
@@ -172,7 +215,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = pmm_allocate_blocks(1);
+		void *block = pmm_allocate_block();
 
 		if (block == NULL) {
 			return 1;
@@ -203,15 +246,24 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 	return 0;
 }
 
+// Clear page table - the physical address of the page table is
+// determined based on the given virtual address, which will get
+// translated in order to get its corresponding page table, which
+// will end up being cleared
+void _clear_pt(uint32_t virtual_address) {
+	uint32_t *pt = (uint32_t *) (PT_VIRT_BASE +
+		PAGE_DIRECTORY_INDEX(virtual_address) * PAGE_SIZE);
+
+	memset(pt, 0, PAGE_SIZE);
+}
+
 /**
  * @brief Map virtual address to physical address
  *
- * This function maps the given virtual address to the given physical address
- * by setting the frame in the corresponding page table. See comments below
- * for more info.
- *
  * @param physical_address 	The physical address
  * @param virtual_address 	The virtual address
+ * @param pde_flags			PDE flags
+ * @param pte_flags			PTE flags
  *
  * @return 0 if successful, 1 otherwise
  */
@@ -227,23 +279,24 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = pmm_allocate_blocks(1);
+		void *block = pmm_allocate_block();
 
 		if (block == NULL) {
 			return 1;
 		}
 
 		// set frame and flags
-		memset(pde, 0, sizeof(uint32_t));
+		*pde = 0;
 		SET_FRAME(pde, (uint32_t) block);
 		SET_ATTRIBUTE(pde, pde_flags);
+		_clear_pt(virtual_address);
 	}
 
 	// get corresponding PTE for the given virtual address
 	pt_entry *pte = vmm_get_pte(virtual_address);
 
 	// set frame and flags
-	memset(pte, 0, sizeof(uint32_t));
+	*pte = 0;
 	SET_FRAME(pte, physical_address);
 	SET_ATTRIBUTE(pte, pte_flags);
 
@@ -256,38 +309,39 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 /**
  * @brief Unmap the page for the given virtual address
  *
- * This function gets the page table entry for the given virtual address
- * and sets the frame (so the addressof the 4KB page frame) to 0 and unsets
- * the present bit.
- *
  * @param virtual_address The virtual address
+ * @return physical address
  */
-int vmm_unmap_page(uint32_t virtual_address) {
+void *vmm_unmap_page(uint32_t virtual_address) {
 	// get page table entry
 	pt_entry *pte = vmm_get_pte((uint32_t) virtual_address);
+	uint32_t paddr;
 
 	if (!pte) {
-		return 1;
+		return NULL;
 	}
 
+	paddr = PAGE_FRAME(virtual_address);
+
 	// set frame to address 0 and clear present bit
-	SET_FRAME(pte, 0x0);
+	SET_FRAME(pte, 0);
 	CLEAR_ATTRIBUTE(pte, PAGE_PTE_PRESENT);
 	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) PD_VIRT_ADDR));
 
-	return 0;
+	return (void *) paddr;
 }
 
 /**
- * @brief Phase 2 in setting up the virtual memory
+ * @brief Second phase in setting up the virtual memory
  *
  * - unmap identity map of the first 4MB
  * - set R/W bit in the page table entries based on section
  * - reload %cr3
+ * - init the page allocator
  *
  * @return 0 if successful, 1 otherwise
  */
-void vmm_init_phase2(void) {
+int vmm_init_phase2(void) {
 	struct page_directory *pd = (struct page_directory *) boot_page_directory;
 	current_page_directory = pd;
 
@@ -309,12 +363,16 @@ void vmm_init_phase2(void) {
 		CLEAR_ATTRIBUTE(pte, PAGE_PTE_WRITABLE);
 	}
 
-	// unmap identity map of the first 4MB as it's no longer useful
+	// unmap identity map of the first 4MB as it's no longer needed
 	pd->entries[0] = 0;
 
 	// reload page directory addr into %cr3
 	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) pd));
 	kernel_page_directory = current_page_directory;
+
+	// init the page allocator vmm_bitmap
+	return mark_region_reserved(vmm_bitmap, VMM_BITMAP_SIZE, KERNEL_BASE_ADDR,
+			(uint32_t) _kernel_end - KERNEL_BASE_ADDR, KERNEL_BASE_ADDR / PAGE_SIZE);
 }
 
 /**
@@ -328,7 +386,7 @@ void vmm_init_phase2(void) {
  * @return New page directory
  */
 struct page_directory *create_address_space(void) {
-	struct page_directory *dir = pmm_allocate_blocks(1);
+	struct page_directory *dir = pmm_allocate_block();
 
 	if (dir == NULL) {
 		return NULL;
@@ -374,8 +432,8 @@ void restore_kernel_address_space(void) {
 			pd_entry phys_address_of_page_table =
 				current_page_directory->entries[i];
 
-			pmm_free_blocks(
-				(void *) PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
+			pmm_free_block(
+				(void *) PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table));
 		}
 	}
 
@@ -390,7 +448,7 @@ void restore_kernel_address_space(void) {
 	}
 
 	// free memory with the old page directory
-	pmm_free_blocks((void *) tmp, 1);
+	pmm_free_block((void *) tmp);
 }
 
 /**
@@ -424,7 +482,6 @@ void free_proc_phys_mem(void) {
 
 /**
  * @brief Set the page directory to the kernel page directory
- *
  * @return 1 if error occured, 0 otherwise
  */
 uint8_t set_kernel_page_directory(void) {
@@ -432,15 +489,26 @@ uint8_t set_kernel_page_directory(void) {
 }
 
 /**
- * Idea: use the recursive part of the page directory
+ * @brief Map given physical address to a virtual address
+ * - should be called before the physical and virtual
+ *   memory allocators have been initialized, the normal
+ *   vmm_map_page should be used afterwards
  *
- * basically, go to the last entry, which points to the PD
- * itself, then search for the first free PT. Once one is
- * found, set its frame to the given physical address.
- * The obtained virtual address corresponding to the given
- * physical address will then have the following format:
+ * The function will do the mapping between the given physical
+ * address and a virtual address of this form:
  *
  * 0xFFC<PT_index><offset>
+ *
+ * - the page directory index will be 1023 (the last entry)
+ * - because the last entry in the PD points to itself, the
+ *   PD_index will be used as the index in the PD as well
+ *   (instead of a page table in the normal case)
+ * - as a result, the PD will be used as PD and PT for
+ *   addresses of this form
+ *
+ * @param physical_address	The physical address to be mapped
+ * @return the virtual address corresponding to the given
+ * physical address if any could be obtained, 0 otherwise
  */
 uint32_t vmm_map_page_early(uint32_t physical_address) {
 	uint32_t *pd = (uint32_t *) PD_VIRT_ADDR;
@@ -465,32 +533,44 @@ uint32_t vmm_map_page_early(uint32_t physical_address) {
 	return 0;
 }
 
-// map video memory, either vga or vbe framebuffer
-// virt mem will be right after the kernel
-// for vga, memory should already be mapped in boot.S, this
-// will also remap it to a new virtual address
-// (maybe remove the mapping from boot.S?)
+/**
+ * @brief Map video memory
+ *
+ * The corresponding region will start with the first aligned
+ * address after the kernel
+ *
+ * @param phys_addr		Starting physical address of the video region
+ * @param size			Region size
+ * @return virtual address of video mem, 0 if errors occurred
+ */
 uint32_t vmm_map_video_mem(uint32_t phys_addr, uint32_t size) {
+	// kernel_end should be already aligned at this point, but this doesn't harm
 	uint32_t vaddr = ALIGN((uint32_t) _kernel_end, PAGE_SIZE);
 	uint32_t vaddr_copy = vaddr;
 
 	// number of pages
 	uint32_t nr_pages = size / PAGE_SIZE;
-	int ret;
 
 	if (size % PAGE_SIZE) {
 		nr_pages++;
 	}
 
 	// map every page
-	for (uint32_t i = 0; i < nr_pages; i++, vaddr += PAGE_SIZE, phys_addr += PAGE_SIZE) {
-		ret = vmm_map_page(phys_addr, vaddr,
+	for (uint32_t i = 0; i < nr_pages; i++, vaddr += PAGE_SIZE, phys_addr += BLOCK_SIZE) {
+		if (vmm_map_page(phys_addr, vaddr,
 				PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
-				PAGE_PTE_PRESENT | PAGE_PDE_WRITABLE);
-
-		if (ret) {
+				PAGE_PTE_PRESENT | PAGE_PDE_WRITABLE)) {
+			// no unmapping as we cannot recover from this
 			return 0;
 		}
+	}
+
+	// mark region reserved in the page allocator and physical mem allocator
+	if (mark_region_reserved(vmm_bitmap, VMM_BITMAP_SIZE, vaddr_copy, size,
+				KERNEL_BASE_ADDR / PAGE_SIZE) ||
+		mark_region_reserved(pmm_bitmap, BITMAP_SIZE, phys_addr, size, 0)) {
+		// no unmapping as we cannot recover from this
+		return 0;
 	}
 
 	return vaddr_copy;

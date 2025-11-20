@@ -26,6 +26,10 @@
 // this virtual address
 #define PT_VIRT_BASE					0xFFC00000
 
+#define KERNEL_BASE_ADDR				0xC0000000
+#define END_RAM							0xFFFFFFFF
+#define VMM_BITMAP_SIZE					((END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE / 8)
+
 /**
  * Page Directory Entry Format (4K)
  *
@@ -99,9 +103,9 @@ struct page_table {
 	pt_entry entries[TABLES_PER_DIR];
 };
 
-void vmm_init_phase2(void);
+int vmm_init_phase2(void);
 int vmm_map_page(uint32_t, uint32_t, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS);
-int vmm_unmap_page(uint32_t);
+void *vmm_unmap_page(uint32_t);
 pt_entry *vmm_get_pte(uint32_t);
 uint32_t vmm_virt_to_phys(uint32_t);
 uint32_t vmm_map_page_early(uint32_t);
@@ -114,5 +118,8 @@ uint8_t vmm_set_page_directory(struct page_directory *);
 void restore_kernel_address_space(void);
 uint8_t set_kernel_page_directory(void);
 void free_proc_phys_mem(void);
+
+void *allocate_page(void);
+void free_page(void *);
 
 #endif /* !MM_VMM_H */
