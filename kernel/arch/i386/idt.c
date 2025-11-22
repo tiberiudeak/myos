@@ -1,4 +1,4 @@
-#define pr_log_fmt(msg)	"IDT: %s: " msg, __func__
+#define pr_log_fmt(msg)	"idt: %s: " msg, __func__
 #include <arch/i386/idt.h>
 #include <arch/i386/irq.h>
 #include <arch/i386/pic.h>

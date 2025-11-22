@@ -13,5 +13,6 @@ typedef enum {
 } OPEN_FLAGS;
 
 int ceil(int a, int b);
+void panic(char *) __attribute__((noreturn));
 
 #endif

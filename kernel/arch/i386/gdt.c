@@ -1,4 +1,4 @@
-#define pr_log_fmt(msg) "GDT: %s: " msg, __func__
+#define pr_log_fmt(msg) "gdt: %s: " msg, __func__
 #include <arch/i386/gdt.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>

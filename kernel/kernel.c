@@ -20,9 +20,16 @@
 // the system-wide table of open files
 struct open_files_table *open_files_table;
 
-void halt_processor(void) {
-	while (1) {
-		__asm__ __volatile__("cli; hlt");
+extern char _kernel_end[];
+
+void panic(char *msg) {
+	asm volatile("cli");
+
+	printk("\n\n*** KERNEL PANIC ***\n");
+	printk("%s", msg);
+
+	for (;;) {
+		asm volatile("hlt");
 	}
 }
 
@@ -36,7 +43,9 @@ void kmain(unsigned long magic, unsigned long addr) {
 	}
 
 	// virtual memory setup - phase 2 (after the early boot phase)
-	vmm_init_phase2();
+	if (vmm_init_phase2()) {
+		return;
+	}
 
 	// map mbi structure temporarily to access its members
 	uint32_t mbi_vaddr = vmm_map_page_early(addr);
@@ -85,7 +94,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 		if (tmp_vaddr) {
 			printk("bootloader booting the kernel: %s\n", (char *) tmp_vaddr);
 
-			if (vmm_unmap_page(tmp_vaddr)) {
+			if (!vmm_unmap_page(tmp_vaddr)) {
 				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
 			}
 		}
@@ -106,7 +115,7 @@ void kmain(unsigned long magic, unsigned long addr) {
 		if (tmp_vaddr) {
 			printk("cmdline = %s\n", (char *) tmp_vaddr);
 
-			if (vmm_unmap_page(tmp_vaddr)) {
+			if (!vmm_unmap_page(tmp_vaddr)) {
 				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
 			}
 		}
@@ -163,7 +172,7 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 						mmap_entry->type == 1 ? "usable" : "reserved");
 			}
 
-			if (vmm_unmap_page(tmp_vaddr)) {
+			if (!vmm_unmap_page(tmp_vaddr)) {
 				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
 			}
 		}
@@ -183,15 +192,18 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 						drive_entry->drive_number, drive_entry->drive_mode == 0 ? "CHS" : "LBA");
 			}
 
-			if (vmm_unmap_page(tmp_vaddr)) {
+			if (!vmm_unmap_page(tmp_vaddr)) {
 				printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", tmp_vaddr);
 			}
 		}
 	}
 
-	if (vmm_unmap_page(mbi_vaddr)) {
+	if (!vmm_unmap_page(mbi_vaddr)) {
 		printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", mbi_vaddr);
 	}
+
+	// print physical mem info
+	print_phymem_info();
 
 	// initialize global descriptor table
 	gdt_init();
@@ -199,20 +211,20 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	// initialize interrupt descriptor table
 	idt_init();
 
+	while(1);
+
 	// find and initialize acpi tables
 	ret = acpi_init();
 
 	if (ret) {
-		printk("ERROR: ACPI could not be successfully initialized!\n");
-		return;
+		panic("ACPI could not be initialized successfully!\n");
 	}
 
-	while(1);
 	// initialize PS/2 controller
 	ret = PS2_init();
 
 	if (ret) {
-		halt_processor();
+		panic("");
 	}
 
 	// install keyboard irq handler
@@ -224,22 +236,20 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 #ifdef CONFIG_TTY_VBE
 	ret = map_framebuffer(); // map the framebuffer
 	if (ret) {
-		halt_processor();
+		panic("");
 	}
 #endif /* CONFIG_TTY_VBE */
 
 	ret = fs_init(); // initialize the file system
 
 	if (ret) {
-		printk("Error initializing the file system\n");
-		halt_processor();
+		panic("initialize the file system\n");
 	}
 
 	open_files_table = init_open_files_table();
 
 	if (open_files_table == NULL) {
-		printk("failed to init open files table!\n");
-		halt_processor();
+		panic("init open files table!\n");
 	}
 
 	printk("Welcome to MyOS!\n\n");
@@ -250,8 +260,7 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	ret = scheduler_init();
 
 	if (ret) {
-		printk("failed to initialize the scheduler\n");
-		halt_processor();
+		panic("initialize the scheduler\n");
 	}
 
 	simple_task_scheduler();
@@ -260,8 +269,7 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	ret = scheduler_init_rr(); // initialize the round robin scheduler
 
 	if (ret) {
-		printk("failed to initialize the scheduler\n");
-		halt_processor();
+		panic("initialize the scheduler\n");
 	}
 
 	// start first process

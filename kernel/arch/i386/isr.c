@@ -186,7 +186,7 @@ void page_fault_handler(struct interrupt_regs *r) {
 		}
 	}
 
-	__asm__ __volatile__("cli; hlt");
+	panic("kernel page fault");
 }
 
 /**
@@ -212,9 +212,7 @@ void isr_handler(struct interrupt_regs *r) {
 					r->ecx, r->eax, r->int_no, r->err_code);
 			printk("eip: 0x%x cs: 0x%x eflags: 0x%x useresp: 0x%x ss: 0x%x\n",
 					r->eip, r->cs, r->eflags, r->useresp, r->ss);
-			printk("Kernel Panic - System Halted!\n");
-			for (;;)
-				;
+			panic("unknown interrupt");
 		}
 	}
 
