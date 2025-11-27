@@ -2,8 +2,11 @@
 #define pr_log_fmt(msg)	"pmm: " msg
 #include <kernel/multiboot.h>
 #include <kernel/string.h>
+#include <kernel/utils.h>
 #include <kernel/tty.h>
 #include <mm/pmm.h>
+#include <mm/vmm.h>
+#include <mm/kmalloc.h>
 
 #include <stddef.h>
 
@@ -14,6 +17,7 @@ static uint32_t used_blocks;
 // defined in the linker script
 extern char _kernel_end_phys[];
 extern char _kernel_start_phys[];
+extern char _kernel_end[];
 
 int ceil(int a, int b) {
 	return (a + b - 1) / b;
@@ -219,7 +223,7 @@ uint8_t pmm_self_test() {
 	uint32_t test_used_blocks = used_blocks;
 	uint32_t test_free_blocks = max_blocks - used_blocks;
 
-	uint32_t *a = (uint32_t *) pmm_allocate_block();
+	uint32_t *a = (uint32_t *) pmm_allocate_blocks(1);
 
 	if ((test_free_blocks == 0 && a != NULL) ||
 		(test_free_blocks > 0 && a == NULL) ||
@@ -231,19 +235,19 @@ uint8_t pmm_self_test() {
 		test_used_blocks++;
 	}
 
-	uint32_t *b = (uint32_t *) pmm_allocate_block();
+	uint32_t *b = (uint32_t *) pmm_allocate_blocks(2);
 
-	if ((test_free_blocks < 1 && b != NULL) ||
-		(test_free_blocks > 1 && b == NULL) ||
-		(b != NULL && test_free_blocks - (max_blocks - used_blocks) != 1) ||
-		(b != NULL && used_blocks - test_used_blocks != 1)) {
+	if ((test_free_blocks < 2 && b != NULL) ||
+		(test_free_blocks > 2 && b == NULL) ||
+		(b != NULL && test_free_blocks - (max_blocks - used_blocks) != 2) ||
+		(b != NULL && used_blocks - test_used_blocks != 2)) {
 		return 1;
 	} else {
-		test_free_blocks -= 1;
-		test_used_blocks += 1;
+		test_free_blocks -= 2;
+		test_used_blocks += 2;
 	}
 
-	pmm_free_block(a);
+	pmm_free_blocks(a, 1);
 
 	if (((max_blocks - used_blocks) - test_free_blocks != 1) ||
 		(test_used_blocks - used_blocks != 1)) {
@@ -253,14 +257,14 @@ uint8_t pmm_self_test() {
 		test_used_blocks -= 1;
 	}
 
-	pmm_free_block(b);
+	pmm_free_blocks(b, 2);
 
-	if (((max_blocks - used_blocks) - test_free_blocks != 1) ||
-		(test_used_blocks - used_blocks != 1)) {
+	if (((max_blocks - used_blocks) - test_free_blocks != 2) ||
+		(test_used_blocks - used_blocks != 2)) {
 		return 1;
 	} else {
-		test_free_blocks += 1;
-		test_used_blocks -= 1;
+		test_free_blocks += 2;
+		test_used_blocks -= 2;
 	}
 
 	return 0;
@@ -308,10 +312,20 @@ uint8_t pmm_init(uint32_t addr, uint32_t length) {
  * @return index of found region (if any), 0 otherwise
  * (0 should no be an available region, so make sure to reserve it beforehand)
  */
-uint32_t find_first_fit(uint8_t *bitmap, uint32_t b_size, uint32_t n) {
+uint32_t find_first_fit(uint8_t *bitmap, uint32_t b_size, uint32_t n, uint32_t req_nr) {
+	uint32_t current_number_of_free_regs = 0;
+	uint32_t starting_reg = 0;
+
 	for (size_t i = 0; i < n; i++) {
 		if (get_bit_from_bitmap(bitmap, b_size, i) == 0) {
-			return i;
+			current_number_of_free_regs++;
+
+			if (current_number_of_free_regs >= req_nr) {
+				return starting_reg;
+			}
+		} else {
+			   current_number_of_free_regs = 0;
+			   starting_reg = i + 1;
 		}
 	}
 
@@ -320,37 +334,50 @@ uint32_t find_first_fit(uint8_t *bitmap, uint32_t b_size, uint32_t n) {
 }
 
 /**
- * @brief Allocate a block of physical memory
+ * @brief Allocate requested nr of blocks
  *
+ * Reqion of physical memory will be contiguous
+ *
+ * @param nr_blocks	Requested number of blocks
  * @return physical address of the block if any are free,
  * NULL otherwise
  */
-void *pmm_allocate_block(void) {
-	if (max_blocks - used_blocks < 1) {
+void *pmm_allocate_blocks(uint32_t nr_blocks) {
+	if (max_blocks - used_blocks < nr_blocks) {
 		return NULL;
 	}
 
-	uint32_t first_fit_block = find_first_fit(pmm_bitmap, BITMAP_SIZE, max_blocks);
+	uint32_t first_fit_block = find_first_fit(pmm_bitmap, BITMAP_SIZE,
+			max_blocks, nr_blocks);
 
 	// first block is reserved already
 	if (first_fit_block == 0) {
 		return NULL;
 	}
 
-	set_bit_in_bitmap(pmm_bitmap, BITMAP_SIZE, first_fit_block);
-	used_blocks++;
+	uint32_t first_fit_block_copy = first_fit_block;
 
-	return (void *) (first_fit_block * BLOCK_SIZE);
+	for (uint32_t i = 0; i < nr_blocks; i++) {
+		set_bit_in_bitmap(pmm_bitmap, BITMAP_SIZE, first_fit_block);
+		first_fit_block++;
+		used_blocks++;
+	}
+
+	return (void *) (first_fit_block_copy * BLOCK_SIZE);
 }
 
 /**
- * @brief Free block starting at given physical address
+ * @brief Free nr_blocks blocks starting at given physical address
  * @param address		Physical address
+ * @param nr_blocks		Number of blocks
  */
-void pmm_free_block(void *address) {
+void pmm_free_blocks(void *address, uint32_t nr_blocks) {
 	uint32_t block_index = (uint32_t) address / BLOCK_SIZE;
-	unset_bit_in_bitmap(pmm_bitmap, BITMAP_SIZE, block_index);
-	used_blocks--;
+	for (uint32_t i = 0; i < nr_blocks; i++) {
+		unset_bit_in_bitmap(pmm_bitmap, BITMAP_SIZE, block_index);
+		block_index++;
+		used_blocks--;
+	}
 }
 
 /**
@@ -360,4 +387,50 @@ void print_phymem_info() {
 	pr_log("total number of blocks: %d\n", max_blocks);
 	pr_log("used blocks: %d\n", used_blocks);
 	pr_log("free blocks: %d\n", max_blocks - used_blocks);
+}
+
+/**
+ * @brief Some basic tests for the page allocator
+ *
+ * - the function is defined here to have access to the
+ *   max_blocks and used_blocks variables from the pmm
+ */
+void test_page_allocator(void) {
+	uint32_t initial_used = used_blocks;
+	void *tmp;
+
+	void *p1 = allocate_pages(1);
+	tmp = p1;
+	ASSERT(p1 != NULL, "Failed to allocate 1 page");
+	ASSERT(used_blocks == initial_used + 1, "used_blocks mismatch after 1 page alloc");
+
+	void *p2 = allocate_pages(2);
+	ASSERT(p2 != NULL, "Failed to allocate 2 pages");
+	ASSERT(used_blocks == initial_used + 3, "used_blocks mismatch after 2 page alloc");
+
+	free_pages(p1, 1);
+	ASSERT(used_blocks == initial_used + 2, "used_blocks mismatch after freeing 1 page");
+	free_pages(p2, 2);
+	ASSERT(used_blocks == initial_used, "used_blocks mismatch after freeing 2 pages");
+
+	p1 = allocate_pages(1);
+	ASSERT(p1 != NULL, "Failed to allocate 1 page again");
+	ASSERT(p1 == tmp, "Unexpected virtual address");
+	free_pages(p1, 1);
+
+	void *blocks[10];
+	for (int i = 0; i < 10; i++) {
+		blocks[i] = allocate_pages(i + 1);
+		ASSERT(blocks[i] != NULL, "Failed multiple allocation");
+		ASSERT(used_blocks <= max_blocks, "used_blocks exceeded max_blocks");
+	}
+
+	for (int i = 0; i < 10; i++) {
+		free_pages(blocks[i], i + 1);
+		ASSERT(used_blocks >= initial_used, "used_blocks below initial");
+	}
+	ASSERT(used_blocks == initial_used, "used_blocks not back to initial");
+
+	uint32_t free_blocks_count = max_blocks - used_blocks;
+	ASSERT(free_blocks_count == max_blocks - initial_used, "Free block count mismatch");
 }

@@ -82,83 +82,113 @@ uint32_t vmm_virt_to_phys(uint32_t virtual_address) {
 }
 
 /**
- * @brief Allocate a page
+ * @brief Allocate requested nr of pages
  *
- * @return virtual address of the page if any free,
+ * Regions of virtual memory will be contiguous, but not
+ * necessarily contiguous on physical memory as well
+ *
+ * @param nr_pages	Number of pages
+ * @return virtual address of the starting page,
  * NULL otherwise
  */
-void *allocate_page(void) {
-	void *block;
-	uint32_t vaddr, first_fit_page;
+void *allocate_pages(uint32_t nr_pages) {
+    if (nr_pages == 0) {
+        return NULL;
+	}
 
-	first_fit_page = find_first_fit(vmm_bitmap, VMM_BITMAP_SIZE,
-			(END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE);
+    uint32_t first_fit_page = find_first_fit(
+        vmm_bitmap, VMM_BITMAP_SIZE,
+        (END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE,
+        nr_pages);
 
 	// index 0 is reserved in the vmm init 2 function
-	if (first_fit_page == 0) {
-		return NULL;
+    if (first_fit_page == 0) {
+        return NULL;
 	}
 
-	// compute virtual address and mark bit as reserved
-	vaddr = first_fit_page * PAGE_SIZE + KERNEL_BASE_ADDR;
-	set_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, first_fit_page);
+    uint32_t base_vaddr = first_fit_page * PAGE_SIZE + KERNEL_BASE_ADDR;
+    uint32_t mapped_pages = 0;
 
-	block = pmm_allocate_block();
+    for (uint32_t i = 0; i < nr_pages; i++) {
+        uint32_t page_index = first_fit_page + i;
+        uint32_t vaddr = page_index * PAGE_SIZE + KERNEL_BASE_ADDR;
+		uint32_t phys = (uint32_t) pmm_allocate_blocks(1);
 
-	if (block == NULL) {
-		goto unset_bit;
+		if (!phys) {
+			goto error;
+		}
+
+        if (vmm_map_page(phys, vaddr,
+            PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
+            PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE)) {
+			// free current allocated block of physical mem
+			pmm_free_blocks((void*) phys, 1);
+			goto error;
+        }
+
+        memset((void *) vaddr, 0, PAGE_SIZE);
+        set_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index);
+        mapped_pages++;
+    }
+
+    return (void *) base_vaddr;
+
+error:
+	for (uint32_t j = 0; j < mapped_pages; j++) {
+		uint32_t undo_idx = first_fit_page + j;
+		uint32_t undo_vaddr = undo_idx * PAGE_SIZE + KERNEL_BASE_ADDR;
+		void *phys = vmm_unmap_page(undo_vaddr);
+
+		if (!phys) {
+			printk("warning: could not unmap va = 0x%.8x\n", undo_vaddr);
+		} else {
+			pmm_free_blocks(phys, 1);
+		}
+		unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, undo_idx);
 	}
-
-	// map virtual address to the physical address we got
-	// from the physical memory manager
-	if (vmm_map_page((uint32_t) block, vaddr,
-			PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
-			PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE)) {
-		goto free_pmem;
-	}
-
-	memset((void*)vaddr, 0, PAGE_SIZE);
-
-	return (void *) vaddr;
-
-free_pmem:
-	pmm_free_block(block);
-unset_bit:
-	unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, first_fit_page);
 
 	return NULL;
 }
 
 /**
- * @brief Free page starting at the given virtual address
- * @param Virtual address
+ * @brief Free given number of pages starting at the given address
+ *
+ * @param address	Virtual address
+ * @param nr_pages	Number of pages
  */
-void free_page(void *address) {
-	if ((uint32_t) address < KERNEL_BASE_ADDR) {
-		panic("kfree: free page below kernel base");
-		return;
+void free_pages(void *address, uint32_t nr_pages) {
+    if (nr_pages == 0) {
+        return;
 	}
 
-	if ((uint32_t) address % PAGE_SIZE != 0) {
-		panic("kfree: free unaligned page");
-		return;
-	}
+    uint32_t addr = (uint32_t) address;
 
-	uint32_t page_index = ((uint32_t) address - KERNEL_BASE_ADDR) / PAGE_SIZE;
+    if (addr < KERNEL_BASE_ADDR) {
+        panic("free_pages: free page below kernel base");
+    }
 
-	if (get_bit_from_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index) == 0) {
-		panic("kfree: page already free");
-		return;
-	}
+    if (addr % PAGE_SIZE != 0) {
+        panic("free_pages: unaligned page free");
+    }
 
-	void *paddr = vmm_unmap_page((uint32_t) address);
-	if (!paddr) {
-		printk("warning: could not unmap page for va = 0x%.8x\n", (uint32_t)address);
-		return;
-	}
+    for (uint32_t i = 0; i < nr_pages; i++) {
+        uint32_t vaddr = addr + i * PAGE_SIZE;
+        uint32_t page_index = (vaddr - KERNEL_BASE_ADDR) / PAGE_SIZE;
 
-	unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index);
-	pmm_free_block(paddr);
+        if (get_bit_from_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index) == 0) {
+            panic("free_pages: page already free");
+		}
+
+        uint32_t phys = (uint32_t) vmm_unmap_page(vaddr);
+
+        if (!phys) {
+            printk("warning: could not unmap va = 0x%.8x\n", vaddr);
+            continue;
+        }
+
+        pmm_free_blocks((void *) phys, 1);
+        unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index);
+    }
 }
 
 /**
@@ -215,7 +245,7 @@ uint8_t map_user_page(void *physical_address, void *virtual_address) {
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = pmm_allocate_block();
+		void *block = pmm_allocate_blocks(1);
 
 		if (block == NULL) {
 			return 1;
@@ -279,7 +309,7 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 	// if the page directory entry is not present, create it
 	if (!(*pde & PAGE_PDE_PRESENT)) {
 		// allocate block for the new page table
-		void *block = pmm_allocate_block();
+		void *block = pmm_allocate_blocks(1);
 
 		if (block == NULL) {
 			return 1;
@@ -386,7 +416,7 @@ int vmm_init_phase2(void) {
  * @return New page directory
  */
 struct page_directory *create_address_space(void) {
-	struct page_directory *dir = pmm_allocate_block();
+	struct page_directory *dir = pmm_allocate_blocks(1);
 
 	if (dir == NULL) {
 		return NULL;
@@ -432,8 +462,8 @@ void restore_kernel_address_space(void) {
 			pd_entry phys_address_of_page_table =
 				current_page_directory->entries[i];
 
-			pmm_free_block(
-				(void *) PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table));
+			pmm_free_blocks(
+				(void *) PAGE_GET_PHY_ADDRESS(&phys_address_of_page_table), 1);
 		}
 	}
 
@@ -448,7 +478,7 @@ void restore_kernel_address_space(void) {
 	}
 
 	// free memory with the old page directory
-	pmm_free_block((void *) tmp);
+	pmm_free_blocks((void *) tmp, 1);
 }
 
 /**
@@ -473,7 +503,7 @@ void free_proc_phys_mem(void) {
 				if (pt->entries[j] != 0) {
 					// printk("freeing phys mem: %x, %d\n",
 					// PAGE_GET_PHY_ADDRESS(&pt->entries[j]), j);
-					free_page(&pt->entries[j]);
+					free_pages(&pt->entries[j], 1);
 				}
 			}
 		}

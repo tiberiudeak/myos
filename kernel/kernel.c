@@ -205,6 +205,9 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	// print physical mem info
 	print_phymem_info();
 
+	// test page allocator
+	test_page_allocator();
+
 	// initialize global descriptor table
 	gdt_init();
 

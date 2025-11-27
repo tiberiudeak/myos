@@ -15,4 +15,6 @@ typedef enum {
 int ceil(int a, int b);
 void panic(char *) __attribute__((noreturn));
 
+#define ASSERT(cond, msg) do { if (!(cond)) panic(msg); } while(0)
+
 #endif

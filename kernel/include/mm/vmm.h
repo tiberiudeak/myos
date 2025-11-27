@@ -119,7 +119,7 @@ void restore_kernel_address_space(void);
 uint8_t set_kernel_page_directory(void);
 void free_proc_phys_mem(void);
 
-void *allocate_page(void);
-void free_page(void *);
+void *allocate_pages(uint32_t);
+void free_pages(void *, uint32_t);
 
 #endif /* !MM_VMM_H */
