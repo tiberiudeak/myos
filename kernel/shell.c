@@ -199,7 +199,7 @@ void shell_exec_command(char *command) {
 	else if (strcmp(command, "help") == 0) {
 		show_available_commands();
 	} else if (strcmp(command, "kheap") == 0) {
-		kmalloc_print_list();
+		//kmalloc_print_list();
 	} else if (strcmp(command, "kheap1") == 0) {
 		kmalloc_allocate();
 	} else if (strcmp(command, "kheap2") == 0) {
