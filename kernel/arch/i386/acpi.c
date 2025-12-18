@@ -2,9 +2,12 @@
 #include <kernel/acpi.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
+#include <kernel/utils.h>
+#include <mm/vmm.h>
 
 #include <stdint.h>
 
+struct acpi_rsdp_descriptor rsdp;
 
 /**
  * @brief Compute and return checksum of the given SDT Header
@@ -51,6 +54,26 @@ int acpi_validate_rsdp(struct acpi_rsdp_descriptor *rsdp) {
 	return 0;
 }
 
+void acpi_print_table_header(void *addr) {
+	if (memcmp(((struct acpi_rsdp_descriptor *) addr)->signature,
+				"RSD PTR ", 8) == 0) {
+		pr_log("RSDP at 0x%8x (v%d %.6s)\n",
+				addr,
+				((struct acpi_rsdp_descriptor *) addr)->revision,
+				//== 0 ? 1 : 2,
+				((struct acpi_rsdp_descriptor *) addr)->oem_id);
+	} else {
+		struct acpi_sdt_header *header = (struct acpi_sdt_header *) addr;
+
+		pr_log("%.4s at 0x%8x (v%d %.6s %.8s)\n",
+				header->signature,
+				addr,
+				header->revision,// == 0 ? 1 : 2,
+				header->oem_id,
+				header->oem_table_id);
+	}
+}
+
 /**
  * @brief Detect the Root System Description Pointer (RSDP) in memory.
  *
@@ -59,101 +82,104 @@ int acpi_validate_rsdp(struct acpi_rsdp_descriptor *rsdp) {
  *
  * @return The address of the RSDP if found, NULL otherwise.
  */
-void *acpi_find_rsdp() {
-	char *start = (char *) 0x00080000;
-	char *end = (char *) 0x00081024;
+int acpi_find_rsdp() {
+	struct acpi_rsdp_descriptor *desc;
+	// search first 1KB of the EBDA
+	uint32_t size = 0x400;
+	char *start = (char *) vmm_map_page_phys(0x80000,
+			PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
+			PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE, size);
+
+	if (!start)
+		return 1;
+
+	char *end = start + size;
 
 	while (start < end) {
 		if (memcmp(start, "RSD PTR ", 8) == 0) {
 			if (acpi_validate_rsdp((struct acpi_rsdp_descriptor *) start) == 0) {
-				return start;
+				goto found;
 			}
 		}
 		start += 16;
 	}
 
-	start = (char *) 0x000E0000;
-	end = (char *) 0x000FFFFF;
+	vmm_unmap_page_phys((uint32_t)start, size);
+
+	// search from 0xe0000 to 0xFFFFF
+	size = 0x1FFFF;
+	start = (char *) vmm_map_page_phys(0xE0000,
+			PAGE_PDE_PRESENT | PAGE_PDE_WRITABLE,
+			PAGE_PTE_PRESENT | PAGE_PTE_WRITABLE, size);
+
+	if (!start)
+		return 1;
+
+	end = start + size;
 
 	while (start < end) {
 		if (memcmp(start, "RSD PTR ", 8) == 0) {
 			if (acpi_validate_rsdp((struct acpi_rsdp_descriptor *) start) == 0) {
-				return start;
+				goto found;
 			}
 		}
 		start += 16;
 	}
 
-	return NULL;
-}
+	vmm_unmap_page_phys((uint32_t)start, size);
 
-/**
- * @brief Searches for the Fixed ACPI Description Table
- *
- * This function searches for the FADT signature in the System Descriptor
- * Tables present in the Root System Descriptor Table.
- *
- * @param RSDT_pointer address of the RSDT
- */
-void *find_FACP(void *RSDT_pointer) {
-	struct acpi_rsdt *rsdt = (struct acpi_rsdt *) RSDT_pointer;
-	int entries = (rsdt->header.length - sizeof(rsdt->header)) / 4;
+	return 1;
 
-	for (int i = 0; i < entries; i++) {
-		struct acpi_sdt_header *h =
-			(struct acpi_sdt_header *) rsdt->pointer_to_other_sdt[i];
-
-		if (memcmp(h->signature, "FACP", 4) == 0) {
-			if (acpi_compute_checksum(h) == 0) {
-				return (void *) h;
-			} else {
-				return NULL;
-			}
-		}
-	}
-
-	return NULL;
-}
-
-void acpi_print_table_header(void *physical_address) {
-	if (memcmp(((struct acpi_rsdp_descriptor *) physical_address)->signature,
-				"RSD PTR ", 8) == 0) {
-		pr_log("RSDP at 0x%8x (v%d %.6s)\n",
-				physical_address,
-				((struct acpi_rsdp_descriptor *) physical_address)->revision,
-				//== 0 ? 1 : 2,
-				((struct acpi_rsdp_descriptor *) physical_address)->oem_id);
-	} else {
-		struct acpi_sdt_header *header = (struct acpi_sdt_header *) physical_address;
-
-		pr_log("%.4s at 0x%8x (v%d %.6s %.8s)\n",
-				header->signature,
-				physical_address,
-				header->revision,// == 0 ? 1 : 2,
-				header->oem_id,
-				header->oem_table_id);
-	}
-}
-
-uint8_t acpi_parse_root_table(struct acpi_rsdp_descriptor *rsdp) {
-	struct acpi_rsdt *rsdt;
-	struct acpi_sdt_header *table;
-	uint32_t nr_entries = 0;
-
-	if (rsdp->revision > 0) {
-		pr_log("ACPI version 2, using XSDT table not implemented!\n");
+found:
+	desc = (struct acpi_rsdp_descriptor *) start;
+	if (acpi_validate_rsdp(desc) != 0) {
+		printk("found RSDP is not valid!\n");
+		vmm_unmap_page_phys((uint32_t)start, size);
 		return 1;
 	}
 
-	rsdt = (struct acpi_rsdt *) rsdp->rsdt_phy_address;
+	// save rsdp
+	memcpy(rsdp.signature, desc->signature, 8);
+	rsdp.checksum = desc->checksum;
+	memcpy(rsdp.oem_id, desc->oem_id, 6);
+	rsdp.revision = desc->revision;
+	rsdp.rsdt_phy_address = desc->rsdt_phy_address;
 
-	if (!rsdt) {
+	vmm_unmap_page_phys((uint32_t)start, size);
+	return 0;
+}
+
+uint8_t acpi_parse_root_table() {
+	struct acpi_rsdt *rsdt;
+	struct acpi_sdt_header *table;
+	uint32_t nr_entries = 0;
+	uint32_t *rsdt_va;
+
+	//if (rsdp.revision > 0) {
+	//	pr_log("ACPI version 2, using XSDT table not implemented!\n");
+	//	return 1;
+	//}
+
+	if (rsdp.rsdt_phy_address == 0) {
 		pr_log("Invalid RSDT physical address!\n");
 		return 1;
 	}
 
+	uint32_t rsdt_pa = rsdp.rsdt_phy_address;
+	uint32_t rsdt_pa_offset = PAGE_OFFSET(rsdt_pa);
+	rsdt_va = vmm_map_page_phys(rsdt_pa, PAGE_PDE_PRESENT, PAGE_PTE_PRESENT, 1);
+
+	if (!rsdt_va) {
+		pr_log("Could not map RSDT\n");
+		return 1;
+	}
+
+	// rsdt phy address might not be aligned
+	rsdt = (struct acpi_rsdt *) ((uint32_t)rsdt_va + rsdt_pa_offset);
+
 	// validate table length
 	if (rsdt->header.length < (sizeof(struct acpi_sdt_header) + sizeof(uint32_t))) {
+		printk("length: %d\n", rsdt->header.length);
 		pr_log("Invalid RSDT table length!\n");
 		return 1;
 	}
@@ -170,41 +196,46 @@ uint8_t acpi_parse_root_table(struct acpi_rsdp_descriptor *rsdp) {
 	nr_entries = (rsdt->header.length - sizeof(struct acpi_sdt_header)) / sizeof(uint32_t);
 
 	for (uint32_t i = 0; i < nr_entries; i++) {
-		table = (struct acpi_sdt_header *) rsdt->pointer_to_other_sdt[i];
+		uint32_t table_pa = rsdt->pointer_to_other_sdt[i];
+		uint32_t table_pa_offset = PAGE_OFFSET(table_pa);
+
+		uint32_t *table_va = vmm_map_page_phys(table_pa, PAGE_PDE_PRESENT, PAGE_PTE_PRESENT, 1);
+
+		if (!table_va) {
+			pr_log("Could not map found acpi table\n");
+			return 1;
+		}
+
+		// table's phy address might not be aligned
+		table = (struct acpi_sdt_header *) ((uint32_t)table_va + table_pa_offset);
 
 		if (table && acpi_compute_checksum(table) == 0) {
 			acpi_print_table_header(table);
 
-			// add table in global list
+			// add table info in global list
 		} else {
 			pr_log("%.4s: wrong checksum!\n", table->signature);
 		}
+
+		vmm_unmap_page_phys((uint32_t)table_va, 1);
 	}
 
 	return 0;
 }
 
 /**
- * @brief Discovers location of ACPI Tables
- *
- * This function discovers the location of the present ACPI tables
- * and initializes the global variables with their addresses.
- *
- * TODO: create and populate global addresses
- * TODO: create a function  that displays the hardware information
+ * @brief Discover ACPI Tables
+ * @return 0 if successful, 1 otherwise
  */
 uint8_t acpi_init() {
 	pr_log("Initializing ACPI\n");
-	struct acpi_rsdp_descriptor *rsdp = acpi_find_rsdp();
-
-	if (rsdp == NULL) {
-		pr_log("RSDP not found!\n");
+	if (acpi_find_rsdp() != 0) {
 		return 1;
-	} else {
-		acpi_print_table_header(rsdp);
 	}
 
-	if (acpi_parse_root_table(rsdp)) {
+	acpi_print_table_header(&rsdp);
+
+	if (acpi_parse_root_table() != 0) {
 		return 1;
 	}
 

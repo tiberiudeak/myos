@@ -30,6 +30,9 @@
 #define END_RAM							0xFFFFFFFF
 #define VMM_BITMAP_SIZE					((END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE / 8)
 
+#define PAGE_ROUNDUP(sz)  (((sz)+PAGE_SIZE-1) & ~(PAGE_SIZE-1))
+#define PAGE_ROUNDDOWN(a) (((a)) & ~(PAGE_SIZE-1))
+
 /**
  * Page Directory Entry Format (4K)
  *
@@ -109,6 +112,8 @@ void *vmm_unmap_page(uint32_t);
 pt_entry *vmm_get_pte(uint32_t);
 uint32_t vmm_virt_to_phys(uint32_t);
 uint32_t vmm_map_page_early(uint32_t);
+void *vmm_map_page_phys(uint32_t, PAGE_PDE_FLAGS, PAGE_PTE_FLAGS, uint32_t);
+void vmm_unmap_page_phys(uint32_t, uint32_t);
 void vmm_reload_cr3(uint32_t);
 uint32_t vmm_map_video_mem(uint32_t, uint32_t);
 

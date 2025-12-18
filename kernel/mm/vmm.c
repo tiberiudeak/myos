@@ -299,6 +299,10 @@ void _clear_pt(uint32_t virtual_address) {
  */
 int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 		PAGE_PDE_FLAGS pde_flags, PAGE_PTE_FLAGS pte_flags) {
+	if (virtual_address % PAGE_SIZE != 0) {
+		panic("virtual address not page aligned");
+	}
+
 	// get current page directory
 	struct page_directory *pd = current_page_directory;
 
@@ -336,6 +340,54 @@ int vmm_map_page(uint32_t physical_address, uint32_t virtual_address,
 	return 0;
 }
 
+void *vmm_map_page_phys(uint32_t physical_address, PAGE_PDE_FLAGS pde_flags,
+		PAGE_PTE_FLAGS pte_flags, uint32_t size) {
+	uint32_t req_pages = size / PAGE_SIZE;
+
+	if (size % PAGE_SIZE > 0) {
+		req_pages++;
+	}
+
+    uint32_t first_fit_page = find_first_fit(
+        vmm_bitmap, VMM_BITMAP_SIZE,
+        (END_RAM - KERNEL_BASE_ADDR + 1) / PAGE_SIZE,
+        req_pages);
+
+	if (first_fit_page == 0) {
+		return NULL;
+	}
+
+    uint32_t base_vaddr = first_fit_page * PAGE_SIZE + KERNEL_BASE_ADDR;
+    uint32_t mapped_pages = 0;
+
+    for (uint32_t i = 0; i < req_pages; i++) {
+        uint32_t page_index = first_fit_page + i;
+        uint32_t vaddr = page_index * PAGE_SIZE + KERNEL_BASE_ADDR;
+		uint32_t phys =  physical_address + i * BLOCK_SIZE;
+
+        if (vmm_map_page(phys, vaddr, pde_flags, pte_flags)) {
+			goto error;
+        }
+
+        set_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, page_index);
+        mapped_pages++;
+    }
+
+	return (void *) base_vaddr;
+
+error:
+	for (uint32_t j = 0; j < mapped_pages; j++) {
+		uint32_t undo_idx = first_fit_page + j;
+		uint32_t undo_vaddr = undo_idx * PAGE_SIZE + KERNEL_BASE_ADDR;
+		if (!vmm_unmap_page(undo_vaddr)) {
+			printk("warning: page could not be unmapped: vaddr = 0x%.8x\n", undo_vaddr);
+		}
+		unset_bit_in_bitmap(vmm_bitmap, VMM_BITMAP_SIZE, undo_idx);
+	}
+
+	return NULL;
+}
+
 /**
  * @brief Unmap the page for the given virtual address
  *
@@ -359,6 +411,21 @@ void *vmm_unmap_page(uint32_t virtual_address) {
 	vmm_reload_cr3(vmm_virt_to_phys((uint32_t) PD_VIRT_ADDR));
 
 	return (void *) paddr;
+}
+
+void vmm_unmap_page_phys(uint32_t virtual_address, uint32_t size) {
+	uint32_t pages = size / PAGE_SIZE;
+
+	if (size % PAGE_SIZE > 0) {
+		pages++;
+	}
+
+	for (uint32_t i = 0; i < pages; i++) {
+		if (!vmm_unmap_page(virtual_address + i * PAGE_SIZE)) {
+			printk("warning: page could not be unmapped: vaddr = 0x%.8x\n",
+					virtual_address + i * PAGE_SIZE);
+		}
+	}
 }
 
 /**

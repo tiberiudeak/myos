@@ -113,6 +113,20 @@ struct acpi_fadt {
 	struct acpi_generic_address x_gpe1_block;
 } __attribute__((packed));
 
+struct acpi_madt {
+	struct acpi_sdt_header header;
+	uint32_t local_address; // phys address of local APIC
+	uint32_t flags;
+} __attribute__ ((packed));
+
+struct acpi_madt_local_apic {
+	uint8_t type;
+	uint8_t length;
+	uint8_t processor_id;
+	uint8_t apic_id;
+	uint32_t flags;
+};
+
 uint8_t acpi_init(void);
 
 #endif /* KERNEL_ACPI_H */

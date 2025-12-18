@@ -214,14 +214,14 @@ sections = %d, size = 0x%x, addr = 0x%x, shndx = 0x%x\n", elf_shdr->num,
 	// initialize interrupt descriptor table
 	idt_init();
 
-	while(1);
-
 	// find and initialize acpi tables
 	ret = acpi_init();
 
 	if (ret) {
 		panic("ACPI could not be initialized successfully!\n");
 	}
+
+	while(1);
 
 	// initialize PS/2 controller
 	ret = PS2_init();
