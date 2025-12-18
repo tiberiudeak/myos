@@ -1,5 +1,4 @@
 #define pr_log_fmt(msg)	"vmm: " msg
-#include <kernel/global_addresses.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
 #include <kernel/utils.h>

@@ -1,4 +1,3 @@
-#include <kernel/global_addresses.h>
 #include <kernel/multiboot.h>
 #include <kernel/font8x16.h>
 #include <kernel/string.h>

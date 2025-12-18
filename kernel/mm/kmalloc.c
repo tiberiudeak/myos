@@ -1,4 +1,3 @@
-#include <kernel/global_addresses.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>
 #include <mm/kmalloc.h>

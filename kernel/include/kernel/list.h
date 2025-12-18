@@ -66,6 +66,8 @@ void list_add_front(struct embedded_link *, struct embedded_link *);
 void list_add_end(struct embedded_link *, struct embedded_link *);
 void list_add_before(struct embedded_link *, struct embedded_link *,
 					 struct embedded_link *);
+void list_add_after(struct embedded_link *, struct embedded_link *,
+					 struct embedded_link *);
 void list_delete(struct embedded_link *, struct embedded_link *);
 int list_is_empty(struct embedded_link *);
 

@@ -9,7 +9,6 @@
 #include <arch/i386/pit.h>
 #include <kernel/elf.h>
 #include <kernel/fs.h>
-#include <kernel/global_addresses.h>
 #include <kernel/io.h>
 #include <kernel/string.h>
 #include <kernel/tty.h>

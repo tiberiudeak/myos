@@ -58,6 +58,25 @@ void list_add_before(struct embedded_link *list_h, struct embedded_link *before,
 }
 
 /*
+ * add element after another element in the list
+ *
+ * @param list_h	head of list
+ * @param after		add new_node after this element
+ * @param new_node	new node to be added
+ */
+void list_add_after(struct embedded_link *list_h, struct embedded_link *after,
+					 struct embedded_link *new_node) {
+	if (after->next == list_h) {
+		list_add_end(list_h, new_node);
+	} else {
+		new_node->next = after->next;
+		new_node->prev = after;
+		after->next = new_node;
+		after->next->prev = new_node;
+	}
+}
+
+/*
  * delete given node from the list
  *
  * @param list_h	head of list
