@@ -1,4 +1,5 @@
 ENTRY (_start)
+OUTPUT_ARCH(i386:x86-64)
 
 KERNEL_VIRT_BASE_ADDR = 0xffffffff80000000;
 KERNEL_PHYS_BASE_ADDR = 0x100000;
@@ -30,16 +31,12 @@ SECTIONS
 
 	.text ALIGN (4K) : AT (ADDR (.text) - KERNEL_VIRT_BASE_ADDR)
 	{
-		_kernel_text_sec_start = .;
 		*(.text)
-		_kernel_text_sec_end = .;
 	}
 
 	.rodata ALIGN (4K) : AT (ADDR (.rodata) - KERNEL_VIRT_BASE_ADDR)
 	{
-		_kernel_rodata_sec_start = .;
 		*(.rodata)
-		_kernel_rodata_sec_end = .;
 	}
 
 	.data ALIGN (4K) : AT (ADDR (.data) - KERNEL_VIRT_BASE_ADDR)
@@ -49,11 +46,8 @@ SECTIONS
 
 	.bss ALIGN (4K) : AT (ADDR (.bss) - KERNEL_VIRT_BASE_ADDR)
 	{
-		*(COMMON)
 		*(.bss)
-
-		. = ALIGN(4K);
-		*(.bootstrap_stack)
+		*(COMMON)
 	}
 	. = ALIGN(4K);
 	_kernel_end = .;

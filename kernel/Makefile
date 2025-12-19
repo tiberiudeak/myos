@@ -8,7 +8,7 @@ KERNEL_DEPS:=$(shell find . -type f -name '*.d')
 
 #KERNEL_OBJS:=$(KERNEL_SOURCES_C:.c=.o)
 #KERNEL_OBJS:=$(KERNEL_OBJS) $(KERNEL_SOURCES_S:.S=.o)
-KERNEL_OBJS:=boot.o
+KERNEL_OBJS:=boot32.o boot64.o
 
 OBJS=$(KERNEL_OBJS)
 
