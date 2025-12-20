@@ -30,6 +30,7 @@ pt:
 stack_bottom:
 .skip STACK_SIZE
 stack_top:
+.global stack_top
 
 .section .multiboot.text, "ax"
 .global _start

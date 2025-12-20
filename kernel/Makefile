@@ -1,5 +1,5 @@
-CFLAGS:=-MD -O0 -g -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -ffreestanding -Wall -Wextra -Werror -Iinclude -std=gnu99
-LDFLAGS:=-Tlinker.ld -nostdlib
+CFLAGS:=-MD -O0 -g -mcmodel=large -mno-red-zone -mno-mmx -mno-sse -mno-sse2 -ffreestanding -Wall -Wextra -Werror -Iinclude -m64
+LDFLAGS:=-Tlinker.ld -nostdlib -z max-page-size=0x1000
 ASFLAGS:=-g
 
 KERNEL_SOURCES_C:=$(shell find . -type f -name '*.c')
@@ -8,7 +8,7 @@ KERNEL_DEPS:=$(shell find . -type f -name '*.d')
 
 #KERNEL_OBJS:=$(KERNEL_SOURCES_C:.c=.o)
 #KERNEL_OBJS:=$(KERNEL_OBJS) $(KERNEL_SOURCES_S:.S=.o)
-KERNEL_OBJS:=boot32.o boot64.o
+KERNEL_OBJS:=boot32.o boot64.o main.o
 
 OBJS=$(KERNEL_OBJS)
 
